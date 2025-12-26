@@ -11,14 +11,14 @@ const awarenessBlocks = [
     title: "Why Only Robusta?",
     subtitle: "The Caffeine payload & The Sourcing",
     body: "We reclaim the bean the world ignored. Robusta provides twice the antioxidant load and caffeine payoff of Arabica. Our beans are sourced exclusively from high-altitude estates in Vietnam and India, where pressure and climate craft an uncompromising profile.",
-    img: "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&q=80&w=1000"
+    img: "/media/rabuste1.jpeg",
   },
   {
     title: "The Trifecta",
     subtitle: "Coffee, Art, Community",
     body: "A café is a sanctuary, not just a service. We built Rabuste to be the collision point of coffee, fine art, and shared learning—where caffeine, conversation, and creativity blend.",
-    img: "https://images.unsplash.com/photo-1541167760496-162955ed8a9f?auto=format&fit=crop&q=80&w=1000"
-  }
+    img: "/media/rabuste2.jpeg",
+  },
 ];
 
 interface AwarenessPageProps {

@@ -35,7 +35,7 @@ const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
             />
           </div>
           <p className="text-[12px] font-sans text-zinc-400 max-w-sm uppercase tracking-widest leading-relaxed">
-            Rabuste is a specialty coffee collective focused on the reclamation of Robusta coffee. Operating from San Francisco, we converge intentionality, art, and high-performance stimulants.
+            Rabuste is a specialty coffee collective focused on the reclamation of Robusta coffee, operating from Surat.
           </p>
         </div>
 

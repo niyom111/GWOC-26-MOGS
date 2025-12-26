@@ -203,7 +203,11 @@ const App: React.FC = () => {
           )}
 
           {currentPage === Page.ADMIN && (
-            <AdminDashboard onBack={() => navigateTo(Page.HOME)} />
+            <AdminRoute>
+              {handleLogout => (
+                <AdminDashboard onBack={() => navigateTo(Page.HOME)} onLogout={handleLogout} />
+              )}
+            </AdminRoute>
           )}
           </motion.div>
         </AnimatePresence>
@@ -212,6 +216,134 @@ const App: React.FC = () => {
       </div>
       </MenuProvider>
     </DataProvider>
+  );
+};
+
+// Simple hardcoded admin login gate with loading overlay
+const AdminRoute: React.FC<{ children: (logout: () => void) => React.ReactNode }> = ({ children }) => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [lastLogin, setLastLogin] = useState<string | null>(() => {
+    if (typeof window === 'undefined') return null;
+    return window.localStorage.getItem('rabuste_last_login');
+  });
+
+  const handleLoginSuccess = () => {
+    setIsLoading(true);
+    const now = new Date().toISOString();
+
+    setTimeout(() => {
+      // Save this successful login time for the next visit
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem('rabuste_last_login', now);
+      }
+      setIsLoading(false);
+      setIsAuthenticated(true);
+      setEmail('');
+      setPassword('');
+      setError(null);
+      // We intentionally do NOT update lastLogin here so the login screen
+      // always shows the previous successful login timestamp.
+    }, 2000);
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (email === 'robustecafe@gmail.com' && password === 'GWOC26@robusta') {
+      handleLoginSuccess();
+    } else {
+      setError('Invalid Credentials');
+    }
+  };
+
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    setEmail('');
+    setPassword('');
+    setError(null);
+    setIsLoading(false);
+    // Refresh lastLogin from storage so the login card shows the most recent timestamp
+    if (typeof window !== 'undefined') {
+      const stored = window.localStorage.getItem('rabuste_last_login');
+      setLastLogin(stored);
+    }
+  };
+
+  if (isAuthenticated) {
+    return <>{children(handleLogout)}</>;
+  }
+
+  return (
+    <div className="min-h-screen bg-[#F9F8F4] flex items-center justify-center px-4 relative overflow-hidden">
+      <div className="w-full max-w-sm bg-white border border-black/10 rounded-xl shadow-sm p-8 z-10">
+        <h1 className="text-2xl font-serif mb-2 text-center">Admin Login</h1>
+        <p className="text-xs text-zinc-500 font-sans mb-4 text-center uppercase tracking-[0.25em]">
+          Rabuste Coffee
+        </p>
+        {lastLogin && (
+          <p className="text-[10px] text-zinc-500 font-sans mb-4 text-center">
+            Last successful login:{' '}
+            {new Date(lastLogin).toLocaleString()}
+          </p>
+        )}
+        <form onSubmit={handleSubmit} className="space-y-4 font-sans text-sm">
+          <div>
+            <label className="block text-[11px] uppercase tracking-[0.25em] mb-1">Email</label>
+            <input
+              type="email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              className="w-full bg-transparent border border-black/20 rounded-md px-3 py-2 outline-none focus:border-black"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-[11px] uppercase tracking-[0.25em] mb-1">Password</label>
+            <input
+              type="password"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              className="w-full bg-transparent border border-black/20 rounded-md px-3 py-2 outline-none focus:border-black"
+              required
+            />
+          </div>
+          {error && <p className="text-xs text-red-600 mt-1">{error}</p>}
+          <button
+            type="submit"
+            className="w-full mt-4 py-2.5 bg-[#0a0a0a] text-[#F9F8F4] text-[10px] uppercase tracking-[0.3em] rounded-full hover:bg-black transition-colors disabled:opacity-60"
+            disabled={isLoading}
+          >
+            {isLoading ? 'Signing In...' : 'Sign In'}
+          </button>
+        </form>
+      </div>
+
+      <AnimatePresence>
+        {isLoading && (
+          <motion.div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div
+              className="bg-white border border-black rounded-xl px-8 py-6 shadow-xl flex flex-col items-center space-y-4"
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+            >
+              <div className="w-3 h-3 rounded-full bg-black animate-pulse" />
+              <p className="text-xs font-sans uppercase tracking-[0.25em] text-black">
+                Signing in...
+              </p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 };
 

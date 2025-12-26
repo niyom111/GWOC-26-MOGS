@@ -26,6 +26,7 @@ import { useMenuContext } from '../context/MenuContext';
 
 interface AdminDashboardProps {
   onBack: () => void;
+  onLogout: () => void;
 }
 
 interface FranchiseEnquiry {
@@ -37,7 +38,7 @@ interface FranchiseEnquiry {
   read: boolean;
 }
 
-const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
+const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'coffee' | 'orders' | 'art' | 'workshops' | 'franchise'>('overview');
 
   const tabs = [
@@ -878,7 +879,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
         </div>
 
         <button
-          onClick={onBack}
+          onClick={() => {
+            onLogout();
+            onBack();
+          }}
           className="flex items-center space-x-2 px-3 py-2 text-[11px] uppercase tracking-[0.18em] text-zinc-500 hover:text-red-500 transition-all"
         >
           <LogOut className="w-4 h-4" />

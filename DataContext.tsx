@@ -736,27 +736,15 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [artItems, setArtItems] = useState<ArtAdminItem[]>(initial.artItems);
   const [workshops, setWorkshops] = useState<WorkshopAdminItem[]>(initial.workshops);
   const [orders, setOrders] = useState<Order[]>(() => {
-    // Clear any existing orders (schema changed and user requested reset)
     if (typeof window === 'undefined') return [];
     try {
-      window.localStorage.removeItem(ORDERS_KEY);
-      const raw = window.localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw) as Partial<StoredData>;
-        if (parsed) {
-          const updated: StoredData = {
-            menuItems: parsed.menuItems && parsed.menuItems.length ? parsed.menuItems : defaultData.menuItems,
-            artItems: parsed.artItems && parsed.artItems.length ? parsed.artItems : defaultData.artItems,
-            workshops: parsed.workshops && parsed.workshops.length ? parsed.workshops : defaultData.workshops,
-            orders: [],
-          };
-          window.localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-        }
-      }
+      const saved = window.localStorage.getItem(ORDERS_KEY);
+      if (!saved) return [];
+      const parsed = JSON.parse(saved) as Order[];
+      return Array.isArray(parsed) ? parsed : [];
     } catch {
-      // ignore
+      return [];
     }
-    return [];
   });
 
   // Persist menu/art/workshops + orders snapshot to localStorage whenever they change
