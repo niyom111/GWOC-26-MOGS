@@ -1,0 +1,7 @@
+{
+  "name": "Rabuste Café",
+  "description": "A premium coffee and art experience centered around the bold identity of Robusta coffee, featuring an award-winning aesthetic with gothic typography and smooth parallax effects.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
