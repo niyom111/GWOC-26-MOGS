@@ -9,10 +9,11 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "react": "^19.2.3",
-    "react-dom": "^19.2.3",
+    "@emailjs/browser": "^4.4.1",
+    "framer-motion": "^12.2.3",
     "lucide-react": "^0.475.0",
-    "framer-motion": "^12.2.3"
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",

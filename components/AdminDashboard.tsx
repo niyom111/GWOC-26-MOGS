@@ -13,12 +13,14 @@ import {
   LayoutDashboard,
   CheckCircle2,
   AlertTriangle,
+  ClipboardList,
 } from 'lucide-react';
 import {
   useDataContext,
   CoffeeAdminItem,
   ArtAdminItem,
   WorkshopAdminItem,
+  Order,
 } from '../DataContext';
 import { useMenuContext } from '../context/MenuContext';
 
@@ -36,11 +38,12 @@ interface FranchiseEnquiry {
 }
 
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'coffee' | 'art' | 'workshops' | 'franchise'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'coffee' | 'orders' | 'art' | 'workshops' | 'franchise'>('overview');
 
   const tabs = [
     { id: 'overview' as const, label: 'Overview', icon: LayoutDashboard },
     { id: 'coffee' as const, label: 'Coffee Menu', icon: Coffee },
+    { id: 'orders' as const, label: 'Orders', icon: ClipboardList },
     { id: 'art' as const, label: 'Art Gallery', icon: Palette },
     { id: 'workshops' as const, label: 'Workshops', icon: Calendar },
     { id: 'franchise' as const, label: 'Franchise Enquiries', icon: Users },
@@ -59,6 +62,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
     toggleArtStatus,
     addWorkshop,
     addArtItem,
+    orders,
   } = useDataContext();
 
   const {
@@ -952,6 +956,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
           />
         )}
 
+        {activeTab === 'orders' && (
+          <OrdersTable items={orders} />
+        )}
+
         {activeTab === 'art' && (
           <ArtTable items={artItems} onToggleStatus={toggleArtStatus} />
         )}
@@ -1160,6 +1168,43 @@ const CoffeeTable: React.FC<{
                   <Trash2 className="w-4 h-4" /> Delete
                 </button>
               </div>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+);
+
+// Orders table
+const OrdersTable: React.FC<{ items: Order[] }> = ({ items }) => (
+  <div className="bg-white border border-black/5 rounded-xl overflow-hidden">
+    <table className="w-full text-left font-sans text-sm">
+      <thead className="bg-[#F9F8F4] text-[10px] uppercase tracking-[0.25em] text-zinc-500">
+        <tr>
+          <th className="px-6 py-3 font-semibold">Order ID</th>
+          <th className="px-6 py-3 font-semibold">Customer</th>
+          <th className="px-6 py-3 font-semibold">Phone</th>
+          <th className="px-6 py-3 font-semibold">Items</th>
+          <th className="px-6 py-3 font-semibold">Total (₹)</th>
+          <th className="px-6 py-3 font-semibold">Pickup Time</th>
+          <th className="px-6 py-3 font-semibold">Date</th>
+        </tr>
+      </thead>
+      <tbody>
+        {items.map(order => (
+          <tr
+            key={order.id}
+            className="border-t border-black/5 hover:bg-[#F9F8F4]/60 transition-colors"
+          >
+            <td className="px-6 py-4 text-xs font-mono">{order.id}</td>
+            <td className="px-6 py-4 text-sm">{order.customer.name}</td>
+            <td className="px-6 py-4 text-sm text-zinc-700">{order.customer.phone}</td>
+            <td className="px-6 py-4 text-sm text-zinc-700">{order.items.length}</td>
+            <td className="px-6 py-4 text-sm font-semibold">₹{order.total.toFixed(0)}</td>
+            <td className="px-6 py-4 text-sm text-zinc-700">{order.pickupTime}</td>
+            <td className="px-6 py-4 text-xs text-zinc-500">
+              {new Date(order.date).toLocaleString()}
             </td>
           </tr>
         ))}

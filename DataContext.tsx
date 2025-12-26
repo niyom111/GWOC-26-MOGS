@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { CartItem } from './types';
 
 // Shared data shapes for menu, art, and workshops
 export interface CoffeeAdminItem {
@@ -31,10 +32,26 @@ export interface WorkshopAdminItem {
   price: number;
 }
 
+export interface OrderCustomer {
+  name: string;
+  phone: string;
+  email: string;
+}
+
+export interface Order {
+  id: string;
+  customer: OrderCustomer;
+  items: CartItem[];
+  total: number;
+  date: string; // ISO string
+  pickupTime: string;
+}
+
 interface StoredData {
   menuItems: CoffeeAdminItem[];
   artItems: ArtAdminItem[];
   workshops: WorkshopAdminItem[];
+  orders: Order[];
 }
 
 // Default data used when nothing is in localStorage yet
@@ -667,9 +684,11 @@ export const defaultData: StoredData = {
       price: 799,
     },
   ],
+  orders: [],
 };
 
 const STORAGE_KEY = 'rabuste-admin-data-v1';
+const ORDERS_KEY = 'rabuste_orders';
 
 function loadInitialData(): StoredData {
   if (typeof window === 'undefined') {
@@ -684,6 +703,7 @@ function loadInitialData(): StoredData {
       menuItems: parsed.menuItems && parsed.menuItems.length ? parsed.menuItems : defaultData.menuItems,
       artItems: parsed.artItems && parsed.artItems.length ? parsed.artItems : defaultData.artItems,
       workshops: parsed.workshops && parsed.workshops.length ? parsed.workshops : defaultData.workshops,
+      orders: parsed.orders && parsed.orders.length ? parsed.orders : [],
     };
   } catch {
     return defaultData;
@@ -694,6 +714,7 @@ interface DataContextValue {
   menuItems: CoffeeAdminItem[];
   artItems: ArtAdminItem[];
   workshops: WorkshopAdminItem[];
+  orders: Order[];
   addMenuItem: (item: CoffeeAdminItem) => void;
   updateMenuItem: (id: string, updates: Partial<CoffeeAdminItem>) => void;
   deleteMenuItem: (id: string) => void;
@@ -704,6 +725,7 @@ interface DataContextValue {
   addWorkshop: (item: WorkshopAdminItem) => void;
   updateWorkshop: (id: string, updates: Partial<WorkshopAdminItem>) => void;
   deleteWorkshop: (id: string) => void;
+  placeOrder: (customer: OrderCustomer, items: CartItem[], total: number, pickupTime: string) => Order;
 }
 
 const DataContext = createContext<DataContextValue | undefined>(undefined);
@@ -713,17 +735,50 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [menuItems, setMenuItems] = useState<CoffeeAdminItem[]>(initial.menuItems);
   const [artItems, setArtItems] = useState<ArtAdminItem[]>(initial.artItems);
   const [workshops, setWorkshops] = useState<WorkshopAdminItem[]>(initial.workshops);
+  const [orders, setOrders] = useState<Order[]>(() => {
+    // Clear any existing orders (schema changed and user requested reset)
+    if (typeof window === 'undefined') return [];
+    try {
+      window.localStorage.removeItem(ORDERS_KEY);
+      const raw = window.localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as Partial<StoredData>;
+        if (parsed) {
+          const updated: StoredData = {
+            menuItems: parsed.menuItems && parsed.menuItems.length ? parsed.menuItems : defaultData.menuItems,
+            artItems: parsed.artItems && parsed.artItems.length ? parsed.artItems : defaultData.artItems,
+            workshops: parsed.workshops && parsed.workshops.length ? parsed.workshops : defaultData.workshops,
+            orders: [],
+          };
+          window.localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+        }
+      }
+    } catch {
+      // ignore
+    }
+    return [];
+  });
 
-  // Persist to localStorage whenever any of the collections change
+  // Persist menu/art/workshops + orders snapshot to localStorage whenever they change
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const payload: StoredData = { menuItems, artItems, workshops };
+    const payload: StoredData = { menuItems, artItems, workshops, orders };
     try {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
     } catch {
       // ignore write errors
     }
-  }, [menuItems, artItems, workshops]);
+  }, [menuItems, artItems, workshops, orders]);
+
+  // Persist orders separately under rabuste_orders for fast access in admin / cart flows
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      window.localStorage.setItem(ORDERS_KEY, JSON.stringify(orders));
+    } catch {
+      // ignore write errors
+    }
+  }, [orders]);
 
   const addMenuItem = (item: CoffeeAdminItem) => {
     setMenuItems(prev => [...prev, item]);
@@ -771,10 +826,30 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setWorkshops(prev => prev.filter(item => item.id !== id));
   };
 
+  const placeOrder = (
+    customer: OrderCustomer,
+    items: CartItem[],
+    total: number,
+    pickupTime: string
+  ): Order => {
+    const id = `#ORD-${Date.now().toString().slice(-4)}`;
+    const order: Order = {
+      id,
+      customer,
+      items,
+      total,
+      date: new Date().toISOString(),
+      pickupTime,
+    };
+    setOrders(prev => [order, ...prev]);
+    return order;
+  };
+
   const value: DataContextValue = {
     menuItems,
     artItems,
     workshops,
+    orders,
     addMenuItem,
     updateMenuItem,
     deleteMenuItem,
@@ -785,6 +860,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     addWorkshop,
     updateWorkshop,
     deleteWorkshop,
+    placeOrder,
   };
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;

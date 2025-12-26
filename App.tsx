@@ -77,7 +77,17 @@ const App: React.FC = () => {
   };
 
   const [currentPage, setCurrentPage] = useState<Page>(() => pathToPage(window.location.pathname));
-  const [cart, setCart] = useState<CartItem[]>([]);
+  const [cart, setCart] = useState<CartItem[]>(() => {
+    if (typeof window === 'undefined') return [];
+    try {
+      const raw = window.localStorage.getItem('rabuste_cart');
+      if (!raw) return [];
+      const parsed = JSON.parse(raw) as CartItem[];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  });
 
   // Sync with browser back/forward buttons
   useEffect(() => {
@@ -88,6 +98,16 @@ const App: React.FC = () => {
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
+
+  // Persist cart to localStorage
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      window.localStorage.setItem('rabuste_cart', JSON.stringify(cart));
+    } catch {
+      // ignore write errors
+    }
+  }, [cart]);
 
   const navigateTo = (page: Page) => {
     const newPath = pageToPath(page);
@@ -153,6 +173,8 @@ const App: React.FC = () => {
               onRemove={removeFromCart} 
               onUpdateQuantity={updateQuantity}
               onBackToMenu={() => navigateTo(Page.MENU)}
+              onClearCart={() => setCart([])}
+              onBackToHome={() => navigateTo(Page.HOME)}
             />
           )}
 
