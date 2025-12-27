@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Page, CoffeeItem, CartItem } from './types';
 import Header from './components/Header';
@@ -20,6 +19,8 @@ import FAQPage from './components/FAQPage';
 import { motion as motionBase, AnimatePresence } from 'framer-motion';
 import { DataProvider } from './DataContext';
 import { MenuProvider } from './context/MenuContext';
+import ChatWidget from './components/ChatWidget';
+
 
 // Fix for framer-motion type mismatch in the current environment
 const motion = motionBase as any;
@@ -213,6 +214,9 @@ const App: React.FC = () => {
         </AnimatePresence>
 
         {currentPage !== Page.ADMIN && <Footer onNavigate={navigateTo} />}
+        
+        {/* --- ADDED CHAT WIDGET HERE --- */}
+        <ChatWidget />
       </div>
       </MenuProvider>
     </DataProvider>
