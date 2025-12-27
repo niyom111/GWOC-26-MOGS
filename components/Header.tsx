@@ -78,7 +78,7 @@ const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage, cartCount }) =
 
       {/* RIGHT SIDE ICONS */}
       {currentPage !== Page.ADMIN && (
-      <div className={`fixed top-5 right-8 z-50 flex items-center space-x-6 pointer-events-auto ${textColorClass}`}>
+      <div className={`fixed top-4 right-4 z-50 flex items-center space-x-4 md:space-x-6 pointer-events-auto ${textColorClass}`}>
             
             {/* Portal Button */}
             <button 

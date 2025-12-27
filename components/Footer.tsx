@@ -24,7 +24,7 @@ const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
         <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-black via-transparent to-black/10" />
       </div>
 
-      <div className="max-w-7xl mx-auto px-8 pt-20 pb-32 grid grid-cols-1 md:grid-cols-4 gap-20">
+      <div className="max-w-7xl mx-auto px-8 pt-16 pb-24 grid grid-cols-1 md:grid-cols-4 gap-12 md:gap-20">
         <div className="col-span-1 md:col-span-2">
           {/* Brand Logo Stamp: Increased size of logo.png and tight vertical gap */}
           <div className="mb-2">
@@ -65,7 +65,7 @@ const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-8 py-10 flex flex-col md:row-reverse md:flex-row justify-between items-center border-t border-white/10 text-[9px] font-sans tracking-widest text-zinc-600 uppercase">
+      <div className="max-w-7xl mx-auto px-8 py-10 flex flex-col md:row-reverse md:flex-row justify-between items-center border-t border-white/10 text-[9px] font-sans tracking-widest text-zinc-600 uppercase space-y-4 md:space-y-0">
         <button 
           onClick={scrollToTop}
           className="flex items-center space-x-3 mb-6 md:mb-0 hover:text-white transition-colors"

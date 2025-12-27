@@ -11,8 +11,8 @@ interface RobustaStoryProps {
 
 const RobustaStory: React.FC<RobustaStoryProps> = ({ onBack }) => {
   return (
-    <section className="bg-[#060606] text-white pt-24 pb-40 px-6 md:px-12 lg:px-24 min-h-screen">
-      <div className="max-w-5xl mx-auto">
+    <section className="pt-32 pb-40 px-8 bg-[#F9F8F4] text-[#0a0a0a] min-h-screen">
+      <div className="max-w-6xl mx-auto">
         <button
           onClick={() => onBack(Page.AWARENESS)}
           className="mb-10 inline-flex items-center space-x-3 text-[10px] uppercase tracking-[0.4em] text-zinc-400 hover:text-white transition-colors"
@@ -21,7 +21,7 @@ const RobustaStory: React.FC<RobustaStoryProps> = ({ onBack }) => {
           <span>Back to Philosophy</span>
         </button>
 
-        <header className="mb-16 text-left">
+        <header className="mb-20 text-left">
           <motion.p
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -32,36 +32,36 @@ const RobustaStory: React.FC<RobustaStoryProps> = ({ onBack }) => {
           <motion.h1
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-5xl md:text-7xl font-serif italic tracking-tight leading-tight mb-6"
+            className="text-5xl md:text-7xl font-serif italic tracking-tight leading-tight mb-6 text-[#1A1A1A]"
           >
             The Robusta Story.
           </motion.h1>
-          <p className="text-sm md:text-base text-zinc-400 max-w-2xl leading-relaxed">
+          <p className="text-sm md:text-base text-zinc-600 max-w-2xl leading-relaxed uppercase tracking-widest">
             Before it was misunderstood, Robusta was revered. This is the story of a bean that refused to be
-            domesticated by taste trendsand why its bold character has become the backbone of our craft.
+            domesticated by taste trends—and why its bold character has become the backbone of our craft.
           </p>
         </header>
 
-        {/* Hero Image / Video */}
+        {/* Hero Video */}
         <motion.div
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
-          className="mb-20 relative aspect-[16/9] overflow-hidden rounded-lg border border-white/10"
+          className="mb-24 relative aspect-[16/9] overflow-hidden rounded-2xl border border-black/10 bg-black"
         >
           <video
             className="w-full h-full object-cover"
-            src="/media/coffee-beans.mp4"
+            src="/media/robusta-story.mp4"
             autoPlay
             loop
             muted
             playsInline
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent" />
-          <div className="absolute bottom-6 left-6 max-w-md">
+          <div className="absolute bottom-6 left-6 max-w-md text-white">
             <h2 className="text-xl md:text-2xl font-serif mb-2">From Highlands to Harbour</h2>
-            <p className="text-xs md:text-sm text-zinc-300 leading-relaxed">
-              Robusta thrives where other coffees faltersteep altitudes, heavy rains, and volcanic soil. In the
+            <p className="text-xs md:text-sm text-zinc-200 leading-relaxed">
+              Robusta thrives where other coffees falter—steep altitudes, heavy rains, and volcanic soil. In the
               highlands of Vietnam and the forests of India, farmers have cultivated these resilient cherries for
               generations.
             </p>
@@ -69,16 +69,16 @@ const RobustaStory: React.FC<RobustaStoryProps> = ({ onBack }) => {
         </motion.div>
 
         {/* History Section */}
-        <section className="space-y-10 mb-20">
+        <section className="space-y-10 mb-24">
           <motion.div
             initial={{ opacity: 0, x: -40 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
           >
-            <h3 className="text-2xl md:text-3xl font-serif mb-4">A Bean in the Shadows.</h3>
-            <p className="text-sm md:text-base text-zinc-300 leading-relaxed">
-              For much of the last century, Robusta was relegated to the backgroundblended into espresso for crema,
+            <h3 className="text-2xl md:text-3xl font-serif mb-4 text-[#1A1A1A]">A Bean in the Shadows.</h3>
+            <p className="text-sm md:text-base text-zinc-700 leading-relaxed">
+              For much of the last century, Robusta was relegated to the background—blended into espresso for crema,
               hidden in instant coffee, and rarely celebrated on its own. Its intense bitterness and towering caffeine
               content were treated as flaws instead of features.
             </p>
@@ -90,10 +90,10 @@ const RobustaStory: React.FC<RobustaStoryProps> = ({ onBack }) => {
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: 0.15 }}
           >
-            <h3 className="text-2xl md:text-3xl font-serif mb-4">The Shift Toward Character.</h3>
-            <p className="text-sm md:text-base text-zinc-300 leading-relaxed">
+            <h3 className="text-2xl md:text-3xl font-serif mb-4 text-[#1A1A1A]">The Shift Toward Character.</h3>
+            <p className="text-sm md:text-base text-zinc-700 leading-relaxed">
               As coffee drinkers grew more adventurous, a new curiosity emerged: what if we stopped hiding Robusta?
-              What if we pursued its natural strengthsthe deep cocoa, the molasses, the earth and spiceinstead of
+              What if we pursued its natural strengths—the deep cocoa, the molasses, the earth and spice—instead of
               sanding them down?
             </p>
           </motion.div>
@@ -104,8 +104,8 @@ const RobustaStory: React.FC<RobustaStoryProps> = ({ onBack }) => {
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: 0.3 }}
           >
-            <h3 className="text-2xl md:text-3xl font-serif mb-4">Reclamation, Not Reinvention.</h3>
-            <p className="text-sm md:text-base text-zinc-300 leading-relaxed">
+            <h3 className="text-2xl md:text-3xl font-serif mb-4 text-[#1A1A1A]">Reclamation, Not Reinvention.</h3>
+            <p className="text-sm md:text-base text-zinc-700 leading-relaxed">
               At Rabuste, we don't try to disguise what Robusta is. We refine it. Through rigorous sourcing,
               sugarcane and honey processing, and precise roast curves, we reveal a spectrum that ranges from
               burnt-sugar sweetness to blackstrap depth. It is coffee that doesn't whisper—it resonates.
@@ -130,15 +130,15 @@ const RobustaStory: React.FC<RobustaStoryProps> = ({ onBack }) => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6 }}
-              className="relative overflow-hidden rounded-lg border border-white/10"
+              className="relative overflow-hidden rounded-lg border border-black/10 bg-black"
             >
               <img
-                src="https://images.unsplash.com/photo-1581331559191-31c1c11d9e0a?auto=format&fit=crop&q=80&w=1200"
+                src="/media/robusta-story1.jpg"
                 className="w-full h-56 object-cover"
                 alt="Robusta coffee plants in Vietnam"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-              <div className="absolute bottom-4 left-4 right-4 text-xs text-zinc-200">
+              <div className="absolute bottom-4 left-4 right-4 text-xs text-zinc-100">
                 High-altitude farms in Vietnam where Robusta cherries grow dense and resilient, shaped by monsoon rains
                 and red basalt soil.
               </div>
@@ -149,15 +149,15 @@ const RobustaStory: React.FC<RobustaStoryProps> = ({ onBack }) => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, amount: 0.4 }}
               transition={{ duration: 0.6, delay: 0.1 }}
-              className="relative overflow-hidden rounded-lg border border-white/10"
+              className="relative overflow-hidden rounded-lg border border-black/10 bg-black"
             >
               <img
-                src="https://images.unsplash.com/photo-1517705008128-361805f42e86?auto=format&fit=crop&q=80&w=1200"
+                src="/media/robusta-story2.jpg"
                 className="w-full h-56 object-cover"
                 alt="Coffee being processed in India"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-              <div className="absolute bottom-4 left-4 right-4 text-xs text-zinc-200">
+              <div className="absolute bottom-4 left-4 right-4 text-xs text-zinc-100">
                 In southern India, generations of growers experiment with fermentation and drying to coax out layered
                 flavors from each lot.
               </div>
@@ -168,15 +168,15 @@ const RobustaStory: React.FC<RobustaStoryProps> = ({ onBack }) => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, amount: 0.4 }}
               transition={{ duration: 0.6, delay: 0.2 }}
-              className="relative overflow-hidden rounded-lg border border-white/10"
+              className="relative overflow-hidden rounded-lg border border-black/10 bg-black"
             >
               <img
-                src="https://images.unsplash.com/photo-1517705008128-361805f42e86?auto=format&fit=crop&q=80&w=1200"
+                src="/media/robusta-story3.jpg"
                 className="w-full h-56 object-cover"
                 alt="Roasting robusta coffee beans"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-              <div className="absolute bottom-4 left-4 right-4 text-xs text-zinc-200">
+              <div className="absolute bottom-4 left-4 right-4 text-xs text-zinc-100">
                 In the roastery, careful heat curves transform dense green seeds into thick-bodied, crema-rich
                 expressions of power.
               </div>

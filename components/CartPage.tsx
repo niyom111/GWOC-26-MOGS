@@ -298,7 +298,7 @@ const CartPage: React.FC<CartPageProps> = ({
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="w-full max-w-md bg-white rounded-xl border border-black/10 shadow-xl p-8"
+className="w-full max-w-md mx-4 bg-white rounded-xl border border-black/10 shadow-xl p-6 md:p-8"
             >
               <h2 className="text-2xl font-serif mb-4">Pay at Counter</h2>
               <p className="text-xs text-zinc-500 font-sans mb-6">
@@ -385,7 +385,7 @@ const CartPage: React.FC<CartPageProps> = ({
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="w-full max-w-md bg-white rounded-xl border border-black/10 shadow-xl p-8 text-center"
+className="w-full max-w-md mx-4 bg-white rounded-xl border border-black/10 shadow-xl p-6 md:p-8 text-center"
             >
               <CheckCircle2 className="w-16 h-16 mx-auto mb-6 text-black" />
               <h2 className="text-2xl font-serif mb-3">Order Placed Successfully</h2>
