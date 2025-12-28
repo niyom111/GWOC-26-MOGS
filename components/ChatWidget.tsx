@@ -25,10 +25,17 @@ export default function ChatWidget() {
     setIsLoading(true);
 
     try {
+      // NEW VERSION (Update your file to this)
       const response = await fetch('http://localhost:5000/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: userMessage }),
+        body: JSON.stringify({ 
+          message: userMessage,
+          history: messages.map(m => ({
+            role: m.isUser ? "user" : "model",
+            parts: [{ text: m.text }]
+          }))
+        })
       });
 
       const data = await response.json();
@@ -84,7 +91,7 @@ export default function ChatWidget() {
             
             {messages.map((msg, index) => (
               <div key={index} className={`flex ${msg.isUser ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[85%] p-3 text-sm shadow-sm ${
+                <div className={`max-w-[85%] p-3 text-sm shadow-sm whitespace-pre-line ${
                   msg.isUser 
                     ? 'bg-[#2C1810] text-[#F3E5AB] rounded-2xl rounded-br-sm' // User: Espresso color
                     : 'bg-[#EFEBE9] text-[#2C1810] border border-[#d7ccc8] rounded-2xl rounded-bl-sm' // Bot: Milk foam color

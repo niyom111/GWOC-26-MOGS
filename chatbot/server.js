@@ -8,11 +8,9 @@ dotenv.config();
 const app = express();
 const PORT = 5000;
 
-// 1. Allow Frontend to connect
 app.use(cors());
 app.use(express.json());
 
-// 2. Check API Key
 if (!process.env.GEMINI_API_KEY) {
   console.error("❌ ERROR: GEMINI_API_KEY is missing in .env file");
   process.exit(1);
@@ -20,65 +18,94 @@ if (!process.env.GEMINI_API_KEY) {
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
+// --- 🧠 MENU KNOWLEDGE BASE (Updated from your MenuPage.tsx) ---
+const MENU_KQ = `
+CURRENT RABUSTE MENU & PRICING (Currency: INR ₹):
+
+ROBUSTA SPECIALTY (COLD - NON MILK)
+- Iced Americano: ₹160
+- Iced Espresso: ₹130
+- Iced Espresso Tonic: ₹250
+- Iced Espresso Red Bull: ₹290
+- Cranberry Tonic: ₹270
+
+ROBUSTA SPECIALTY (COLD - MILK BASED)
+- Iced Latte: ₹220
+- Affogato: ₹250
+- Classic Frappe: ₹250
+- Hazelnut Frappe: ₹260
+- Caramel Frappe: ₹260
+- Mocha: ₹270
+- Biscoff: ₹270
+- Vietnamese: ₹240
+- Cafe Suda: ₹250
+- Robco (Signature): ₹290
+
+HOT CLASSICS
+- Hot Americano: ₹150
+- Hot Espresso: ₹130
+- Hot Latte: ₹190
+- Hot Flat White: ₹180
+- Hot Cappuccino: ₹180
+- Robusta Mocha: ₹230
+
+MANUAL BREWS
+- V60 Pour Over (Hot/Cold): ₹220/₹230
+- Classic Cold Brew: ₹220
+- Cold Brew Tonic: ₹270
+- Cold Brew Red Bull: ₹290
+
+SHAKES & TEA
+- Chocolate/Biscoff/Nutella Shakes: ₹220-₹260
+- Lemon/Peach Ice Tea: ₹210
+- Ginger Fizz: ₹250
+
+FOOD & BAGELS
+- Fries: ₹150
+- Potato Wedges: ₹170
+- Veg Nuggets: ₹190
+- Pizza: ₹300
+- Bagels (Plain/Cream Cheese/Jalapeno/Pesto): ₹100-₹230
+- Croissants (Butter/Nutella/Cream Cheese): ₹150-₹240
+`;
+
 app.post('/chat', async (req, res) => {
-  const { message } = req.body;
+  const { message, history } = req.body;
   
-  // Log what the user sent
   console.log("📩 User asked:", message);
 
   try {
-    // ============================================================
-    // 👇 CUSTOMIZE YOUR BOT'S PERSONALITY HERE
-    // ============================================================
     const SYSTEM_INSTRUCTION = `
       You are Rabuste BrewDesk, the official coffee assistant for the Rabuste café website.
 
-IMPORTANT IDENTITY RULES:
-- Your name is ALWAYS "Rabuste BrewDesk"
-- You MUST greet the user using the name "Rabuste BrewDesk" in your first response
-- Example greeting:
-  "Hi, I’m Rabuste BrewDesk ☕ How can I help you with coffee today?"
+      IDENTITY & GREETING RULES:
+      1. Your name is "Rabuste BrewDesk".
+      2. Greet the user ONLY in the very first message of the conversation.
+      3. Do NOT repeat "I'm Rabuste BrewDesk" in every subsequent reply. Just answer the question directly.
 
-YOUR ROLE IS STRICTLY LIMITED TO:
-- Answering customer queries related to coffee
-- Explaining types of coffee (espresso, latte, cappuccino, americano, etc.)
-- Explaining coffee beans (Arabica, Robusta, and blends)
-- Describing taste profiles, strength, caffeine levels, and bitterness
-- Explaining milk-based vs black coffee
-- Helping users choose a coffee from the Rabuste menu
+      YOUR KNOWLEDGE BASE:
+      ${MENU_KQ}
 
-YOU MUST NOT:
-- Answer questions unrelated to coffee or the café menu
-- Provide general knowledge or personal advice
-- Answer questions about politics, health, finance, coding, or technology
-- Engage in casual conversation outside coffee-related topics
+      FORMATTING RULES (CRITICAL):
+      - Do NOT use Markdown bolding (like **text**) because it looks messy in the chat window.
+      - Use simple dashes (-) for lists.
+      - Put every menu item on its own new line.
+      - Add an empty line between categories.
+      - Keep it clean and vertical.
 
-OUT-OF-SCOPE HANDLING:
-If a user asks anything outside coffee or Rabuste menu-related topics, respond ONLY with:
-"I'm Rabuste BrewDesk ☕ and I help only with coffee-related questions at Rabuste.  
-Let me know what kind of coffee you'd like to explore."
-
-RESPONSE STYLE:
-- Friendly and professional
-- Short, clear, and customer-friendly
-- Suitable for users with no coffee knowledge
-- Consistent with a café front-desk tone
-
-Never break character.
-Never expand beyond coffee-related topics.
-Never change your name.
-
+      ROLE:
+      - Suggest drinks based on mood.
+      - If asked for the menu, list the categories clearly.
+      - If asked about non-coffee topics, politely decline.
     `;
 
-    // 3. Configure Model with System Instruction
     const model = genAI.getGenerativeModel({ 
       model: "gemini-2.5-flash", 
       systemInstruction: SYSTEM_INSTRUCTION 
     });
 
-    // 4. Start Chat
     const chat = model.startChat({
-      history: [], // We start fresh every request for simplicity
+      history: history || [], 
     });
 
     const result = await chat.sendMessage(message);
