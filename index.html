@@ -1,60 +1,86 @@
-
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Rabuste Café | Bold. Intentional. Robusta.</title>
-    <link rel="icon" type="image/png" href="/media/orange-logo.png" />
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <!-- Editorial Serif, Gothic Header, and Modern Body Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;700;900&family=Space+Grotesk:wght@300;400;700&family=Mrs+Saint+Delafield&family=UnifrakturMaguntia&family=Pirata+One&display=swap" rel="stylesheet">
-    <style>
-      :root {
-        --cream: #F9F8F4;
-        --charcoal: #1A1A1A;
-      }
-      .font-serif { font-family: 'Fraunces', serif; }
-      .font-sans { font-family: 'Space Grotesk', sans-serif; }
-      .font-script { font-family: 'Mrs Saint Delafield', cursive; }
-      .font-gothic { font-family: 'UnifrakturMaguntia', cursive; }
-      
-      ::-webkit-scrollbar {
-        width: 6px;
-      }
-      ::-webkit-scrollbar-track {
-        background: var(--charcoal);
-      }
-      ::-webkit-scrollbar-thumb {
-        background: #444;
-      }
-      ::-webkit-scrollbar-thumb:hover {
-        background: #666;
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rabuste Café | Bold. Intentional. Robusta.</title>
+  <link rel="icon" type="image/png" href="/media/orange-logo.png" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <!-- Editorial Serif, Gothic Header, and Modern Body Fonts -->
+  <link
+    href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;700;900&family=Space+Grotesk:wght@300;400;700&family=Mrs+Saint+Delafield&family=UnifrakturMaguntia&family=Pirata+One&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --cream: #F9F8F4;
+      --charcoal: #1A1A1A;
+    }
+
+    .font-serif {
+      font-family: 'Fraunces', serif;
+    }
+
+    .font-sans {
+      font-family: 'Space Grotesk', sans-serif;
+    }
+
+    .font-script {
+      font-family: 'Mrs Saint Delafield', cursive;
+    }
+
+    .font-gothic {
+      font-family: 'UnifrakturMaguntia', cursive;
+    }
+
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: var(--charcoal);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #444;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: #666;
+    }
+
+    body {
+      background-color: var(--cream);
+      color: var(--charcoal);
+      overflow-x: hidden;
+    }
+
+    .text-balance {
+      text-wrap: balance;
+    }
+
+    /* Custom animations */
+    @keyframes float {
+      0% {
+        transform: translateY(0px);
       }
 
-      body {
-        background-color: var(--cream);
-        color: var(--charcoal);
-        overflow-x: hidden;
+      50% {
+        transform: translateY(-10px);
       }
 
-      .text-balance {
-        text-wrap: balance;
+      100% {
+        transform: translateY(0px);
       }
+    }
 
-      /* Custom animations */
-      @keyframes float {
-        0% { transform: translateY(0px); }
-        50% { transform: translateY(-10px); }
-        100% { transform: translateY(0px); }
-      }
-      .animate-float {
-        animation: float 4s ease-in-out infinite;
-      }
-    </style>
-    <script type="importmap">
+    .animate-float {
+      animation: float 4s ease-in-out infinite;
+    }
+  </style>
+  <script type="importmap">
 {
   "imports": {
     "react": "https://esm.sh/react@^19.2.3",
@@ -66,10 +92,12 @@
   }
 }
 </script>
-  <link rel="stylesheet" href="/index.css">
+
 </head>
-  <body>
-    <div id="root"></div>
-  <script type="module" src="/index.tsx"></script>
+
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/index.tsx"></script>
 </body>
+
 </html>

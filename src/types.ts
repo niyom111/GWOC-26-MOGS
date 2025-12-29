@@ -21,6 +21,7 @@ export interface ArtPiece {
   price: string;
   image: string;
   available: boolean;
+  stock: number;
 }
 
 export interface Workshop {

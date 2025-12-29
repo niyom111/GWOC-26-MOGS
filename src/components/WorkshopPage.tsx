@@ -118,11 +118,11 @@ const WorkshopPage: React.FC = () => {
   };
 
   return (
-    <div className="pt-32 pb-40 px-8 bg-[#F9F8F4]">
+    <div className="pt-24 md:pt-32 pb-40 px-6 md:px-8 bg-[#F9F8F4]">
       <div className="max-w-7xl mx-auto">
-        <header className="mb-32">
-          <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-[10px] uppercase tracking-[0.5em] text-zinc-400 mb-6 font-sans">Education & Mastery</motion.p>
-          <motion.h1 initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} className="text-7xl md:text-9xl font-serif italic tracking-tighter leading-none text-[#1A1A1A]">Craft & Community.</motion.h1>
+        <header className="mb-20 md:mb-32">
+          <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-[9px] md:text-[10px] uppercase tracking-[0.4em] md:tracking-[0.5em] text-zinc-400 mb-4 md:mb-6 font-sans">Education & Mastery</motion.p>
+          <motion.h1 initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} className="text-5xl md:text-9xl font-serif italic tracking-tighter leading-none text-[#1A1A1A]">Craft & Community.</motion.h1>
         </header>
 
         {/* WORKSHOPS GRID */}
@@ -177,8 +177,8 @@ const WorkshopPage: React.FC = () => {
                     type="submit"
                     disabled={isSoldOut || isLoading}
                     className={`w-full py-4 text-[10px] uppercase tracking-[0.3em] font-bold transition-all flex items-center justify-center space-x-2 ${isSoldOut
-                        ? 'bg-zinc-200 text-zinc-400 cursor-not-allowed'
-                        : 'bg-black text-white hover:bg-zinc-800'
+                      ? 'bg-zinc-200 text-zinc-400 cursor-not-allowed'
+                      : 'bg-black text-white hover:bg-zinc-800'
                       }`}
                   >
                     {isLoading ? (
@@ -199,21 +199,21 @@ const WorkshopPage: React.FC = () => {
         </div>
 
         {/* HOST SECTION */}
-        <section className="bg-black text-white p-12 md:p-32 relative overflow-hidden rounded-sm">
+        <section className="bg-black text-white p-8 md:p-32 relative overflow-hidden rounded-sm">
           <div className="max-w-2xl relative z-10">
-            <h2 className="text-5xl md:text-7xl font-serif italic mb-10 tracking-tighter">Host Your Own.</h2>
-            <p className="text-sm font-sans text-zinc-400 mb-12 uppercase tracking-[0.2em] leading-relaxed">
+            <h2 className="text-4xl md:text-7xl font-serif italic mb-6 md:mb-10 tracking-tighter">Host Your Own.</h2>
+            <p className="text-xs md:text-sm font-sans text-zinc-400 mb-8 md:mb-12 uppercase tracking-[0.2em] leading-relaxed">
               Have a craft or idea to share? We provide the canvas, the audience, and the coffee.
             </p>
 
-            <form onSubmit={handleHostSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <form onSubmit={handleHostSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
               <input
                 name="idea"
                 value={hostForm.idea}
                 onChange={handleHostChange}
                 required
                 placeholder="WORKSHOP IDEA"
-                className="bg-transparent border-b border-white/20 p-4 text-[10px] font-sans uppercase tracking-widest outline-none focus:border-white transition-all text-white placeholder:text-zinc-600"
+                className="bg-transparent border-b border-white/20 p-3 md:p-4 text-[10px] font-sans uppercase tracking-widest outline-none focus:border-white transition-all text-white placeholder:text-zinc-600"
               />
               <input
                 name="dates"
@@ -221,7 +221,7 @@ const WorkshopPage: React.FC = () => {
                 onChange={handleHostChange}
                 required
                 placeholder="PREFERRED DATES"
-                className="bg-transparent border-b border-white/20 p-4 text-[10px] font-sans uppercase tracking-widest outline-none focus:border-white transition-all text-white placeholder:text-zinc-600"
+                className="bg-transparent border-b border-white/20 p-3 md:p-4 text-[10px] font-sans uppercase tracking-widest outline-none focus:border-white transition-all text-white placeholder:text-zinc-600"
               />
               <input
                 name="contact"
@@ -230,13 +230,13 @@ const WorkshopPage: React.FC = () => {
                 onChange={handleHostChange}
                 required
                 placeholder="CONTACT EMAIL"
-                className="bg-transparent border-b border-white/20 p-4 text-[10px] font-sans uppercase tracking-widest outline-none focus:border-white transition-all md:col-span-2 text-white placeholder:text-zinc-600"
+                className="bg-transparent border-b border-white/20 p-3 md:p-4 text-[10px] font-sans uppercase tracking-widest outline-none focus:border-white transition-all md:col-span-2 text-white placeholder:text-zinc-600"
               />
 
               <button
                 type="submit"
                 disabled={isHosting}
-                className="md:col-span-2 py-5 border border-white/20 hover:bg-white hover:text-black transition-all text-[11px] uppercase tracking-[0.4em] font-bold flex items-center justify-center space-x-4 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="md:col-span-2 py-4 md:py-5 border border-white/20 hover:bg-white hover:text-black transition-all text-[10px] md:text-[11px] uppercase tracking-[0.4em] font-bold flex items-center justify-center space-x-4 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isHosting ? (
                   <>
@@ -252,7 +252,7 @@ const WorkshopPage: React.FC = () => {
               </button>
             </form>
           </div>
-          <div className="absolute top-20 right-20 text-[20rem] font-serif opacity-[0.03] select-none pointer-events-none text-white">HOST</div>
+          <div className="absolute top-20 right-20 text-[10rem] md:text-[20rem] font-serif opacity-[0.03] select-none pointer-events-none text-white">HOST</div>
         </section>
       </div>
 

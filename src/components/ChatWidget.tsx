@@ -73,7 +73,7 @@ export default function ChatWidget() {
 
       {/* 2. THE CHAT WINDOW */}
       {isOpen && (
-        <div className="bg-[#FAF9F6] rounded-2xl shadow-2xl w-80 sm:w-96 flex flex-col border-2 border-[#2C1810] overflow-hidden" style={{ height: '550px' }}>
+        <div className="bg-[#FAF9F6] rounded-2xl shadow-2xl w-[calc(100vw-3rem)] sm:w-96 flex flex-col border-2 border-[#2C1810] overflow-hidden" style={{ height: 'min(550px, 75vh)' }}>
 
           {/* Header: Dark Espresso Background */}
           <div className="bg-[#2C1810] text-[#F3E5AB] p-4 flex justify-between items-center shadow-md">

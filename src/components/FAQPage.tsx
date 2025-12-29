@@ -31,13 +31,13 @@ const FAQPage: React.FC = () => {
   const [openIndex, setOpenIndex] = React.useState<number | null>(0);
 
   return (
-    <div className="pt-32 pb-40 px-8 bg-[#F9F8F4] text-[#1A1A1A]">
+    <div className="pt-24 md:pt-32 pb-40 px-6 md:px-8 bg-[#F9F8F4] text-[#1A1A1A]">
       <div className="max-w-4xl mx-auto">
-        <header className="mb-12 text-center">
+        <header className="mb-8 md:mb-12 text-center">
           <motion.p
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-[10px] uppercase tracking-[0.5em] text-zinc-500 mb-4 font-sans"
+            className="text-[9px] md:text-[10px] uppercase tracking-[0.4em] md:tracking-[0.5em] text-zinc-500 mb-4 font-sans"
           >
             Support
           </motion.p>

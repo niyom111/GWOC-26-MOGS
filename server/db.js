@@ -12,73 +12,108 @@ const db = new sqlite3.Database(dbPath);
 // Default data (mirrors DataContext.tsx)
 const defaultData = {
     menuItems: [
-        { id: 'rs-cnm-1', name: 'Iced Americano', category: 'Robusta Specialty (Cold - Non Milk)', price: 160, caffeine: 'High', image: '/media/pic1.jpeg', description: 'Robusta Specialty (Cold - Non Milk)', tags: 'cold, strong, black, robusta, bitter, intense' },
-        { id: 'rs-cnm-2', name: 'Iced Espresso', category: 'Robusta Specialty (Cold - Non Milk)', price: 130, caffeine: 'High', image: '/media/pic1.jpeg', description: 'Robusta Specialty (Cold - Non Milk)', tags: 'cold, strong, black, robusta, shot, energetic' },
-        { id: 'rs-cnm-3', name: 'Iced Espresso Tonic', category: 'Robusta Specialty (Cold - Non Milk)', price: 250, caffeine: 'High', image: '/media/pic1.jpeg', description: 'Robusta Specialty (Cold - Non Milk)', tags: 'cold, fizzy, refreshing, citrus, summer, unique' },
-        { id: 'rs-cnm-4', name: 'Iced Espresso Red Bull', category: 'Robusta Specialty (Cold - Non Milk)', price: 290, caffeine: 'Extreme', image: '/media/pic1.jpeg', description: 'Robusta Specialty (Cold - Non Milk)', tags: 'cold, energy, sweet, strong, buzz, party' },
-        { id: 'rs-cnm-5', name: 'Cranberry Tonic', category: 'Robusta Specialty (Cold - Non Milk)', price: 270, caffeine: 'High', image: '/media/pic1.jpeg', description: 'Robusta Specialty (Cold - Non Milk)', tags: 'cold, fruity, sweet, refreshing, mocktail' },
-        { id: 'rs-cm-1', name: 'Iced Latte', category: 'Robusta Specialty (Cold - Milk Based)', price: 220, caffeine: 'High', image: '/media/pic2.jpeg', description: 'Robusta Specialty (Cold - Milk Based)', tags: 'cold, milky, creamy, smooth, classic, robusta' },
-        { id: 'rs-cm-2', name: 'Affogato', category: 'Robusta Specialty (Cold - Milk Based)', price: 250, caffeine: 'High', image: '/media/pic2.jpeg', description: 'Robusta Specialty (Cold - Milk Based)', tags: 'dessert, ice cream, sweet, cold, treat' },
-        { id: 'rs-cm-3', name: 'Classic Frappe', category: 'Robusta Specialty (Cold - Milk Based)', price: 250, caffeine: 'High', image: '/media/pic2.jpeg', description: 'Robusta Specialty (Cold - Milk Based)', tags: 'cold, sweet, blended, creamy, dessert, summer' },
-        { id: 'rs-cm-4', name: 'Hazelnut', category: 'Robusta Specialty (Cold - Milk Based)', price: 260, caffeine: 'High', image: '/media/pic2.jpeg', description: 'Robusta Specialty (Cold - Milk Based)', tags: 'cold, sweet, flavored, nutty, creamy' },
-        { id: 'rs-cm-5', name: 'Caramel', category: 'Robusta Specialty (Cold - Milk Based)', price: 260, caffeine: 'High', image: '/media/pic2.jpeg', description: 'Robusta Specialty (Cold - Milk Based)', tags: 'cold, sweet, flavored, caramel, creamy' },
-        { id: 'rs-cm-6', name: 'Mocha', category: 'Robusta Specialty (Cold - Milk Based)', price: 270, caffeine: 'High', image: '/media/pic2.jpeg', description: 'Robusta Specialty (Cold - Milk Based)', tags: 'cold, chocolate, sweet, creamy, dessert' },
-        { id: 'rs-cm-7', name: 'Biscoff', category: 'Robusta Specialty (Cold - Milk Based)', price: 270, caffeine: 'High', image: '/media/pic2.jpeg', description: 'Robusta Specialty (Cold - Milk Based)', tags: 'cold, sweet, cookie, biscoff, dessert, creamy' },
-        { id: 'rs-cm-8', name: 'Vietnamese', category: 'Robusta Specialty (Cold - Milk Based)', price: 240, caffeine: 'High', image: '/media/pic2.jpeg', description: 'Robusta Specialty (Cold - Milk Based)', tags: 'cold, sweet, condensed milk, strong, asian' },
-        { id: 'rs-cm-9', name: 'Cafe Suda', category: 'Robusta Specialty (Cold - Milk Based)', price: 250, caffeine: 'High', image: '/media/pic2.jpeg', description: 'Robusta Specialty (Cold - Milk Based)', tags: 'cold, sweet, milky, strong, traditional' },
-        { id: 'rs-cm-10', name: 'Robco', category: 'Robusta Specialty (Cold - Milk Based)', price: 290, caffeine: 'Extreme', image: '/media/pic2.jpeg', description: 'Robusta Specialty (Cold - Milk Based)', tags: 'cold, strong, signature, special, creamy' },
-        { id: 'rs-hnm-1', name: 'Hot Americano', category: 'Robusta Specialty (Hot - Non Milk)', price: 150, caffeine: 'High', image: '/media/pic3.jpeg', description: 'Robusta Specialty (Hot - Non Milk)', tags: 'hot, strong, black, robusta, bitter, classic' },
-        { id: 'rs-hnm-2', name: 'Hot Espresso', category: 'Robusta Specialty (Hot - Non Milk)', price: 130, caffeine: 'High', image: '/media/pic3.jpeg', description: 'Robusta Specialty (Hot - Non Milk)', tags: 'hot, strong, black, shot, intense' },
-        { id: 'rs-hm-1', name: 'Hot Latte', category: 'Robusta Specialty (Hot - Milk Based)', price: 190, caffeine: 'High', image: '/media/pic3.jpeg', description: 'Robusta Specialty (Hot - Milk Based)', tags: 'hot, milky, creamy, smooth, classic, comfort' },
-        { id: 'rs-hm-2', name: 'Hot Flat White', category: 'Robusta Specialty (Hot - Milk Based)', price: 180, caffeine: 'High', image: '/media/pic3.jpeg', description: 'Robusta Specialty (Hot - Milk Based)', tags: 'hot, milky, strong, creamy, smooth' },
-        { id: 'rs-hm-3', name: 'Hot Cappuccino', category: 'Robusta Specialty (Hot - Milk Based)', price: 180, caffeine: 'High', image: '/media/pic3.jpeg', description: 'Robusta Specialty (Hot - Milk Based)', tags: 'hot, milky, foamy, classic, breakfast' },
-        { id: 'rs-hm-4', name: 'Robusta Mocha', category: 'Robusta Specialty (Hot - Milk Based)', price: 230, caffeine: 'Extreme', image: '/media/pic3.jpeg', description: 'Robusta Specialty (Hot - Milk Based)', tags: 'hot, chocolate, sweet, creamy, dessert' },
-        { id: 'bl-cnm-1', name: 'Iced Americano', category: 'Blend (Cold - Non Milk)', price: 150, caffeine: 'High', image: '/media/pic1.jpeg', description: 'Blend (Cold - Non Milk)', tags: 'cold, mild, black, blend, smooth' },
-        { id: 'bl-cnm-2', name: 'Iced Espresso', category: 'Blend (Cold - Non Milk)', price: 120, caffeine: 'High', image: '/media/pic1.jpeg', description: 'Blend (Cold - Non Milk)', tags: 'cold, mild, black, shot, smooth' },
-        { id: 'bl-cnm-3', name: 'Iced Espresso Tonic', category: 'Blend (Cold - Non Milk)', price: 230, caffeine: 'High', image: '/media/pic1.jpeg', description: 'Blend (Cold - Non Milk)', tags: 'cold, fizzy, refreshing, citrus' },
-        { id: 'bl-cnm-4', name: 'Iced Espresso Red Bull', category: 'Blend (Cold - Non Milk)', price: 270, caffeine: 'Extreme', image: '/media/pic1.jpeg', description: 'Blend (Cold - Non Milk)', tags: 'cold, energy, sweet, mild, buzz' },
-        { id: 'bl-cnm-5', name: 'Cranberry Tonic', category: 'Blend (Cold - Non Milk)', price: 250, caffeine: 'High', image: '/media/pic1.jpeg', description: 'Blend (Cold - Non Milk)', tags: 'cold, fruity, sweet, refreshing' },
-        { id: 'bl-cm-1', name: 'Iced Latte', category: 'Blend (Cold - Milk Based)', price: 210, caffeine: 'High', image: '/media/pic2.jpeg', description: 'Blend (Cold - Milk Based)', tags: 'cold, milky, creamy, smooth, classic, mild' },
-        { id: 'bl-cm-2', name: 'Affogato', category: 'Blend (Cold - Milk Based)', price: 240, caffeine: 'High', image: '/media/pic2.jpeg', description: 'Blend (Cold - Milk Based)', tags: 'dessert, ice cream, sweet, cold, mild' },
-        { id: 'bl-cm-3', name: 'Classic Frappe', category: 'Blend (Cold - Milk Based)', price: 240, caffeine: 'High', image: '/media/pic2.jpeg', description: 'Blend (Cold - Milk Based)', tags: 'cold, sweet, blended, creamy, dessert, mild' },
-        { id: 'bl-cm-4', name: 'Hazelnut', category: 'Blend (Cold - Milk Based)', price: 250, caffeine: 'High', image: '/media/pic2.jpeg', description: 'Blend (Cold - Milk Based)', tags: 'cold, sweet, flavored, nutty, creamy, mild' },
-        { id: 'bl-cm-5', name: 'Caramel', category: 'Blend (Cold - Milk Based)', price: 250, caffeine: 'High', image: '/media/pic2.jpeg', description: 'Blend (Cold - Milk Based)', tags: 'cold, sweet, flavored, caramel, creamy, mild' },
-        { id: 'bl-cm-6', name: 'Mocha', category: 'Blend (Cold - Milk Based)', price: 260, caffeine: 'High', image: '/media/pic2.jpeg', description: 'Blend (Cold - Milk Based)', tags: 'cold, chocolate, sweet, creamy, dessert, mild' },
-        { id: 'bl-cm-7', name: 'Biscoff', category: 'Blend (Cold - Milk Based)', price: 260, caffeine: 'High', image: '/media/pic2.jpeg', description: 'Blend (Cold - Milk Based)', tags: 'cold, sweet, cookie, biscoff, dessert, mild' },
-        { id: 'bl-hnm-1', name: 'Hot Americano', category: 'Blend (Hot - Non Milk)', price: 140, caffeine: 'High', image: '/media/pic3.jpeg', description: 'Blend (Hot - Non Milk)', tags: 'hot, mild, black, blend, smooth, classic' },
-        { id: 'bl-hnm-2', name: 'Hot Espresso', category: 'Blend (Hot - Non Milk)', price: 120, caffeine: 'High', image: '/media/pic3.jpeg', description: 'Blend (Hot - Non Milk)', tags: 'hot, mild, black, shot, smooth' },
-        { id: 'bl-hm-1', name: 'Hot Latte', category: 'Blend (Hot - Milk Based)', price: 180, caffeine: 'High', image: '/media/pic3.jpeg', description: 'Blend (Hot - Milk Based)', tags: 'hot, milky, creamy, smooth, classic, mild, comfort' },
-        { id: 'bl-hm-2', name: 'Hot Flat White', category: 'Blend (Hot - Milk Based)', price: 170, caffeine: 'High', image: '/media/pic3.jpeg', description: 'Blend (Hot - Milk Based)', tags: 'hot, milky, mild, creamy, smooth' },
-        { id: 'bl-hm-3', name: 'Hot Cappuccino', category: 'Blend (Hot - Milk Based)', price: 170, caffeine: 'High', image: '/media/pic3.jpeg', description: 'Blend (Hot - Milk Based)', tags: 'hot, milky, foamy, classic, mild' },
-        { id: 'bl-hm-4', name: 'Blend Mocha', category: 'Blend (Hot - Milk Based)', price: 220, caffeine: 'Extreme', image: '/media/pic3.jpeg', description: 'Blend (Hot - Milk Based)', tags: 'hot, chocolate, sweet, creamy, dessert, mild' },
-        { id: 'mb-1', name: 'Classic Cold Brew', category: 'Manual Brew (Peaberry Special)', price: 220, caffeine: 'Very High', image: '/media/pic1.jpeg', description: 'Manual Brew (Peaberry Special)', tags: 'cold, strong, smooth, black, slow brew, premium' },
-        { id: 'mb-2', name: 'Cold Brew Tonic', category: 'Manual Brew (Peaberry Special)', price: 270, caffeine: 'Very High', image: '/media/pic1.jpeg', description: 'Manual Brew (Peaberry Special)', tags: 'cold, fizzy, refreshing, strong, premium' },
-        { id: 'mb-3', name: 'Cold Brew Red Bull', category: 'Manual Brew (Peaberry Special)', price: 290, caffeine: 'Extreme', image: '/media/pic1.jpeg', description: 'Manual Brew (Peaberry Special)', tags: 'cold, energy, sweet, strong, buzz, premium' },
-        { id: 'mb-4', name: 'V60 Pour Over Hot', category: 'Manual Brew (Peaberry Special)', price: 220, caffeine: 'High', image: '/media/pic1.jpeg', description: 'Manual Brew (Peaberry Special)', tags: 'hot, black, artisan, filter, smooth, premium' },
-        { id: 'mb-5', name: 'V60 Pour Over Cold', category: 'Manual Brew (Peaberry Special)', price: 230, caffeine: 'High', image: '/media/pic1.jpeg', description: 'Manual Brew (Peaberry Special)', tags: 'cold, black, artisan, filter, smooth, premium' },
-        { id: 'mb-6', name: 'Cranberry Cold Brew Tonic', category: 'Manual Brew (Peaberry Special)', price: 280, caffeine: 'High', image: '/media/pic1.jpeg', description: 'Manual Brew (Peaberry Special)', tags: 'cold, fruity, sweet, refreshing, premium' },
-        { id: 'sh-1', name: 'Chocolate', category: 'Shakes', price: 220, caffeine: 'High', image: '/media/pic2.jpeg', description: 'Shakes', tags: 'cold, dessert, sweet, milk, kid friendly' },
+        // Robusta Specialty (Cold - Non-Milk)
+        { id: 'rs-cnm-1', name: 'Iced Americano', category: 'Robusta Specialty (Cold - Non Milk)', price: 160, caffeine: 'High', image: '/media/pic1.jpeg', description: 'Robusta Specialty (Cold - Non Milk)', tags: 'cold, strong, black, robusta' },
+        { id: 'rs-cnm-2', name: 'Iced Espresso', category: 'Robusta Specialty (Cold - Non Milk)', price: 130, caffeine: 'High', image: '/media/pic1.jpeg', description: 'Robusta Specialty (Cold - Non Milk)', tags: 'cold, strong, black, robusta' },
+        { id: 'rs-cnm-3', name: 'Iced Espresso Tonic', category: 'Robusta Specialty (Cold - Non Milk)', price: 250, caffeine: 'High', image: '/media/pic1.jpeg', description: 'Robusta Specialty (Cold - Non Milk)', tags: 'cold, fizzy, refreshing, tonic' },
+        { id: 'rs-cnm-4', name: 'Iced Espresso Ginger Ale', category: 'Robusta Specialty (Cold - Non Milk)', price: 250, caffeine: 'High', image: '/media/pic1.jpeg', description: 'Robusta Specialty (Cold - Non Milk)', tags: 'cold, fizzy, refreshing, ginger' },
+        { id: 'rs-cnm-5', name: 'Iced Espresso Orange', category: 'Robusta Specialty (Cold - Non Milk)', price: 250, caffeine: 'High', image: '/media/pic1.jpeg', description: 'Robusta Specialty (Cold - Non Milk)', tags: 'cold, fruity, refreshing, orange' },
+        { id: 'rs-cnm-6', name: 'Iced Espresso Red Bull', category: 'Robusta Specialty (Cold - Non Milk)', price: 290, caffeine: 'Extreme', image: '/media/pic1.jpeg', description: 'Robusta Specialty (Cold - Non Milk)', tags: 'cold, energy, sweet, strong' },
+        { id: 'rs-cnm-7', name: 'Cranberry Tonic', category: 'Robusta Specialty (Cold - Non Milk)', price: 270, caffeine: 'High', image: '/media/pic1.jpeg', description: 'Robusta Specialty (Cold - Non Milk)', tags: 'cold, fruity, sweet, refreshing' },
+
+        // Robusta Specialty (Cold - Milk Based)
+        { id: 'rs-cm-1', name: 'Iced Latte', category: 'Robusta Specialty (Cold - Milk Based)', price: 220, caffeine: 'High', image: '/media/pic2.jpeg', description: 'Robusta Specialty (Cold - Milk Based)', tags: 'cold, milky, creamy, classic' },
+        { id: 'rs-cm-2', name: 'Affogato', category: 'Robusta Specialty (Cold - Milk Based)', price: 250, caffeine: 'High', image: '/media/pic2.jpeg', description: 'Robusta Specialty (Cold - Milk Based)', tags: 'dessert, ice cream, sweet' },
+        { id: 'rs-cm-3', name: 'Classic Frappe', category: 'Robusta Specialty (Cold - Milk Based)', price: 250, caffeine: 'High', image: '/media/pic2.jpeg', description: 'Robusta Specialty (Cold - Milk Based)', tags: 'cold, sweet, blended, creamy' },
+        { id: 'rs-cm-4', name: 'Hazelnut', category: 'Robusta Specialty (Cold - Milk Based)', price: 260, caffeine: 'High', image: '/media/pic2.jpeg', description: 'Robusta Specialty (Cold - Milk Based)', tags: 'cold, sweet, nutty' },
+        { id: 'rs-cm-5', name: 'Caramel', category: 'Robusta Specialty (Cold - Milk Based)', price: 260, caffeine: 'High', image: '/media/pic2.jpeg', description: 'Robusta Specialty (Cold - Milk Based)', tags: 'cold, sweet, caramel' },
+        { id: 'rs-cm-6', name: 'Mocha', category: 'Robusta Specialty (Cold - Milk Based)', price: 270, caffeine: 'High', image: '/media/pic2.jpeg', description: 'Robusta Specialty (Cold - Milk Based)', tags: 'cold, chocolate, sweet' },
+        { id: 'rs-cm-7', name: 'Biscoff', category: 'Robusta Specialty (Cold - Milk Based)', price: 270, caffeine: 'High', image: '/media/pic2.jpeg', description: 'Robusta Specialty (Cold - Milk Based)', tags: 'cold, sweet, cookie' },
+        { id: 'rs-cm-8', name: 'Vietnamese', category: 'Robusta Specialty (Cold - Milk Based)', price: 240, caffeine: 'High', image: '/media/pic2.jpeg', description: 'Robusta Specialty (Cold - Milk Based)', tags: 'cold, sweet, condensed milk' },
+        { id: 'rs-cm-9', name: 'Café Suda', category: 'Robusta Specialty (Cold - Milk Based)', price: 250, caffeine: 'High', image: '/media/pic2.jpeg', description: 'Robusta Specialty (Cold - Milk Based)', tags: 'cold, sweet, strong' },
+        { id: 'rs-cm-10', name: 'Robco', category: 'Robusta Specialty (Cold - Milk Based)', price: 290, caffeine: 'Extreme', image: '/media/pic2.jpeg', description: 'Robusta Specialty (Cold - Milk Based)', tags: 'cold, signature' },
+
+        // Robusta Specialty (Hot - Non Milk)
+        { id: 'rs-hnm-1', name: 'Robusta Hot Americano', category: 'Robusta Specialty (Hot - Non Milk)', price: 150, caffeine: 'High', image: '/media/pic3.jpeg', description: 'Robusta Specialty (Hot - Non Milk)', tags: 'hot, strong, black, robusta' },
+        { id: 'rs-hnm-2', name: 'Robusta Hot Espresso', category: 'Robusta Specialty (Hot - Non Milk)', price: 130, caffeine: 'High', image: '/media/pic3.jpeg', description: 'Robusta Specialty (Hot - Non Milk)', tags: 'hot, strong, black, shot' },
+
+        // Robusta Specialty (Hot - Milk Based)
+        { id: 'rs-hm-1', name: 'Robusta Hot Latte', category: 'Robusta Specialty (Hot - Milk Based)', price: 190, caffeine: 'High', image: '/media/pic3.jpeg', description: 'Robusta Specialty (Hot - Milk Based)', tags: 'hot, milky, creamy' },
+        { id: 'rs-hm-2', name: 'Robusta Hot Flat White', category: 'Robusta Specialty (Hot - Milk Based)', price: 180, caffeine: 'High', image: '/media/pic3.jpeg', description: 'Robusta Specialty (Hot - Milk Based)', tags: 'hot, milky, strong' },
+        { id: 'rs-hm-3', name: 'Robusta Hot Cappuccino', category: 'Robusta Specialty (Hot - Milk Based)', price: 180, caffeine: 'High', image: '/media/pic3.jpeg', description: 'Robusta Specialty (Hot - Milk Based)', tags: 'hot, milky, foamy' },
+        { id: 'rs-hm-4', name: 'Robusta Mocha', category: 'Robusta Specialty (Hot - Milk Based)', price: 230, caffeine: 'Extreme', image: '/media/pic3.jpeg', description: 'Robusta Specialty (Hot - Milk Based)', tags: 'hot, chocolate, sweet' },
+
+        // Blend (Cold - Non Milk)
+        { id: 'bl-cnm-1', name: 'Iced Americano', category: 'Blend (Cold - Non Milk)', price: 150, caffeine: 'High', image: '/media/pic1.jpeg', description: 'Blend (Cold - Non Milk)', tags: 'cold, mild, black' },
+        { id: 'bl-cnm-2', name: 'Iced Espresso', category: 'Blend (Cold - Non Milk)', price: 120, caffeine: 'High', image: '/media/pic1.jpeg', description: 'Blend (Cold - Non Milk)', tags: 'cold, mild, black' },
+        { id: 'bl-cnm-3', name: 'Iced Espresso Tonic', category: 'Blend (Cold - Non Milk)', price: 230, caffeine: 'High', image: '/media/pic1.jpeg', description: 'Blend (Cold - Non Milk)', tags: 'cold, fizzy, refreshing, tonic' },
+        { id: 'bl-cnm-4', name: 'Iced Espresso Ginger Ale', category: 'Blend (Cold - Non Milk)', price: 230, caffeine: 'High', image: '/media/pic1.jpeg', description: 'Blend (Cold - Non Milk)', tags: 'cold, fizzy, refreshing, ginger' },
+        { id: 'bl-cnm-5', name: 'Iced Espresso Orange', category: 'Blend (Cold - Non Milk)', price: 230, caffeine: 'High', image: '/media/pic1.jpeg', description: 'Blend (Cold - Non Milk)', tags: 'cold, fruity, refreshing, orange' },
+        { id: 'bl-cnm-6', name: 'Iced Espresso Red Bull', category: 'Blend (Cold - Non Milk)', price: 270, caffeine: 'Extreme', image: '/media/pic1.jpeg', description: 'Blend (Cold - Non Milk)', tags: 'cold, energy, sweet' },
+        { id: 'bl-cnm-7', name: 'Cranberry Tonic', category: 'Blend (Cold - Non Milk)', price: 250, caffeine: 'High', image: '/media/pic1.jpeg', description: 'Blend (Cold - Non Milk)', tags: 'cold, fruity, sweet' },
+
+        // Blend (Cold - Milk Based)
+        { id: 'bl-cm-1', name: 'Iced Latte', category: 'Blend (Cold - Milk Based)', price: 210, caffeine: 'High', image: '/media/pic2.jpeg', description: 'Blend (Cold - Milk Based)', tags: 'cold, milky, creamy' },
+        { id: 'bl-cm-2', name: 'Affogato', category: 'Blend (Cold - Milk Based)', price: 240, caffeine: 'High', image: '/media/pic2.jpeg', description: 'Blend (Cold - Milk Based)', tags: 'dessert, ice cream, sweet' },
+        { id: 'bl-cm-3', name: 'Classic Frappe', category: 'Blend (Cold - Milk Based)', price: 240, caffeine: 'High', image: '/media/pic2.jpeg', description: 'Blend (Cold - Milk Based)', tags: 'cold, sweet, blended' },
+        { id: 'bl-cm-4', name: 'Hazelnut', category: 'Blend (Cold - Milk Based)', price: 250, caffeine: 'High', image: '/media/pic2.jpeg', description: 'Blend (Cold - Milk Based)', tags: 'cold, sweet, nutty' },
+        { id: 'bl-cm-5', name: 'Caramel', category: 'Blend (Cold - Milk Based)', price: 250, caffeine: 'High', image: '/media/pic2.jpeg', description: 'Blend (Cold - Milk Based)', tags: 'cold, sweet, caramel' },
+        { id: 'bl-cm-6', name: 'Mocha', category: 'Blend (Cold - Milk Based)', price: 260, caffeine: 'High', image: '/media/pic2.jpeg', description: 'Blend (Cold - Milk Based)', tags: 'cold, chocolate, sweet' },
+        { id: 'bl-cm-7', name: 'Biscoff', category: 'Blend (Cold - Milk Based)', price: 260, caffeine: 'High', image: '/media/pic2.jpeg', description: 'Blend (Cold - Milk Based)', tags: 'cold, sweet, cookie' },
+
+        // Blend (Hot - Non Milk)
+        { id: 'bl-hnm-1', name: 'Hot Americano', category: 'Blend (Hot - Non Milk)', price: 140, caffeine: 'High', image: '/media/pic3.jpeg', description: 'Blend (Hot - Non Milk)', tags: 'hot, mild, black' },
+        { id: 'bl-hnm-2', name: 'Hot Espresso', category: 'Blend (Hot - Non Milk)', price: 120, caffeine: 'High', image: '/media/pic3.jpeg', description: 'Blend (Hot - Non Milk)', tags: 'hot, mild, black, shot' },
+
+        // Blend (Hot - Milk Based)
+        { id: 'bl-hm-1', name: 'Hot Latte', category: 'Blend (Hot - Milk Based)', price: 180, caffeine: 'High', image: '/media/pic3.jpeg', description: 'Blend (Hot - Milk Based)', tags: 'hot, milky, creamy' },
+        { id: 'bl-hm-2', name: 'Hot Flat White', category: 'Blend (Hot - Milk Based)', price: 170, caffeine: 'High', image: '/media/pic3.jpeg', description: 'Blend (Hot - Milk Based)', tags: 'hot, milky, mild' },
+        { id: 'bl-hm-3', name: 'Hot Cappuccino', category: 'Blend (Hot - Milk Based)', price: 170, caffeine: 'High', image: '/media/pic3.jpeg', description: 'Blend (Hot - Milk Based)', tags: 'hot, milky, foamy' },
+        { id: 'bl-hm-4', name: 'Mocha', category: 'Blend (Hot - Milk Based)', price: 220, caffeine: 'Extreme', image: '/media/pic3.jpeg', description: 'Blend (Hot - Milk Based)', tags: 'hot, chocolate, sweet' },
+
+        // Manual Brew
+        { id: 'mb-1', name: 'Classic Cold Brew', category: 'Manual Brew (Peaberry Special)', price: 220, caffeine: 'Very High', image: '/media/pic1.jpeg', description: 'Manual Brew (Peaberry Special)', tags: 'cold, strong, smooth' },
+        { id: 'mb-2', name: 'Cold Brew Tonic', category: 'Manual Brew (Peaberry Special)', price: 270, caffeine: 'Very High', image: '/media/pic1.jpeg', description: 'Manual Brew (Peaberry Special)', tags: 'cold, fizzy, refreshing' },
+        { id: 'mb-3', name: 'Cold Brew Ginger Ale', category: 'Manual Brew (Peaberry Special)', price: 270, caffeine: 'Very High', image: '/media/pic1.jpeg', description: 'Manual Brew (Peaberry Special)', tags: 'cold, fizzy, refreshing' },
+        { id: 'mb-4', name: 'Cold Brew Orange', category: 'Manual Brew (Peaberry Special)', price: 270, caffeine: 'Very High', image: '/media/pic1.jpeg', description: 'Manual Brew (Peaberry Special)', tags: 'cold, fruity, refreshing' },
+        { id: 'mb-5', name: 'Cold Brew Red Bull', category: 'Manual Brew (Peaberry Special)', price: 290, caffeine: 'Extreme', image: '/media/pic1.jpeg', description: 'Manual Brew (Peaberry Special)', tags: 'cold, energy, sweet' },
+        { id: 'mb-6', name: 'V60 Pour Over Hot', category: 'Manual Brew (Peaberry Special)', price: 220, caffeine: 'High', image: '/media/pic1.jpeg', description: 'Manual Brew (Peaberry Special)', tags: 'hot, black, artisan' },
+        { id: 'mb-7', name: 'V60 Pour Over Cold', category: 'Manual Brew (Peaberry Special)', price: 230, caffeine: 'High', image: '/media/pic1.jpeg', description: 'Manual Brew (Peaberry Special)', tags: 'cold, black, artisan' },
+        { id: 'mb-8', name: 'Cranberry Cold Brew Tonic', category: 'Manual Brew (Peaberry Special)', price: 280, caffeine: 'High', image: '/media/pic1.jpeg', description: 'Manual Brew (Peaberry Special)', tags: 'cold, fruity, sweet' },
+
+        // Shakes
+        { id: 'sh-1', name: 'Chocolate', category: 'Shakes', price: 220, caffeine: 'High', image: '/media/pic2.jpeg', description: 'Shakes', tags: 'cold, dessert, sweet, milk' },
         { id: 'sh-2', name: 'Biscoff', category: 'Shakes', price: 250, caffeine: 'High', image: '/media/pic2.jpeg', description: 'Shakes', tags: 'cold, dessert, sweet, milk, cookie' },
         { id: 'sh-3', name: 'Nutella', category: 'Shakes', price: 260, caffeine: 'High', image: '/media/pic2.jpeg', description: 'Shakes', tags: 'cold, dessert, sweet, milk, chocolate' },
-        { id: 'tea-1', name: 'Lemon Ice Tea', category: 'Tea (Cold)', price: 210, caffeine: 'High', image: '/media/pic3.jpeg', description: 'Tea (Cold)', tags: 'cold, sweet, refreshing, light, tea' },
-        { id: 'tea-2', name: 'Peach Ice Tea', category: 'Tea (Cold)', price: 210, caffeine: 'High', image: '/media/pic3.jpeg', description: 'Tea (Cold)', tags: 'cold, sweet, refreshing, fruity, tea' },
-        { id: 'tea-3', name: 'Ginger Fizz', category: 'Tea (Cold)', price: 250, caffeine: 'High', image: '/media/pic3.jpeg', description: 'Tea (Cold)', tags: 'cold, spicy, refreshing, fizzy, tea' },
-        { id: 'tea-4', name: 'Orange Mint', category: 'Tea (Cold)', price: 250, caffeine: 'High', image: '/media/pic3.jpeg', description: 'Tea (Cold)', tags: 'cold, citrus, fresh, minty, tea' },
-        { id: 'fb-1', name: 'Fries', category: 'Food & Bagels', price: 150, caffeine: 'High', image: '/media/pic1.jpeg', description: 'Food & Bagels', tags: 'food, snack, salty, savory, veg' },
-        { id: 'fb-2', name: 'Wedges', category: 'Food & Bagels', price: 170, caffeine: 'High', image: '/media/pic1.jpeg', description: 'Food & Bagels', tags: 'food, snack, salty, savory, veg' },
-        { id: 'fb-3', name: 'Veg Nuggets', category: 'Food & Bagels', price: 190, caffeine: 'High', image: '/media/pic1.jpeg', description: 'Food & Bagels', tags: 'food, snack, savory, veg' },
-        { id: 'fb-4', name: 'Pizza', category: 'Food & Bagels', price: 300, caffeine: 'High', image: '/media/pic1.jpeg', description: 'Food & Bagels', tags: 'food, meal, cheesy, savory, veg' },
-        { id: 'fb-5', name: 'Bagel', category: 'Food & Bagels', price: 100, caffeine: 'High', image: '/media/pic1.jpeg', description: 'Food & Bagels', tags: 'food, bread, breakfast, snack' },
-        { id: 'fb-6', name: 'Cream Cheese Bagel', category: 'Food & Bagels', price: 150, caffeine: 'High', image: '/media/pic1.jpeg', description: 'Food & Bagels', tags: 'food, bread, creamy, breakfast' },
-        { id: 'fb-7', name: 'Jalapeno Bagel', category: 'Food & Bagels', price: 200, caffeine: 'High', image: '/media/pic1.jpeg', description: 'Food & Bagels', tags: 'food, spicy, savory, bread' },
-        { id: 'fb-8', name: 'Pesto Bagel', category: 'Food & Bagels', price: 230, caffeine: 'High', image: '/media/pic1.jpeg', description: 'Food & Bagels', tags: 'food, savory, herbal, bread' },
-        { id: 'fb-9', name: 'Butter Croissant', category: 'Food & Bagels', price: 150, caffeine: 'High', image: '/media/pic1.jpeg', description: 'Food & Bagels', tags: 'food, pastry, buttery, flaky, breakfast' },
-        { id: 'fb-10', name: 'Nutella Croissant', category: 'Food & Bagels', price: 200, caffeine: 'High', image: '/media/pic1.jpeg', description: 'Food & Bagels', tags: 'food, pastry, sweet, chocolate, dessert' },
-        { id: 'fb-11', name: 'Cream Cheese Croissant', category: 'Food & Bagels', price: 240, caffeine: 'High', image: '/media/pic1.jpeg', description: 'Food & Bagels', tags: 'food, pastry, savory, creamy' }
+
+        // Tea
+        { id: 'tea-1', name: 'Lemon Ice Tea', category: 'Tea (Cold)', price: 210, caffeine: 'High', image: '/media/pic3.jpeg', description: 'Tea (Cold)', tags: 'cold, sweet, refreshing' },
+        { id: 'tea-2', name: 'Peach Ice Tea', category: 'Tea (Cold)', price: 210, caffeine: 'High', image: '/media/pic3.jpeg', description: 'Tea (Cold)', tags: 'cold, sweet, refreshing' },
+        { id: 'tea-3', name: 'Ginger Fizz', category: 'Tea (Cold)', price: 250, caffeine: 'High', image: '/media/pic3.jpeg', description: 'Tea (Cold)', tags: 'cold, spicy, refreshing' },
+        { id: 'tea-4', name: 'Classic Orange Mint', category: 'Tea (Cold)', price: 250, caffeine: 'High', image: '/media/pic3.jpeg', description: 'Tea (Cold)', tags: 'cold, citrus, fresh' },
+
+        // Food
+        { id: 'fd-1', name: 'Fries', category: 'Food', price: 150, caffeine: 'High', image: '/media/pic1.jpeg', description: 'Food', tags: 'food, snack, salty' },
+        { id: 'fd-2', name: 'Potato Wedges', category: 'Food', price: 170, caffeine: 'High', image: '/media/pic1.jpeg', description: 'Food', tags: 'food, snack, salty' },
+        { id: 'fd-3', name: 'Veg Nuggets', category: 'Food', price: 190, caffeine: 'High', image: '/media/pic1.jpeg', description: 'Food', tags: 'food, snack, savory' },
+        { id: 'fd-4', name: 'Pizza', category: 'Food', price: 300, caffeine: 'High', image: '/media/pic1.jpeg', description: 'Food', tags: 'food, meal, cheesy' },
+        { id: 'fd-5', name: 'Bagel', category: 'Food', price: 100, caffeine: 'High', image: '/media/pic1.jpeg', description: 'Food', tags: 'food, bread, breakfast' },
+        { id: 'fd-6', name: 'Cream Cheese Bagel', category: 'Food', price: 150, caffeine: 'High', image: '/media/pic1.jpeg', description: 'Food', tags: 'food, bread, creamy' },
+        { id: 'fd-7', name: 'Jalapeno Cheese Bagel', category: 'Food', price: 200, caffeine: 'High', image: '/media/pic1.jpeg', description: 'Food', tags: 'food, spicy, savory' },
+        { id: 'fd-8', name: 'Pesto Bagel', category: 'Food', price: 230, caffeine: 'High', image: '/media/pic1.jpeg', description: 'Food', tags: 'food, savory, herbal' },
+        { id: 'fd-9', name: 'Butter Croissant', category: 'Food', price: 150, caffeine: 'High', image: '/media/pic1.jpeg', description: 'Food', tags: 'food, pastry, buttery' },
+        { id: 'fd-10', name: 'Nutella Croissant', category: 'Food', price: 200, caffeine: 'High', image: '/media/pic1.jpeg', description: 'Food', tags: 'food, pastry, sweet' },
+        { id: 'fd-11', name: 'Cream Cheese Croissant', category: 'Food', price: 240, caffeine: 'High', image: '/media/pic1.jpeg', description: 'Food', tags: 'food, pastry, savory' }
     ],
     artItems: [
-        { id: 'a1', title: 'Robusta Bloom', artist: 'Studio 47', price: 12000, status: 'Available', image: '/media/pic1.jpeg' },
-        { id: 'a2', title: 'Night Shift', artist: 'Ananya K.', price: 18000, status: 'Sold', image: '/media/pic2.jpeg' },
+        { id: 'art-1', title: "Transient Echoes", artist: "Maya V.", price: 12000, status: 'Available', image: "https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?auto=format&fit=crop&q=80&w=1945", stock: 1 },
+        { id: 'art-2', title: "Velvet Dawn", artist: "Julian K.", price: 8500, status: 'Sold', image: "https://images.unsplash.com/photo-1541963463532-d68292c34b19?auto=format&fit=crop&q=80&w=1976", stock: 0 },
+        { id: 'art-3', title: "Obsidian Flow", artist: "Soma L.", price: 24000, status: 'Available', image: "https://images.unsplash.com/photo-1549490349-8643362247b5?auto=format&fit=crop&q=80&w=1974", stock: 1 },
+        { id: 'art-4', title: "Primal Surge", artist: "Erik B.", price: 18000, status: 'Available', image: "https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?auto=format&fit=crop&q=80&w=1974", stock: 1 },
+        { id: 'art-5', title: "Dusk Ritual", artist: "Lara M.", price: 31000, status: 'Sold', image: "https://images.unsplash.com/photo-1554188248-986adbb73be4?auto=format&fit=crop&q=80&w=2070", stock: 0 },
+        { id: 'art-6', title: "Carbon Hue", artist: "Aris P.", price: 9500, status: 'Available', image: "https://images.unsplash.com/photo-1547826039-bfc35e0f1ea8?auto=format&fit=crop&q=80&w=2072", stock: 1 },
+        { id: 'a1', title: 'Robusta Bloom', artist: 'Studio 47', price: 12000, status: 'Available', image: '/media/pic1.jpeg', stock: 1 },
+        { id: 'a2', title: 'Night Shift', artist: 'Ananya K.', price: 18000, status: 'Sold', image: '/media/pic2.jpeg', stock: 0 },
     ],
     workshops: [
         { id: 'w1', title: 'Latte Art Basics', datetime: 'Oct 24, 10:00 AM', seats: 8, booked: 5, price: 0 },
@@ -108,7 +143,8 @@ export function initDb() {
         artist TEXT NOT NULL,
         price INTEGER NOT NULL,
         status TEXT,
-        image TEXT
+        image TEXT,
+        stock INTEGER DEFAULT 1
       )`);
 
             // Workshops Table
@@ -131,7 +167,16 @@ export function initDb() {
         pickupTime TEXT
       )`);
 
-            // SEED DATA check (only if empty)
+            // MIGRATION: Attempt to add stock column if it doesn't exist
+            db.run("ALTER TABLE art_items ADD COLUMN stock INTEGER DEFAULT 1", (err) => {
+                // If error is "duplicate column name", we ignore it.
+                if (err && !err.message.includes("duplicate column name")) {
+                    // Log other errors but don't crash, though it might be relevant
+                    console.log("Migration check (stock column):", err.message);
+                }
+            });
+
+            // SEED DATA
             db.get("SELECT count(*) as count FROM menu_items", (err, row) => {
                 if (!err && row.count === 0) {
                     console.log("Seeding Menu Items...");
@@ -143,16 +188,13 @@ export function initDb() {
                 }
             });
 
-            db.get("SELECT count(*) as count FROM art_items", (err, row) => {
-                if (!err && row.count === 0) {
-                    console.log("Seeding Art Items...");
-                    const stmt = db.prepare("INSERT INTO art_items VALUES (?, ?, ?, ?, ?, ?)");
-                    defaultData.artItems.forEach(item => {
-                        stmt.run(item.id, item.title, item.artist, item.price, item.status, item.image);
-                    });
-                    stmt.finalize();
-                }
+            // For Art Items, check individually or count.
+            // Since user wants missing items back, let's insert if they don't exist.
+            const stmt = db.prepare("INSERT OR IGNORE INTO art_items (id, title, artist, price, status, image, stock) VALUES (?, ?, ?, ?, ?, ?, ?)");
+            defaultData.artItems.forEach(item => {
+                stmt.run(item.id, item.title, item.artist, item.price, item.status, item.image, item.stock || 1);
             });
+            stmt.finalize();
 
             db.get("SELECT count(*) as count FROM workshops", (err, row) => {
                 if (!err && row.count === 0) {

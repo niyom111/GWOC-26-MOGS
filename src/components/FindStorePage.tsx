@@ -11,20 +11,20 @@ const FindStorePage: React.FC = () => {
   };
 
   return (
-    <section className="bg-[#F9F8F4] text-[#1A1A1A] pt-32 pb-40 px-8 min-h-screen">
-      <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
+    <section className="bg-[#F9F8F4] text-[#1A1A1A] pt-24 md:pt-32 pb-40 px-6 md:px-8 min-h-screen">
+      <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 md:gap-16 items-start">
         <div>
           <motion.p
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-[10px] uppercase tracking-[0.5em] text-zinc-500 mb-6 font-sans"
+            className="text-[9px] md:text-[10px] uppercase tracking-[0.4em] md:tracking-[0.5em] text-zinc-500 mb-6 font-sans"
           >
             Visit Us
           </motion.p>
           <motion.h1
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-5xl md:text-7xl font-serif italic tracking-tight leading-tight mb-10 text-[#1A1A1A]"
+            className="text-5xl md:text-7xl font-serif italic tracking-tight leading-tight mb-8 md:mb-10 text-[#1A1A1A]"
           >
             Find the<br /> Rabuste Bar.
           </motion.h1>

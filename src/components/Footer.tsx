@@ -24,17 +24,17 @@ const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
         <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-black via-transparent to-black/10" />
       </div>
 
-      <div className="max-w-7xl mx-auto px-8 pt-16 pb-24 grid grid-cols-1 md:grid-cols-4 gap-12 md:gap-20">
+      <div className="max-w-7xl mx-auto px-6 md:px-8 pt-12 md:pt-16 pb-20 md:pb-24 grid grid-cols-1 md:grid-cols-4 gap-12 md:gap-20">
         <div className="col-span-1 md:col-span-2">
-          {/* Brand Logo Stamp: Increased size of logo.png and tight vertical gap */}
+          {/* Brand Logo Stamp */}
           <div className="mb-2">
             <img
               src="/media/logo.png"
               alt="Rabuste Logo"
-              className="h-24 md:h-28 object-contain"
+              className="h-20 md:h-28 object-contain"
             />
           </div>
-          <p className="text-[12px] font-sans text-zinc-400 max-w-sm uppercase tracking-widest leading-relaxed">
+          <p className="text-[10px] md:text-[12px] font-sans text-zinc-400 max-w-sm uppercase tracking-widest leading-relaxed">
             Rabuste is a specialty coffee collective focused on the reclamation of Robusta coffee, operating from Surat.
           </p>
         </div>

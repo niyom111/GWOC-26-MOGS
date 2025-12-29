@@ -61,6 +61,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
     artItems,
     workshops,
     toggleArtStatus,
+    updateArtItem,
+    removeArtItem, // Ensure this exists in useDataContext return type
     addWorkshop,
     addArtItem,
     orders,
@@ -69,6 +71,27 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
     updateMenuItem,
     deleteMenuItem,
   } = useDataContext();
+
+  // Create a ref or effect to make updateArtItem available to saveArtItem if scoping is an issue, 
+  // but since saveArtItem is inside the component, it can just access it. 
+  // I tried to use window hack above, let me correct that logic now that I am adding it here.
+  // I will rewrite saveArtItem correctly in a separate chunk or just rely on the variable being there.
+
+  // FIXING saveArtItem reference:
+  // Since I can't easily edit two disparate blocks and reference a variable I just added, 
+  // I will rely on the fact that `saveArtItem` defined later will see `updateArtItem`.
+  // Wait, I defined `saveArtItem` in the PREVIOUS chunk. 
+  // Code execution is sequential. Replace chunks apply to the file. 
+  // So if I add `updateArtItem` here, the valid code in the previous chunk (which I should fix) will work.
+
+  // Actually, I should just fix `saveArtItem` in the previous chunk to use `updateArtItem` properly.
+  // But since I submitted that chunk with a comment about window hack, I should fix it.
+  // Let's just create a safe wrapper here or assume I'll fix the implementation.
+  // I will re-implement `saveArtItem` properly in this same `multi_replace` if possible? 
+  // No, `multi_replace` takes a list. I can provide multiple chunks.
+
+  // Let's just add `updateArtItem` here. I will re-submit the `saveArtItem` chunk to be correct.
+
 
   // Dynamically derive available categories from current menu items
   const categoryOptions = useMemo(
@@ -698,7 +721,134 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
   const [newCategoryName, setNewCategoryName] = useState('');
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [itemToDelete, setItemToDelete] = useState<CoffeeAdminItem | null>(null);
+  const [itemToDelete, setItemToDelete] = useState<CoffeeAdminItem | ArtAdminItem | null>(null);
+
+  // Modal state for Art items
+  const [artModalOpen, setArtModalOpen] = useState(false);
+  const [editingArt, setEditingArt] = useState<ArtAdminItem | null>(null);
+  const [artDraft, setArtDraft] = useState<Partial<ArtAdminItem>>({});
+
+  const openArtModalForNew = () => {
+    setEditingArt(null);
+    setArtDraft({
+      title: '',
+      artist: '',
+      price: 0,
+      status: 'Available',
+      image: '/media/pic1.jpeg',
+      stock: 1,
+    });
+    setArtModalOpen(true);
+  };
+
+  const openArtModalForEdit = (item: ArtAdminItem) => {
+    setEditingArt(item);
+    setArtDraft(item);
+    setArtModalOpen(true);
+  };
+
+  const closeArtModal = () => {
+    setArtModalOpen(false);
+  };
+
+  const handleArtDraftChange = (field: keyof ArtAdminItem, value: any) => {
+    setArtDraft(prev => ({ ...prev, [field]: value }));
+  };
+
+  /* New helper for file upload */
+  const uploadImage = async (file: File): Promise<string | null> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    try {
+      const res = await fetch('http://localhost:5000/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      if (!res.ok) throw new Error('Upload failed');
+      const data = await res.json();
+      return data.url;
+    } catch (err) {
+      console.error(err);
+      return null;
+    }
+  };
+
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
+  const saveArtItem = async () => {
+    if (!artDraft.title || artDraft.price == null) {
+      showToast('Please fill in required fields', 'error');
+      return;
+    }
+
+    let imageToUse = artDraft.image || '/media/pic1.jpeg';
+
+    if (selectedFile) {
+      const uploadedUrl = await uploadImage(selectedFile);
+      if (uploadedUrl) imageToUse = uploadedUrl;
+    }
+
+    // Auto-status based on stock
+    const stockVal = Number(artDraft.stock || 0);
+    const statusVal = stockVal > 0 ? 'Available' : 'Sold';
+
+    try {
+      if (editingArt) {
+        // For updates, we pass everything that changed
+        const updates: any = {
+          title: artDraft.title,
+          price: Number(artDraft.price),
+          image: imageToUse,
+          stock: stockVal,
+          status: statusVal
+        };
+        await updateArtItem(editingArt.id, updates);
+        showToast('Art item updated successfully', 'success');
+      } else {
+        const newArt: ArtAdminItem = {
+          id: `a${Date.now()}`,
+          title: artDraft.title,
+          artist: '', // Artist removed from UI, defaulting to empty
+          price: Number(artDraft.price),
+          status: statusVal,
+          image: imageToUse,
+          stock: stockVal,
+        };
+        await addArtItem(newArt);
+        showToast('Art item added successfully', 'success');
+      }
+      setArtModalOpen(false);
+      setSelectedFile(null); // Reset file
+    } catch (e) {
+      showToast('Action failed', 'error');
+    }
+  };
+
+  /* Delete Confirmation Logic for Art */
+  const confirmDeleteArtItem = async () => {
+    if (!itemToDelete) return;
+    try {
+      // We are reusing the delete modal which uses 'itemToDelete' (CoffeeAdminItem | ArtAdminItem?) 
+      // Need to make sure itemToDelete is typed correctly or we have a separate state.
+      // Current implementation of 'itemToDelete' seems to be CoffeeAdminItem based on 'CoffeeTable'. 
+      // Let's check state definition... wait, I can't see state defs. 
+      // Assuming I need to handle Art deletion here.
+
+      // Since `deleteCoffeeItem` sets `itemToDelete`, I'll add `deleteArtItem`
+
+      await removeArtItem(itemToDelete.id);
+      setDeleteModalOpen(false);
+      setItemToDelete(null);
+      showToast(`Artwork "${itemToDelete.title || itemToDelete.name}" deleted successfully`, 'success');
+    } catch (e) {
+      showToast('Failed to delete artwork', 'error');
+    }
+  };
+
+  // Re-purposing the delete modal confirm button... 
+  // It currently calls `confirmDeleteCoffeeItem`. I should make it generic or have a switch.
+  // Let's rename the existing confirm function to `confirmDelete` and handle both via a 'deleteType' state.
+
 
   const openCoffeeModalForNew = () => {
     setEditingCoffee(null);
@@ -810,12 +960,28 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
     setItemToDelete(null);
   };
 
-  const confirmDeleteCoffeeItem = () => {
+  /* Unified Delete Logic */
+  const confirmDelete = async () => {
     if (!itemToDelete) return;
-    deleteMenuItem(itemToDelete.id);
+
+    if ('category' in itemToDelete) {
+      // It's a CoffeeAdminItem (Menu Item)
+      deleteMenuItem(itemToDelete.id);
+      showToast(`Menu item "${itemToDelete.name}" deleted`, 'success');
+    } else {
+      // It's an ArtAdminItem
+      await removeArtItem(itemToDelete.id);
+      showToast(`Artwork "${itemToDelete.title}" deleted`, 'success');
+    }
     setDeleteModalOpen(false);
     setItemToDelete(null);
-    showToast('Item deleted successfully', 'success');
+  };
+
+  const deleteArtItem = (id: string) => {
+    const item = artItems.find(a => a.id === id);
+    if (!item) return;
+    setItemToDelete(item);
+    setDeleteModalOpen(true);
   };
 
   // toggleArtStatus and addWorkshop are provided by DataContext
@@ -910,17 +1076,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
 
           {activeTab === 'art' && (
             <button
-              onClick={() => {
-                const newArt: ArtAdminItem = {
-                  id: `a${Date.now()}`,
-                  title: 'Untitled Piece',
-                  artist: 'Unknown',
-                  price: 10000,
-                  status: 'Available',
-                  image: '/media/pic3.jpeg',
-                };
-                addArtItem(newArt);
-              }}
+              onClick={openArtModalForNew}
               className="inline-flex items-center space-x-2 px-6 py-3 bg-[#0a0a0a] text-[#F9F8F4] text-[11px] uppercase tracking-[0.3em] font-bold hover:bg-black transition-all"
             >
               <Plus className="w-4 h-4" />
@@ -961,7 +1117,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
         )}
 
         {activeTab === 'art' && (
-          <ArtTable items={artItems} onToggleStatus={toggleArtStatus} />
+          <ArtTable items={artItems} onToggleStatus={toggleArtStatus} onEdit={openArtModalForEdit} onDelete={deleteArtItem} />
         )}
 
         {activeTab === 'workshops' && <WorkshopTable items={workshops} />}
@@ -1059,6 +1215,97 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
           </motion.div>
         </div>
       )}
+      {artModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="w-full max-w-xl bg-[#F9F8F4] border border-black/10 rounded-xl shadow-2xl p-8"
+          >
+            <div className="flex items-center justify-between mb-8">
+              <h2 className="text-3xl font-serif italic text-black">{editingArt ? 'Edit Art Piece' : 'Upload Art'}</h2>
+              <button onClick={closeArtModal} className="text-xs uppercase tracking-[0.25em] text-zinc-400 hover:text-black transition-colors">Close</button>
+            </div>
+
+            <div className="space-y-6 font-sans text-sm">
+              <div>
+                <label className="block text-[10px] uppercase tracking-[0.25em] text-zinc-500 mb-2">Title</label>
+                <input
+                  value={artDraft.title || ''}
+                  onChange={e => handleArtDraftChange('title', e.target.value)}
+                  className="w-full bg-transparent border-b border-black/10 py-3 text-lg outline-none focus:border-black transition-colors placeholder-zinc-300"
+                  placeholder="e.g. Midnight Bloom"
+                />
+              </div>
+
+              {/* Artist Removed */}
+
+              <div className="grid grid-cols-2 gap-8">
+                <div>
+                  <label className="block text-[10px] uppercase tracking-[0.25em] text-zinc-500 mb-2">Price (₹)</label>
+                  <input
+                    type="number"
+                    value={artDraft.price ?? ''}
+                    onChange={e => handleArtDraftChange('price', Number(e.target.value))}
+                    className="w-full bg-transparent border-b border-black/10 py-2 outline-none focus:border-black font-semibold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] uppercase tracking-[0.25em] text-zinc-500 mb-2">Stock</label>
+                  <input
+                    type="number"
+                    value={artDraft.stock ?? ''}
+                    onChange={e => handleArtDraftChange('stock', Number(e.target.value))}
+                    className="w-full bg-transparent border-b border-black/10 py-2 outline-none focus:border-black"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[10px] uppercase tracking-[0.25em] text-zinc-500 mb-3">Artwork Image</label>
+
+                <div className="flex items-start gap-4">
+                  {/* Preview */}
+                  <div className="w-24 h-24 bg-zinc-100 rounded-lg overflow-hidden border border-black/5 flex-shrink-0">
+                    <img
+                      src={selectedFile ? URL.createObjectURL(selectedFile) : artDraft.image || '/media/pic1.jpeg'}
+                      alt="Preview"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+
+                  <div className="flex-1">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={e => {
+                        if (e.target.files && e.target.files[0]) {
+                          setSelectedFile(e.target.files[0]);
+                        }
+                      }}
+                      className="block w-full text-xs text-zinc-500
+                            file:mr-4 file:py-2 file:px-4
+                            file:rounded-full file:border-0
+                            file:text-[10px] file:uppercase file:tracking-[0.1em]
+                            file:bg-black file:text-white
+                            hover:file:bg-zinc-800
+                            cursor-pointer"
+                    />
+                    <p className="mt-2 text-[10px] text-zinc-400">Upload a high quality JPEG or PNG. Max 5MB.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-4 pt-8 text-[11px] uppercase tracking-[0.25em]">
+                <button onClick={closeArtModal} className="px-6 py-3 text-zinc-400 hover:text-black transition-colors">Cancel</button>
+                <button onClick={saveArtItem} className="px-8 py-3 bg-black text-white hover:bg-zinc-800 transition-all shadow-lg hover:shadow-xl">
+                  {editingArt ? 'Save Changes' : 'Upload Piece'}
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      )}
 
       {/* Delete confirmation modal */}
       {deleteModalOpen && (
@@ -1073,7 +1320,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
               This action cannot be undone.
             </p>
             {itemToDelete && (
-              <p className="text-sm font-serif mb-6">"{itemToDelete.name}"</p>
+              <p className="text-sm font-serif mb-6">"{(itemToDelete as any).title || (itemToDelete as any).name}"</p>
             )}
             <div className="flex justify-end gap-3 text-[11px] uppercase tracking-[0.25em]">
               <button
@@ -1083,7 +1330,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
                 Cancel
               </button>
               <button
-                onClick={confirmDeleteCoffeeItem}
+                onClick={confirmDelete}
                 className="px-5 py-2 bg-[#0a0a0a] text-[#F9F8F4] rounded-full transform transition-transform hover:scale-105"
               >
                 Delete
@@ -1096,17 +1343,21 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
       {/* Toast notifications */}
       {toast.show && (
         <motion.div
-          initial={{ opacity: 0, y: 40 }}
-          animate={{ opacity: 1, y: 0 }}
-          className={`fixed bottom-6 right-6 z-50 flex items-center gap-3 px-4 py-3 bg-white border rounded-full shadow-lg ${toast.type === 'success' ? 'border-black/40' : 'border-red-400'
+          initial={{ opacity: 0, y: -20, x: '-50%' }}
+          animate={{ opacity: 1, y: 0, x: '-50%' }}
+          exit={{ opacity: 0, y: -20, x: '-50%' }}
+          className={`fixed top-8 left-1/2 z-[100] flex items-center gap-4 px-8 py-4 bg-[#F9F8F4] border border-black/10 rounded-2xl shadow-2xl backdrop-blur-md ${toast.type === 'success' ? 'border-l-4 border-l-emerald-500' : 'border-l-4 border-l-red-500'
             }`}
         >
-          {toast.type === 'success' ? (
-            <CheckCircle2 className="w-4 h-4 text-black" />
-          ) : (
-            <AlertTriangle className="w-4 h-4 text-red-500" />
-          )}
-          <span className="text-sm font-serif">{toast.message}</span>
+          <div className={`p-2 rounded-full ${toast.type === 'success' ? 'bg-emerald-100/50 text-emerald-600' : 'bg-red-100/50 text-red-600'}`}>
+            {toast.type === 'success' ? <CheckCircle2 className="w-5 h-5" /> : <AlertTriangle className="w-5 h-5" />}
+          </div>
+          <div className="flex flex-col">
+            <span className="text-[10px] uppercase tracking-[0.2em] text-zinc-400 font-bold">
+              {toast.type === 'success' ? 'Success' : 'Error'}
+            </span>
+            <span className="text-sm font-serif text-black">{toast.message}</span>
+          </div>
         </motion.div>
       )}
     </div>
@@ -1216,15 +1467,18 @@ const OrdersTable: React.FC<{ items: Order[] }> = ({ items }) => (
 const ArtTable: React.FC<{
   items: ArtAdminItem[];
   onToggleStatus: (id: string) => void;
-}> = ({ items, onToggleStatus }) => (
+  onEdit: (item: ArtAdminItem) => void;
+  onDelete: (id: string) => void;
+}> = ({ items, onToggleStatus, onEdit, onDelete }) => (
   <div className="bg-white border border-black/5 rounded-xl overflow-hidden">
     <table className="w-full text-left font-sans text-sm">
       <thead className="bg-[#F9F8F4] text-[10px] uppercase tracking-[0.25em] text-zinc-500">
         <tr>
           <th className="px-6 py-3 font-semibold">Artwork</th>
-          <th className="px-6 py-3 font-semibold">Artist</th>
           <th className="px-6 py-3 font-semibold">Price (₹)</th>
+          <th className="px-6 py-3 font-semibold">Stock</th>
           <th className="px-6 py-3 font-semibold">Status</th>
+          <th className="px-6 py-3 font-semibold">Action</th>
         </tr>
       </thead>
       <tbody>
@@ -1246,8 +1500,9 @@ const ArtTable: React.FC<{
                 </div>
               </div>
             </td>
-            <td className="px-6 py-4 text-sm text-zinc-700">{item.artist}</td>
+            {/* Artist Column Removed */}
             <td className="px-6 py-4 text-sm font-semibold">₹{item.price}</td>
+            <td className="px-6 py-4 text-sm text-zinc-700">{item.stock ?? 1}</td>
             <td className="px-6 py-4">
               <button
                 onClick={() => onToggleStatus(item.id)}
@@ -1258,6 +1513,22 @@ const ArtTable: React.FC<{
               >
                 {item.status}
               </button>
+            </td>
+            <td className="px-6 py-4">
+              <div className="flex gap-3 text-xs uppercase tracking-[0.2em]">
+                <button
+                  onClick={() => onEdit(item)}
+                  className="flex items-center gap-1 text-zinc-600 hover:text-black"
+                >
+                  <Edit3 className="w-4 h-4" /> Edit
+                </button>
+                <button
+                  onClick={() => onDelete(item.id)}
+                  className="flex items-center gap-1 text-red-500 hover:text-red-600"
+                >
+                  <Trash2 className="w-4 h-4" /> Delete
+                </button>
+              </div>
             </td>
           </tr>
         ))}

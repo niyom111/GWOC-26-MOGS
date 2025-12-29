@@ -11,21 +11,21 @@ interface RobustaStoryProps {
 
 const RobustaStory: React.FC<RobustaStoryProps> = ({ onBack }) => {
   return (
-    <section className="pt-32 pb-40 px-8 bg-[#F9F8F4] text-[#0a0a0a] min-h-screen">
+    <section className="pt-24 md:pt-32 pb-40 px-6 md:px-8 bg-[#F9F8F4] text-[#0a0a0a] min-h-screen">
       <div className="max-w-6xl mx-auto">
         <button
           onClick={() => onBack(Page.AWARENESS)}
-          className="mb-10 inline-flex items-center space-x-3 text-[10px] uppercase tracking-[0.4em] text-zinc-400 hover:text-white transition-colors"
+          className="mb-8 md:mb-10 inline-flex items-center space-x-3 text-[9px] md:text-[10px] uppercase tracking-[0.4em] text-zinc-400 hover:text-white transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Back to Philosophy</span>
         </button>
 
-        <header className="mb-20 text-left">
+        <header className="mb-16 md:mb-20 text-left">
           <motion.p
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-[10px] uppercase tracking-[0.5em] text-zinc-500 mb-4 font-sans"
+            className="text-[9px] md:text-[10px] uppercase tracking-[0.4em] md:tracking-[0.5em] text-zinc-500 mb-4 font-sans"
           >
             The Origin
           </motion.p>

@@ -31,20 +31,20 @@ const AwarenessPage: React.FC<AwarenessPageProps> = ({ onNavigate }) => {
   };
 
   return (
-    <div className="pt-32 pb-40 px-8">
+    <div className="pt-24 md:pt-32 pb-40 px-6 md:px-8">
       <div className="max-w-7xl mx-auto">
-        <header className="mb-16 text-center">
+        <header className="mb-12 md:mb-16 text-center">
           <motion.p
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-[10px] uppercase tracking-[0.5em] text-zinc-500 mb-4 font-sans"
+            className="text-[9px] md:text-[10px] uppercase tracking-[0.4em] md:tracking-[0.5em] text-zinc-500 mb-4 font-sans"
           >
             Our Philosophy
           </motion.p>
           <motion.h1
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-7xl md:text-8xl font-serif italic tracking-tight leading-none"
+            className="text-5xl md:text-8xl font-serif italic tracking-tight leading-none"
           >
             More Than A Buzz.
           </motion.h1>

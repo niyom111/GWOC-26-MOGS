@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import multer from 'multer';
 import { db, initDb } from './db.js';
 import { initializeKnowledge, rebuildKnowledgeIndex, getFuseKnowledge } from './data/knowledgeManager.js';
 
@@ -18,6 +19,36 @@ const PORT = 5000;
 
 app.use(cors());
 app.use(express.json());
+
+// Serve static files from the 'public' directory
+app.use(express.static(path.join(__dirname, '../public')));
+
+// Set up multer for file uploads
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        const uploadDir = path.join(__dirname, '../public/media');
+        if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir, { recursive: true });
+        }
+        cb(null, uploadDir);
+    },
+    filename: function (req, file, cb) {
+        // Sanitize filename and timestamp
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, 'upload-' + uniqueSuffix + path.extname(file.originalname));
+    }
+});
+
+const upload = multer({ storage: storage });
+
+app.post('/api/upload', upload.single('file'), (req, res) => {
+    if (!req.file) {
+        return res.status(400).json({ error: 'No file uploaded' });
+    }
+    // Return relative path for frontend usage
+    res.json({ url: `/media/${req.file.filename}` });
+});
+
 
 // -----------------------------------------------------
 // SESSION MEMORY STORAGE
@@ -71,9 +102,11 @@ app.get('/api/art', (req, res) => {
     });
 });
 app.post('/api/art', (req, res) => {
-    const { id, title, artist, price, status, image } = req.body;
-    db.run("INSERT INTO art_items (id, title, artist, price, status, image) VALUES (?,?,?,?,?,?)",
-        [id, title, artist, price, status, image], (err) => {
+    const { id, title, price, status, image, stock } = req.body;
+    // 'artist' column still exists in DB, so we pass an empty string or default value
+    const artist = "";
+    db.run("INSERT INTO art_items (id, title, artist, price, status, image, stock) VALUES (?,?,?,?,?,?,?)",
+        [id, title, artist, price, status, image, stock || 1], (err) => {
             if (err) return res.status(500).json({ error: err.message });
             res.json(req.body);
             // Rebuild knowledge index after adding art item
@@ -81,11 +114,13 @@ app.post('/api/art', (req, res) => {
         });
 });
 app.put('/api/art/:id', (req, res) => {
-    const { status, price } = req.body;
+    const { status, price, stock } = req.body;
     let sql = "UPDATE art_items SET ";
     const params = [];
     if (status) { sql += "status = ?, "; params.push(status); }
     if (price) { sql += "price = ?, "; params.push(price); }
+    if (stock !== undefined) { sql += "stock = ?, "; params.push(stock); }
+
     sql = sql.slice(0, -2) + " WHERE id = ?";
     params.push(req.params.id);
     db.run(sql, params, (err) => {

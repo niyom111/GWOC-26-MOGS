@@ -380,10 +380,10 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
   }, [filteredCategories, activeCategoryId]);
 
   return (
-    <div className="bg-[#F9F8F4] text-[#0a0a0a] pt-32 pb-40 px-6 md:px-10 min-h-screen">
-      <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-16 md:gap-20">
-        {/* Sidebar */}
-        <aside className="md:col-span-3 mb-8 md:mb-0">
+    <div className="bg-[#F9F8F4] text-[#0a0a0a] pt-24 md:pt-32 pb-40 px-6 md:px-10 min-h-screen">
+      <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-20">
+        {/* Sidebar (Desktop Only) */}
+        <aside className="hidden md:block md:col-span-3">
           <div className="sticky top-28 space-y-6">
             <div>
               <p className="text-[10px] uppercase tracking-[0.5em] text-zinc-500 mb-3 font-sans">
@@ -410,6 +410,25 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
             </nav>
           </div>
         </aside>
+
+        {/* Mobile Navigation (Sticky Top) */}
+        <div className="md:hidden sticky top-16 z-30 bg-[#F9F8F4]/95 backdrop-blur-sm py-4 -mx-6 px-6 border-b border-black/5 mb-4">
+          <p className="text-[9px] uppercase tracking-[0.4em] text-zinc-500 mb-2 font-sans">Menu Categories</p>
+          <div className="flex overflow-x-auto gap-3 pb-2 no-scrollbar snap-x">
+            {filteredCategories.map(cat => (
+              <button
+                key={cat.id}
+                onClick={() => handleCategoryClick(cat.id)}
+                className={`shrink-0 px-4 py-2 rounded-full text-[10px] uppercase tracking-[0.2em] font-sans border transition-colors snap-start ${activeCategoryId === cat.id
+                    ? 'bg-[#0a0a0a] text-[#F9F8F4] border-[#0a0a0a]'
+                    : 'bg-white border-black/10 text-zinc-600'
+                  }`}
+              >
+                {cat.group}
+              </button>
+            ))}
+          </div>
+        </div>
 
         {/* Right Content */}
         <main className="md:col-span-8">
