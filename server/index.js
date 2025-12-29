@@ -78,13 +78,27 @@ app.post('/api/menu', (req, res) => {
 });
 app.put('/api/menu/:id', (req, res) => {
     const { name, category, price, caffeine, image, description, tags } = req.body;
-    db.run("UPDATE menu_items SET name = ?, category = ?, price = ?, caffeine = ?, image = ?, description = ?, tags = ? WHERE id = ?",
-        [name, category, price, caffeine, image, description, tags, req.params.id], (err) => {
-            if (err) return res.status(500).json({ error: err.message });
-            res.json({ message: "Updated" });
-            // Rebuild knowledge index after updating menu item
-            rebuildKnowledgeIndex(db).catch(err => console.error('Error rebuilding knowledge after menu PUT:', err));
-        });
+    let sql = "UPDATE menu_items SET ";
+    const params = [];
+
+    // Dynamically build query to prevent overwriting with null
+    if (name !== undefined) { sql += "name = ?, "; params.push(name); }
+    if (category !== undefined) { sql += "category = ?, "; params.push(category); }
+    if (price !== undefined) { sql += "price = ?, "; params.push(price); }
+    if (caffeine !== undefined) { sql += "caffeine = ?, "; params.push(caffeine); }
+    if (image !== undefined) { sql += "image = ?, "; params.push(image); }
+    if (description !== undefined) { sql += "description = ?, "; params.push(description); }
+    if (tags !== undefined) { sql += "tags = ?, "; params.push(tags); }
+
+    sql = sql.slice(0, -2) + " WHERE id = ?";
+    params.push(req.params.id);
+
+    db.run(sql, params, (err) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ message: "Updated" });
+        // Rebuild knowledge index after updating menu item
+        rebuildKnowledgeIndex(db).catch(err => console.error('Error rebuilding knowledge after menu PUT:', err));
+    });
 });
 app.delete('/api/menu/:id', (req, res) => {
     db.run("DELETE FROM menu_items WHERE id = ?", req.params.id, (err) => {
@@ -114,11 +128,15 @@ app.post('/api/art', (req, res) => {
         });
 });
 app.put('/api/art/:id', (req, res) => {
-    const { status, price, stock } = req.body;
+    const { title, artist, status, price, image, stock } = req.body;
     let sql = "UPDATE art_items SET ";
     const params = [];
-    if (status) { sql += "status = ?, "; params.push(status); }
-    if (price) { sql += "price = ?, "; params.push(price); }
+    
+    if (title !== undefined) { sql += "title = ?, "; params.push(title); }
+    if (artist !== undefined) { sql += "artist = ?, "; params.push(artist); }
+    if (status !== undefined) { sql += "status = ?, "; params.push(status); }
+    if (price !== undefined) { sql += "price = ?, "; params.push(price); }
+    if (image !== undefined) { sql += "image = ?, "; params.push(image); }
     if (stock !== undefined) { sql += "stock = ?, "; params.push(stock); }
 
     sql = sql.slice(0, -2) + " WHERE id = ?";
