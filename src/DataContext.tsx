@@ -275,19 +275,28 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       if (res.ok) {
         const newItem = await res.json();
         setMenuItems(prev => [...prev, newItem]);
+      } else {
+        throw new Error('Failed to add menu item');
       }
-    } catch (err) { console.error(err); }
+    } catch (err) {
+      console.error(err);
+      throw err;
+    }
   };
 
   const updateMenuItem = async (id: string, updates: Partial<CoffeeAdminItem>) => {
     try {
-      await fetch(`http://localhost:5000/api/menu/${id}`, {
+      const res = await fetch(`http://localhost:5000/api/menu/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updates)
       });
+      if (!res.ok) throw new Error('Failed to update menu item');
       setMenuItems(prev => prev.map(item => (item.id === id ? { ...item, ...updates } : item)));
-    } catch (err) { console.error(err); }
+    } catch (err) {
+      console.error(err);
+      throw err;
+    }
   };
 
   const deleteMenuItem = async (id: string) => {
@@ -308,17 +317,25 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       if (res.ok) {
         const newItem = await res.json();
         setArtItems(prev => [...prev, newItem]);
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || 'Failed to add art item');
       }
-    } catch (err) { console.error(err); }
+    } catch (err) {
+      console.error(err);
+      throw err;
+    }
   };
 
   const updateArtItem = async (id: string, updates: Partial<ArtAdminItem>) => {
     try {
-      await fetch(`http://localhost:5000/api/art/${id}`, {
+      const res = await fetch(`http://localhost:5000/api/art/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updates)
       });
+      if (!res.ok) throw new Error('Failed to update art item');
+
       setArtItems(prev => prev.map(item => {
         if (item.id !== id) return item;
         const updated = { ...item, ...updates };
@@ -329,7 +346,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
         return updated;
       }));
-    } catch (err) { console.error(err); }
+    } catch (err) {
+      console.error(err);
+      throw err;
+    }
   };
 
   const deleteArtItem = async (id: string) => {
