@@ -7,6 +7,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const dbPath = join(__dirname, 'rabuste.db');
+console.log("--> USING DATABASE AT:", dbPath);
 const db = new sqlite3.Database(dbPath);
 
 // Default data (mirrors DataContext.tsx)
@@ -188,13 +189,18 @@ export function initDb() {
                 }
             });
 
-            // For Art Items, check individually or count.
-            // Since user wants missing items back, let's insert if they don't exist.
-            const stmt = db.prepare("INSERT OR IGNORE INTO art_items (id, title, artist, price, status, image, stock) VALUES (?, ?, ?, ?, ?, ?, ?)");
-            defaultData.artItems.forEach(item => {
-                stmt.run(item.id, item.title, item.artist, item.price, item.status, item.image, item.stock || 1);
+            // FIXED: Only seed Art items if the table is completely empty.
+            // This prevents deleted items from reappearing on server restart.
+            db.get("SELECT count(*) as count FROM art_items", (err, row) => {
+                if (!err && row.count === 0) {
+                    console.log("Seeding Art Items...");
+                    const stmt = db.prepare("INSERT INTO art_items (id, title, artist, price, status, image, stock) VALUES (?, ?, ?, ?, ?, ?, ?)");
+                    defaultData.artItems.forEach(item => {
+                        stmt.run(item.id, item.title, item.artist, item.price, item.status, item.image, item.stock || 1);
+                    });
+                    stmt.finalize();
+                }
             });
-            stmt.finalize();
 
             db.get("SELECT count(*) as count FROM workshops", (err, row) => {
                 if (!err && row.count === 0) {

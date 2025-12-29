@@ -20,6 +20,15 @@ const PORT = 5000;
 app.use(cors());
 app.use(express.json());
 
+// Request Logging Middleware
+app.use((req, res, next) => {
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+    if (req.method === 'POST' || req.method === 'PUT') {
+        console.log('Body:', JSON.stringify(req.body).substring(0, 200) + '...');
+    }
+    next();
+});
+
 // Serve static files from the 'public' directory
 app.use(express.static(path.join(__dirname, '../public')));
 
@@ -131,7 +140,7 @@ app.put('/api/art/:id', (req, res) => {
     const { title, artist, status, price, image, stock } = req.body;
     let sql = "UPDATE art_items SET ";
     const params = [];
-    
+
     if (title !== undefined) { sql += "title = ?, "; params.push(title); }
     if (artist !== undefined) { sql += "artist = ?, "; params.push(artist); }
     if (status !== undefined) { sql += "status = ?, "; params.push(status); }

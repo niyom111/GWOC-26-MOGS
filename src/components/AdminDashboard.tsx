@@ -170,7 +170,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const saveArtItem = async () => {
+    console.log("saveArtItem called", artDraft);
     if (!artDraft.title || artDraft.price == null) {
+      console.log("Validation failed", { title: artDraft.title, price: artDraft.price });
       showToast('Please fill in required fields', 'error');
       return;
     }
@@ -300,6 +302,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
       return;
     }
 
+    console.log("Saving coffee item", coffeeDraft);
     if (editingCoffee) {
       updateMenuItem(editingCoffee.id, {
         ...coffeeDraft, // Send all fields in draft to avoid data loss
@@ -318,6 +321,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
         image: '/media/pic1.jpeg',
         description: '',
       };
+      console.log("Adding new coffee item", newItem);
       addMenuItem(newItem);
       showToast('Item added successfully', 'success');
     }
