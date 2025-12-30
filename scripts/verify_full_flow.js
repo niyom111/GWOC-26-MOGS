@@ -1,6 +1,6 @@
 
-const URL_ART = 'http://localhost:5000/api/art';
-const URL_ORDER = 'http://localhost:5000/api/orders';
+const URL_ART = 'http://127.0.0.1:5000/api/art';
+const URL_ORDER = 'http://127.0.0.1:5000/api/orders';
 
 async function verifyFullFlow() {
     console.log("--> Starting Full Persistence Verification...");
