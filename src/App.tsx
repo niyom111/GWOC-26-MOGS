@@ -12,7 +12,10 @@ import WorkshopPage from './components/WorkshopPage';
 import ArtPage from './components/ArtPage';
 import AwarenessPage from './components/AwarenessPage';
 import Footer from './components/Footer';
+import PaymentFailurePage from './components/PaymentFailurePage';
 import AdminDashboard from './components/AdminDashboard';
+
+
 import FindStorePage from './components/FindStorePage';
 import RobustaStory from './components/RobustaStory';
 import FAQPage from './components/FAQPage';
@@ -175,6 +178,7 @@ const App: React.FC = () => {
                 onBackToMenu={() => navigateTo(Page.MENU)}
                 onClearCart={() => setCart([])}
                 onBackToHome={() => navigateTo(Page.HOME)}
+                onPaymentFailure={() => navigateTo(Page.PAYMENT_FAILURE)}
               />
             )}
 
@@ -223,7 +227,7 @@ const App: React.FC = () => {
 
 // Simple hardcoded admin login gate with loading overlay
 const AdminRoute: React.FC<{ children: (logout: () => void) => React.ReactNode }> = ({ children }) => {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -233,6 +237,16 @@ const AdminRoute: React.FC<{ children: (logout: () => void) => React.ReactNode }
     return window.localStorage.getItem('rabuste_last_login');
   });
 
+  // Check for persistent session on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const session = window.sessionStorage.getItem('rabuste_admin_session');
+      if (session === 'active') {
+        setIsAuthenticated(true);
+      }
+    }
+  }, []);
+
   const handleLoginSuccess = () => {
     setIsLoading(true);
     const now = new Date().toISOString();
@@ -241,20 +255,19 @@ const AdminRoute: React.FC<{ children: (logout: () => void) => React.ReactNode }
       // Save this successful login time for the next visit
       if (typeof window !== 'undefined') {
         window.localStorage.setItem('rabuste_last_login', now);
+        window.sessionStorage.setItem('rabuste_admin_session', 'active');
       }
       setIsLoading(false);
       setIsAuthenticated(true);
-      setEmail('');
+      setUsername('');
       setPassword('');
       setError(null);
-      // We intentionally do NOT update lastLogin here so the login screen
-      // always shows the previous successful login timestamp.
     }, 2000);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (email === 'robustecafe@gmail.com' && password === 'GWOC26@robusta') {
+    if (username === 'rabustecafeadmin' && password === 'Admin@6767') {
       handleLoginSuccess();
     } else {
       setError('Invalid Credentials');
@@ -263,7 +276,7 @@ const AdminRoute: React.FC<{ children: (logout: () => void) => React.ReactNode }
 
   const handleLogout = () => {
     setIsAuthenticated(false);
-    setEmail('');
+    setUsername('');
     setPassword('');
     setError(null);
     setIsLoading(false);
@@ -271,6 +284,7 @@ const AdminRoute: React.FC<{ children: (logout: () => void) => React.ReactNode }
     if (typeof window !== 'undefined') {
       const stored = window.localStorage.getItem('rabuste_last_login');
       setLastLogin(stored);
+      window.sessionStorage.removeItem('rabuste_admin_session');
     }
   };
 
@@ -293,11 +307,11 @@ const AdminRoute: React.FC<{ children: (logout: () => void) => React.ReactNode }
         )}
         <form onSubmit={handleSubmit} className="space-y-4 font-sans text-sm">
           <div>
-            <label className="block text-[11px] uppercase tracking-[0.25em] mb-1">Email</label>
+            <label className="block text-[11px] uppercase tracking-[0.25em] mb-1">Username</label>
             <input
-              type="email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
+              type="text"
+              value={username}
+              onChange={e => setUsername(e.target.value)}
               className="w-full bg-transparent border border-black/20 rounded-md px-3 py-2 outline-none focus:border-black"
               required
             />

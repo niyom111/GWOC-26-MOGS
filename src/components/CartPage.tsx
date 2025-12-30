@@ -14,6 +14,7 @@ interface CartPageProps {
   onBackToMenu: () => void;
   onClearCart: () => void;
   onBackToHome: () => void;
+  onPaymentFailure: () => void;
 }
 
 const CartPage: React.FC<CartPageProps> = ({
@@ -23,17 +24,19 @@ const CartPage: React.FC<CartPageProps> = ({
   onBackToMenu,
   onClearCart,
   onBackToHome,
+  onPaymentFailure,
 }) => {
   const { placeOrder } = useDataContext();
 
   // EmailJS configuration (must be VITE_ prefixed in .env)
   const EMAILJS_SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID as string;
-  const EMAILJS_TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID as string;
+  const EMAILJS_TEMPLATE_ID_COUNTER = import.meta.env.VITE_EMAILJS_TEMPLATE_ID_COUNTER as string;
+  const EMAILJS_TEMPLATE_ID_ONLINE = import.meta.env.VITE_EMAILJS_TEMPLATE_ID_ONLINE as string;
   const EMAILJS_PUBLIC_KEY = import.meta.env.VITE_EMAILJS_PUBLIC_KEY as string;
 
   // Log missing config
   useEffect(() => {
-    if (!EMAILJS_SERVICE_ID || !EMAILJS_TEMPLATE_ID || !EMAILJS_PUBLIC_KEY) {
+    if (!EMAILJS_SERVICE_ID || !EMAILJS_TEMPLATE_ID_COUNTER || !EMAILJS_PUBLIC_KEY) {
       console.error('EmailJS configuration missing. Check your .env file.');
     }
   }, []);
@@ -55,7 +58,7 @@ const CartPage: React.FC<CartPageProps> = ({
   const [customer, setCustomer] = useState({ name: '', phone: '', email: '' });
   const [pickupTime, setPickupTime] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<'counter' | 'upi'>('counter');
-  
+
   // Razorpay configuration
   const RAZORPAY_KEY_ID = import.meta.env.VITE_RAZORPAY_KEY_ID as string;
 
@@ -137,7 +140,7 @@ const CartPage: React.FC<CartPageProps> = ({
           const itemsHTML = generateEmailHTML(cart);
           await emailjs.send(
             EMAILJS_SERVICE_ID,
-            EMAILJS_TEMPLATE_ID,
+            EMAILJS_TEMPLATE_ID_COUNTER,
             {
               to_name: name,
               to_email: email,
@@ -178,12 +181,12 @@ const CartPage: React.FC<CartPageProps> = ({
       if (document.querySelector('script[src="https://checkout.razorpay.com/v1/checkout.js"]')) {
         return;
       }
-      
+
       const script = document.createElement('script');
       script.src = 'https://checkout.razorpay.com/v1/checkout.js';
       script.async = true;
       document.body.appendChild(script);
-      
+
       return () => {
         const existingScript = document.querySelector('script[src="https://checkout.razorpay.com/v1/checkout.js"]');
         if (existingScript) {
@@ -237,7 +240,7 @@ const CartPage: React.FC<CartPageProps> = ({
         handler: async function (response: any) {
           try {
             console.log('[PAYMENT] Razorpay payment success, verifying...');
-            
+
             // Verify payment
             const verifyResponse = await fetch('http://localhost:5000/api/payments/verify-payment', {
               method: 'POST',
@@ -263,7 +266,7 @@ const CartPage: React.FC<CartPageProps> = ({
               const itemsHTML = generateEmailHTML(orderData.items);
               await emailjs.send(
                 EMAILJS_SERVICE_ID,
-                EMAILJS_TEMPLATE_ID,
+                EMAILJS_TEMPLATE_ID_ONLINE,
                 {
                   to_name: orderData.customer.name,
                   to_email: orderData.customer.email,
@@ -300,7 +303,7 @@ const CartPage: React.FC<CartPageProps> = ({
           color: '#0a0a0a'
         },
         modal: {
-          ondismiss: function() {
+          ondismiss: function () {
             setSubmitting(false);
             setError('Payment cancelled');
           }
@@ -314,8 +317,9 @@ const CartPage: React.FC<CartPageProps> = ({
 
       const razorpayInstance = new razorpay(options);
       razorpayInstance.on('payment.failed', function (response: any) {
-        setError('Payment failed. Please try again or use Pay at Counter option.');
+        console.error('Razorpay payment failed:', response.error);
         setSubmitting(false);
+        onPaymentFailure();
       });
 
       razorpayInstance.open();
@@ -476,7 +480,7 @@ const CartPage: React.FC<CartPageProps> = ({
               className="w-full max-w-md mx-4 bg-white rounded-xl border border-black/10 shadow-xl p-6 md:p-8"
             >
               <h2 className="text-2xl font-serif mb-4">Checkout</h2>
-              
+
               {/* Payment Method Selection */}
               <div className="mb-6">
                 <label className="block text-[11px] uppercase tracking-[0.25em] mb-3">Payment Method</label>
@@ -503,7 +507,7 @@ const CartPage: React.FC<CartPageProps> = ({
                       disabled={!RAZORPAY_KEY_ID}
                     />
                     <span className="text-sm">
-                      Pay by UPI
+                      Pay Online
                       {!RAZORPAY_KEY_ID && <span className="text-xs text-zinc-400 ml-2">(Unavailable)</span>}
                     </span>
                   </label>
@@ -515,7 +519,7 @@ const CartPage: React.FC<CartPageProps> = ({
                 )}
                 {paymentMethod === 'upi' && (
                   <p className="text-xs text-zinc-500 font-sans mt-3">
-                    Complete payment via UPI. Your order will be confirmed after successful payment.
+                    Complete payment via Razorpay. Your order will be confirmed after successful payment.
                   </p>
                 )}
               </div>
@@ -586,9 +590,9 @@ const CartPage: React.FC<CartPageProps> = ({
                     disabled={submitting}
                     className="px-6 py-2 bg-[#0a0a0a] text-[#F9F8F4] rounded-full hover:bg-black disabled:opacity-60"
                   >
-                    {submitting 
-                      ? (paymentMethod === 'upi' ? 'Processing Payment...' : 'Placing Order...') 
-                      : (paymentMethod === 'upi' ? 'Pay with UPI' : 'Confirm Order')}
+                    {submitting
+                      ? (paymentMethod === 'upi' ? 'Processing Payment...' : 'Placing Order...')
+                      : (paymentMethod === 'upi' ? 'Pay Online' : 'Confirm Order')}
                   </button>
                 </div>
               </form>

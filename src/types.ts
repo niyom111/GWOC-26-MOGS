@@ -45,5 +45,6 @@ export enum Page {
   FIND_STORE = 'find_store',
   FAQ = 'faq',
   ADMIN = 'admin',
-  LOGIN = 'login'
+  LOGIN = 'login',
+  PAYMENT_FAILURE = 'payment_failure'
 }

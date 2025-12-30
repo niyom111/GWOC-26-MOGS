@@ -817,6 +817,7 @@ const OrdersTable: React.FC<{ items: Order[] }> = ({ items }) => (
           <th className="px-6 py-3 font-semibold">Phone</th>
           <th className="px-6 py-3 font-semibold">Items</th>
           <th className="px-6 py-3 font-semibold">Total (₹)</th>
+          <th className="px-6 py-3 font-semibold">Payment</th>
           <th className="px-6 py-3 font-semibold">Pickup Time</th>
           <th className="px-6 py-3 font-semibold">Date</th>
         </tr>
@@ -832,9 +833,12 @@ const OrdersTable: React.FC<{ items: Order[] }> = ({ items }) => (
             <td className="px-6 py-4 text-sm text-zinc-700">{order.customer.phone}</td>
             <td className="px-6 py-4 text-sm text-zinc-700">{order.items.length}</td>
             <td className="px-6 py-4 text-sm font-semibold">₹{order.total.toFixed(0)}</td>
+            <td className="px-6 py-4 text-xs font-sans uppercase tracking-[0.1em] text-zinc-600">
+              {order.payment_method?.includes('Counter') ? 'Counter' : (order.payment_method?.includes('Online') ? 'Online' : order.payment_method || 'Counter')}
+            </td>
             <td className="px-6 py-4 text-sm text-zinc-700">{order.pickupTime}</td>
             <td className="px-6 py-4 text-xs text-zinc-500">
-              {new Date(order.date).toLocaleString()}
+              {order.date}
             </td>
           </tr>
         ))}

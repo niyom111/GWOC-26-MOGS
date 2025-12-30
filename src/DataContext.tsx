@@ -46,6 +46,8 @@ export interface Order {
   total: number;
   date: string; // ISO string
   pickupTime: string;
+  payment_method?: string;
+  payment_status?: string;
 }
 
 interface StoredData {
@@ -231,7 +233,7 @@ interface DataContextValue {
   addWorkshop: (item: WorkshopAdminItem) => void;
   updateWorkshop: (id: string, updates: Partial<WorkshopAdminItem>) => void;
   deleteWorkshop: (id: string) => void;
-  placeOrder: (customer: OrderCustomer, items: CartItem[], total: number, pickupTime: string) => Promise<Order>;
+  placeOrder: (customer: OrderCustomer, items: CartItem[], total: number, pickupTime: string, paymentMethod?: string) => Promise<Order>;
 }
 
 const DataContext = createContext<DataContextValue | undefined>(undefined);
@@ -386,8 +388,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       customer,
       items,
       total,
-      date: new Date().toISOString(),
+      date: new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour12: true, year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric' }), // Use local IST approximation for optimistic UI
       pickupTime,
+      payment_method: paymentMethod || 'Paid at Counter',
+      payment_status: paymentMethod === 'upi' || paymentMethod === 'Paid Online' ? 'PAID' : 'PENDING_PAYMENT'
     };
 
     console.log('[FRONTEND] placeOrder called with:', {
@@ -411,7 +415,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...newOrder, paymentMethod })
       });
-      
+
       console.log('[FRONTEND] Response received:', {
         status: response.status,
         statusText: response.statusText,
@@ -449,6 +453,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
+  // Reverted deleteOrder
   return (
     <DataContext.Provider
       value={{

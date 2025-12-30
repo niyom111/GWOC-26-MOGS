@@ -26,14 +26,14 @@ for (const envPath of possiblePaths) {
     const envPathAbsolute = path.resolve(envPath);
     if (fs.existsSync(envPath)) {
         console.log('🔍 Found .env file at:', envPathAbsolute);
-        
+
         // Read file to check for errors
         const fileContent = fs.readFileSync(envPath, 'utf8');
         const hasRazorpayKeyId = fileContent.includes('RAZORPAY_KEY_ID');
         const hasRazorpaySecret = fileContent.includes('RAZORPAY_KEY_SECRET');
         const allLines = fileContent.split('\n');
         const nonEmptyLines = allLines.filter(line => line.trim().length > 0);
-        
+
         // Check if file is empty or has no content
         if (fileContent.trim().length === 0) {
             console.error('❌ ERROR: .env file is EMPTY!');
@@ -59,9 +59,9 @@ for (const envPath of possiblePaths) {
             console.error('   - RAZORPAY_KEY_SECRET');
             console.error('   - VITE_RAZORPAY_KEY_ID');
         }
-        
+
         const result = dotenv.config({ path: envPath });
-        
+
         if (result.error) {
             console.error('❌ Error loading .env file:', result.error);
         } else {
@@ -163,10 +163,14 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
 // -----------------------------------------------------
 const sessions = {};
 
+// Helper to get current time in IST (Indian Standard Time)
+const getISTTime = () => {
+    return new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
+};
+
 // -----------------------------------------------------
 // STANDARD API ROUTES
 // -----------------------------------------------------
-// (Keeping CRUD routes concise as requested by context, but fully functional in file)
 
 app.get('/api/menu', (req, res) => {
     db.all("SELECT * FROM menu_items", [], (err, rows) => {
@@ -292,7 +296,7 @@ app.post('/api/orders', (req, res) => {
 
         // Validation
         if (!id || !customer || !items || total === undefined || !pickupTime) {
-            return res.status(400).json({ 
+            return res.status(400).json({
                 error: 'Missing required fields',
                 details: 'Required: id, customer, items, total, pickupTime'
             });
@@ -300,7 +304,7 @@ app.post('/api/orders', (req, res) => {
 
         // Validate customer object
         if (!customer.name || !customer.phone || !customer.email) {
-            return res.status(400).json({ 
+            return res.status(400).json({
                 error: 'Invalid customer data',
                 details: 'Customer must have name, phone, and email'
             });
@@ -308,21 +312,35 @@ app.post('/api/orders', (req, res) => {
 
         // Validate items array
         if (!Array.isArray(items) || items.length === 0) {
-            return res.status(400).json({ 
+            return res.status(400).json({
                 error: 'Invalid items data',
                 details: 'Items must be a non-empty array'
             });
         }
 
         // Pay at Counter flow - no Razorpay, direct insert
-        // Normalize payment method: 'counter' -> 'COUNTER', 'upi' -> 'UPI'
-        const normalizedPaymentMethod = paymentMethod ? (paymentMethod.toLowerCase() === 'counter' ? 'COUNTER' : paymentMethod.toUpperCase()) : 'COUNTER';
+        // Normalize payment method: 'counter' -> 'Paid at Counter', 'upi' -> 'Paid Online' (though UPI usually goes through verify-payment)
+        let normalizedPaymentMethod = 'Paid at Counter';
+        if (paymentMethod) {
+            if (paymentMethod.toLowerCase() === 'counter') {
+                normalizedPaymentMethod = 'Paid at Counter';
+            } else if (paymentMethod.toLowerCase() === 'upi') {
+                // If this is called for UPI, it's likely a mistake or a direct call.
+                // But for now we just log it as Paid Online.
+                // Ideally UPI orders go through verify-payment solely.
+                normalizedPaymentMethod = 'Paid Online';
+            } else {
+                normalizedPaymentMethod = paymentMethod;
+            }
+        }
         const payment_status = 'PENDING_PAYMENT';
-        
+
         const customerJson = JSON.stringify(customer);
         const itemsJson = JSON.stringify(items);
-        const orderDate = date || new Date().toISOString();
-        
+
+        // USE IST TIME
+        const orderDate = getISTTime();
+
         // Insert order with all columns: include payment_status, payment_method, and NULL payment IDs for counter orders
         const sqlQuery = "INSERT INTO orders (id, customer, items, total, date, pickupTime, payment_status, payment_method, razorpay_order_id, razorpay_payment_id) VALUES (?,?,?,?,?,?,?,?,?,?)";
         const sqlParams = [id, customerJson, itemsJson, total, orderDate, pickupTime, payment_status, normalizedPaymentMethod, null, null];
@@ -332,13 +350,13 @@ app.post('/api/orders', (req, res) => {
                 console.error('Order save error:', err);
                 console.error('SQL Query:', sqlQuery);
                 console.error('SQL Params:', sqlParams);
-                return res.status(500).json({ 
+                return res.status(500).json({
                     error: 'Failed to save order',
-                    details: err.message 
+                    details: err.message
                 });
             }
-            console.log('Order saved successfully:', id);
-            res.status(200).json(req.body);
+            console.log('Order saved successfully:', id, 'at', orderDate);
+            res.status(200).json({ ...req.body, date: orderDate });
         });
     } catch (error) {
         console.error('Unexpected error in order creation:', error);
@@ -378,7 +396,7 @@ app.post('/api/payments/create-order', async (req, res) => {
         };
 
         const order = await razorpayInstance.orders.create(options);
-        
+
         res.json({
             id: order.id,
             amount: order.amount,
@@ -387,9 +405,9 @@ app.post('/api/payments/create-order', async (req, res) => {
         });
     } catch (error) {
         console.error('Razorpay order creation error:', error);
-        res.status(500).json({ 
+        res.status(500).json({
             error: 'Failed to create payment order',
-            details: error.message 
+            details: error.message
         });
     }
 });
@@ -426,33 +444,37 @@ app.post('/api/payments/verify-payment', async (req, res) => {
 
         // Create order in database
         if (orderData) {
-            const { id, customer, items, total, date, pickupTime } = orderData;
+            const { id, customer, items, total, pickupTime } = orderData;
+
+            // USE IST TIME for confirmed payment time
+            const confirmedDate = getISTTime();
+
             db.run("INSERT INTO orders (id, customer, items, total, date, pickupTime, payment_status, payment_method, razorpay_order_id, razorpay_payment_id) VALUES (?,?,?,?,?,?,?,?,?,?)",
-                [id, JSON.stringify(customer), JSON.stringify(items), total, date, pickupTime, 'PAID', 'CARD', razorpay_order_id, razorpay_payment_id], (err) => {
+                [id, JSON.stringify(customer), JSON.stringify(items), total, confirmedDate, pickupTime, 'PAID', 'Paid Online', razorpay_order_id, razorpay_payment_id], (err) => {
                     if (err) {
                         console.error('[PAYMENT] Order save error after payment:', err);
                         return res.status(500).json({ error: 'Payment verified but failed to save order', details: err.message });
                     }
-                    console.log('[PAYMENT] Order saved:', id);
-                    res.json({ 
-                        success: true, 
+                    console.log('[PAYMENT] Order saved:', id, 'at', confirmedDate);
+                    res.json({
+                        success: true,
                         message: 'Payment verified and order created',
-                        order: orderData,
+                        order: { ...orderData, date: confirmedDate },
                         payment_id: razorpay_payment_id
                     });
                 });
         } else {
-            res.json({ 
-                success: true, 
+            res.json({
+                success: true,
                 message: 'Payment verified successfully',
                 payment_id: razorpay_payment_id
             });
         }
     } catch (error) {
         console.error('Payment verification error:', error);
-        res.status(500).json({ 
+        res.status(500).json({
             error: 'Payment verification failed',
-            details: error.message 
+            details: error.message
         });
     }
 });
