@@ -228,11 +228,11 @@ app.get('/api/art', (req, res) => {
     });
 });
 app.post('/api/art', (req, res) => {
-    const { id, title, price, status, image, stock } = req.body;
-    // 'artist' column still exists in DB, so we pass an empty string or default value
-    const artist = "";
-    db.run("INSERT INTO art_items (id, title, artist, price, status, image, stock) VALUES (?,?,?,?,?,?,?)",
-        [id, title, artist, price, status, image, stock || 1], (err) => {
+    const { id, title, price, status, image, stock, artist_name, artist_bio, description } = req.body;
+    // 'artist' column still exists in DB for backward compatibility, use artist_name if provided
+    const artist = artist_name || "";
+    db.run("INSERT INTO art_items (id, title, artist, price, status, image, stock, artist_name, artist_bio, description) VALUES (?,?,?,?,?,?,?,?,?,?)",
+        [id, title, artist, price, status, image, stock || 1, artist_name || null, artist_bio || null, description || null], (err) => {
             if (err) return res.status(500).json({ error: err.message });
             res.json(req.body);
             // Rebuild knowledge index after adding art item
@@ -240,7 +240,7 @@ app.post('/api/art', (req, res) => {
         });
 });
 app.put('/api/art/:id', (req, res) => {
-    const { title, artist, status, price, image, stock } = req.body;
+    const { title, artist, status, price, image, stock, artist_name, artist_bio, description } = req.body;
     let sql = "UPDATE art_items SET ";
     const params = [];
 
@@ -250,6 +250,9 @@ app.put('/api/art/:id', (req, res) => {
     if (price !== undefined) { sql += "price = ?, "; params.push(price); }
     if (image !== undefined) { sql += "image = ?, "; params.push(image); }
     if (stock !== undefined) { sql += "stock = ?, "; params.push(stock); }
+    if (artist_name !== undefined) { sql += "artist_name = ?, "; params.push(artist_name); }
+    if (artist_bio !== undefined) { sql += "artist_bio = ?, "; params.push(artist_bio); }
+    if (description !== undefined) { sql += "description = ?, "; params.push(description); }
 
     sql = sql.slice(0, -2) + " WHERE id = ?";
     params.push(req.params.id);
@@ -527,11 +530,15 @@ app.post('/api/chat', (req, res) => {
                 if (msg.includes('cheap')) winner = rows.reduce((prev, curr) => prev.price < curr.price ? prev : curr);
                 if (msg.includes('expensive')) winner = rows.reduce((prev, curr) => prev.price > curr.price ? prev : curr);
 
-                return res.json({ reply: `For art, I recommend **"${winner.title}"** by ${winner.artist} (₹${winner.price}). It's a stunning piece.` });
+                const artistName = winner.artist_name || winner.artist || 'Unknown Artist';
+                return res.json({ reply: `For art, I recommend **"${winner.title}"** by ${artistName} (₹${winner.price}). It's a stunning piece.` });
             }
 
             // General List
-            const artList = rows.map(a => `- "${a.title}" by ${a.artist} (₹${a.price})`).join('\n');
+            const artList = rows.map(a => {
+                const artistName = a.artist_name || a.artist || 'Unknown Artist';
+                return `- "${a.title}" by ${artistName} (₹${a.price})`;
+            }).join('\n');
             res.json({ reply: `Here are the available art pieces in our gallery:\n\n${artList}` });
         });
         return;

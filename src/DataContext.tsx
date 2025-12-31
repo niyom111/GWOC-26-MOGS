@@ -17,7 +17,10 @@ export interface CoffeeAdminItem {
 export interface ArtAdminItem {
   id: string;
   title: string;
-  artist: string;
+  artist: string; // Deprecated, kept for backward compatibility
+  artist_name?: string;
+  artist_bio?: string;
+  description?: string;
   price: number;
   status: 'Available' | 'Sold';
   image: string;

@@ -195,6 +195,30 @@ export function initDb() {
                 }
             });
 
+            // MIGRATION: Add artist_name, artist_bio, description columns to art_items
+            db.run("ALTER TABLE art_items ADD COLUMN artist_name TEXT", (err) => {
+                if (err && !err.message.includes("duplicate column name")) {
+                    console.log("Migration check (artist_name column):", err.message);
+                } else {
+                    // Migrate existing artist data to artist_name if artist_name was just created
+                    db.run("UPDATE art_items SET artist_name = artist WHERE artist_name IS NULL AND artist IS NOT NULL AND artist != ''", (updateErr) => {
+                        if (updateErr) {
+                            console.log("Migration data copy (artist -> artist_name):", updateErr.message);
+                        }
+                    });
+                }
+            });
+            db.run("ALTER TABLE art_items ADD COLUMN artist_bio TEXT", (err) => {
+                if (err && !err.message.includes("duplicate column name")) {
+                    console.log("Migration check (artist_bio column):", err.message);
+                }
+            });
+            db.run("ALTER TABLE art_items ADD COLUMN description TEXT", (err) => {
+                if (err && !err.message.includes("duplicate column name")) {
+                    console.log("Migration check (description column):", err.message);
+                }
+            });
+
             // SEED DATA
             db.get("SELECT count(*) as count FROM menu_items", (err, row) => {
                 if (!err && row.count === 0) {

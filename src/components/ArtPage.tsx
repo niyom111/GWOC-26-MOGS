@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion as motionBase, AnimatePresence } from 'framer-motion';
-import { ShoppingCart } from 'lucide-react';
 import { CoffeeItem } from '../types';
 import { useDataContext, ArtAdminItem } from '../DataContext';
+import ArtworkCard from './ArtworkCard';
 
 // Fix for framer-motion type mismatch in the current environment
 const motion = motionBase as any;
@@ -28,15 +28,16 @@ const ArtPage: React.FC<ArtPageProps> = ({ onAddToCart }) => {
   const handleAddToCart = (art: ArtAdminItem) => {
     // Treat Art as a CoffeeItem for the cart (shared structure)
     // Note: In a real app, we might distinguish types more clearly
+    const artistName = art.artist_name || art.artist || 'Unknown Artist';
     onAddToCart({
       id: art.id,
       name: art.title,
-      notes: art.artist,
+      notes: artistName,
       caffeine: 'N/A',
       intensity: 0,
       image: art.image,
       price: art.price,
-      description: `Art piece by ${art.artist}`
+      description: `Art piece by ${artistName}`
     });
 
     setToastMessage(`${art.title} added to collection`);
@@ -63,54 +64,14 @@ const ArtPage: React.FC<ArtPageProps> = ({ onAddToCart }) => {
         </header>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
-          {artItems.map((art, idx) => {
-            const isAvailable = art.stock > 0;
-            return (
-              <motion.div
-                key={art.id}
-                initial={{ opacity: 0, y: 40 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: idx * 0.1 }}
-                className="group cursor-pointer"
-              >
-                <div className="aspect-[3/4] overflow-hidden mb-8 relative bg-zinc-100">
-                  <img
-                    src={art.image}
-                    className={`w-full h-full object-cover transition-all duration-1000 ${isAvailable ? 'grayscale-0' : 'grayscale'}`}
-                    alt={art.title}
-                  />
-                  <div className="absolute top-4 left-4 flex space-x-2">
-                    <div className={`px-3 py-1 text-[8px] font-sans uppercase tracking-[0.2em] font-bold backdrop-blur-md ${isAvailable ? 'bg-white/90 text-black border border-black/5' : 'bg-red-500/90 text-white'}`}>
-                      {isAvailable ? 'Available' : 'Sold Out'}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex justify-between items-start mb-6">
-                  <div>
-                    <h3 className="text-3xl font-serif italic mb-2">{art.title}</h3>
-                    <p className="text-[10px] font-sans text-zinc-400 uppercase tracking-widest">{art.artist}</p>
-                    {isAvailable && (
-                      <p className="text-[9px] font-sans text-emerald-600 mt-2 uppercase tracking-wide">
-                        {art.stock} piece{art.stock > 1 ? 's' : ''} remaining
-                      </p>
-                    )}
-                  </div>
-                  <span className="text-sm font-sans font-bold">₹{art.price.toLocaleString()}</span>
-                </div>
-
-                {isAvailable && (
-                  <button
-                    onClick={() => handleAddToCart(art)}
-                    className="w-full py-4 border border-black/10 group-hover:bg-black group-hover:text-white group-hover:border-black transition-all text-[10px] uppercase tracking-[0.3em] font-bold flex items-center justify-center space-x-3"
-                  >
-                    <ShoppingCart className="w-4 h-4" />
-                    <span>Add to Collection</span>
-                  </button>
-                )}
-              </motion.div>
-            );
-          })}
+          {artItems.map((art, idx) => (
+            <ArtworkCard
+              key={art.id}
+              art={art}
+              index={idx}
+              onAddToCart={handleAddToCart}
+            />
+          ))}
         </div>
       </div>
 
