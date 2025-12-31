@@ -179,17 +179,62 @@ app.get('/api/menu', (req, res) => {
     });
 });
 app.post('/api/menu', (req, res) => {
-    const { id, name, category, price, caffeine, image, description, tags } = req.body;
-    db.run("INSERT INTO menu_items (id, name, category, price, caffeine, image, description, tags) VALUES (?,?,?,?,?,?,?,?)",
-        [id, name, category, price, caffeine, image, description, tags], (err) => {
+    const {
+        id,
+        name,
+        category,
+        price,
+        caffeine,
+        caffeine_mg,
+        milk_based,
+        calories,
+        shareable,
+        intensity_level,
+        image,
+        description,
+        tags,
+    } = req.body;
+
+    db.run(
+        "INSERT INTO menu_items (id, name, category, price, caffeine, caffeine_mg, milk_based, calories, shareable, intensity_level, image, description, tags) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
+        [
+            id,
+            name,
+            category,
+            price,
+            caffeine,
+            caffeine_mg ?? null,
+            milk_based ?? null,
+            calories ?? null,
+            shareable ?? null,
+            intensity_level ?? null,
+            image,
+            description,
+            tags,
+        ],
+        (err) => {
             if (err) return res.status(500).json({ error: err.message });
             res.json({ id, ...req.body });
             // Rebuild knowledge index after adding menu item
             rebuildKnowledgeIndex(db).catch(err => console.error('Error rebuilding knowledge after menu POST:', err));
-        });
+        }
+    );
 });
 app.put('/api/menu/:id', (req, res) => {
-    const { name, category, price, caffeine, image, description, tags } = req.body;
+    const {
+        name,
+        category,
+        price,
+        caffeine,
+        caffeine_mg,
+        milk_based,
+        calories,
+        shareable,
+        intensity_level,
+        image,
+        description,
+        tags,
+    } = req.body;
     let sql = "UPDATE menu_items SET ";
     const params = [];
 
@@ -198,6 +243,11 @@ app.put('/api/menu/:id', (req, res) => {
     if (category !== undefined) { sql += "category = ?, "; params.push(category); }
     if (price !== undefined) { sql += "price = ?, "; params.push(price); }
     if (caffeine !== undefined) { sql += "caffeine = ?, "; params.push(caffeine); }
+    if (caffeine_mg !== undefined) { sql += "caffeine_mg = ?, "; params.push(caffeine_mg); }
+    if (milk_based !== undefined) { sql += "milk_based = ?, "; params.push(milk_based); }
+    if (calories !== undefined) { sql += "calories = ?, "; params.push(calories); }
+    if (shareable !== undefined) { sql += "shareable = ?, "; params.push(shareable); }
+    if (intensity_level !== undefined) { sql += "intensity_level = ?, "; params.push(intensity_level); }
     if (image !== undefined) { sql += "image = ?, "; params.push(image); }
     if (description !== undefined) { sql += "description = ?, "; params.push(description); }
     if (tags !== undefined) { sql += "tags = ?, "; params.push(tags); }
@@ -368,6 +418,272 @@ app.post('/api/orders', (req, res) => {
             details: error.message
         });
     }
+});
+
+// -----------------------------------------------------
+// BREWDESK VIBE-BASED RECOMMENDATIONS
+// -----------------------------------------------------
+app.post('/api/recommendations/context', (req, res) => {
+    const { mood, activity } = req.body || {};
+
+    const validMoods = ['Energetic', 'Weak', 'Comfort'];
+    const validActivities = ['Work', 'Hangout', 'Chill'];
+    if (!validMoods.includes(mood) || !validActivities.includes(activity)) {
+        return res.status(400).json({ error: 'Invalid mood or activity' });
+    }
+
+    const classifyStrength = (mg) => {
+        if (mg == null) return 'medium';
+        if (mg < 140) return 'light';
+        if (mg <= 220) return 'medium';
+        return 'strong';
+    };
+
+    const strengthWeights = {
+        Energetic: { light: 2, medium: 1, strong: -1 },
+        Weak:      { light: -1, medium: 1, strong: 3 },
+        Comfort:   { light: 1, medium: 3, strong: 1 },
+    };
+
+    const snackWeights = {
+        Work:    { lightSnack: 3, shareable: -1, trending: 0 },
+        Hangout: { lightSnack: 0, shareable: 3, trending: 1 },
+        Chill:   { lightSnack: 0, shareable: 1, trending: 3 },
+    };
+
+    const sql = `
+    SELECT
+      m.*,
+      COALESCE(t.total_quantity, 0) AS trendCount
+    FROM menu_items m
+    LEFT JOIN trending_items_7d t
+      ON t.item_id = m.id;
+  `;
+
+    db.all(sql, [], (err, rows) => {
+        if (err) {
+            console.error('BrewDesk query error:', err);
+            return res.status(500).json({ error: 'Failed to compute recommendations' });
+        }
+
+        // Snacks: category contains "Food & Bagels"
+        const snacks = rows.filter((row) =>
+            row.category && row.category.toLowerCase().includes('food & bagels')
+        );
+
+        // Coffee/Drinks: everything else
+        const coffees = rows.filter((row) => !snacks.includes(row));
+
+        let bestCoffee = null;
+        if (coffees.length > 0) {
+            const moodWeights = strengthWeights[mood];
+
+            const scoredCoffees = coffees.map((row) => {
+                const caffeineMg = typeof row.caffeine_mg === 'number' ? row.caffeine_mg : null;
+                const strength = classifyStrength(caffeineMg);
+                let score = moodWeights[strength] || 0;
+
+                const trendCount = row.trendCount || 0;
+                if (trendCount > 0) score += 2;
+
+                return {
+                    row,
+                    score,
+                    strength,
+                    trendCount,
+                    caffeineMg,
+                };
+            });
+
+            scoredCoffees.sort((a, b) => {
+                if (b.score !== a.score) return b.score - a.score;
+                if (b.trendCount !== a.trendCount) return b.trendCount - a.trendCount;
+                const aMg = a.caffeineMg == null ? 0 : a.caffeineMg;
+                const bMg = b.caffeineMg == null ? 0 : b.caffeineMg;
+                if (bMg !== aMg) return bMg - aMg;
+                return a.row.price - b.row.price;
+            });
+
+            const top = scoredCoffees[0];
+            bestCoffee = {
+                id: top.row.id,
+                name: top.row.name,
+                category: top.row.category,
+                price: top.row.price,
+                image: top.row.image || null,
+                description: top.row.description || null,
+                caffeine_mg: typeof top.row.caffeine_mg === 'number' ? top.row.caffeine_mg : null,
+                milk_based: top.row.milk_based == null ? null : !!top.row.milk_based,
+                score: top.score,
+                trendCount: top.trendCount,
+                strength: top.strength,
+                trending: top.trendCount > 0,
+            };
+        }
+
+        let bestSnack = null;
+        if (snacks.length > 0) {
+            const w = snackWeights[activity];
+
+            const scoredSnacks = snacks.map((row) => {
+                const calories = typeof row.calories === 'number' ? row.calories : null;
+                const shareableFlag = row.shareable == null ? null : !!row.shareable;
+                const trendCount = row.trendCount || 0;
+
+                const lightSnack = calories != null && calories <= 250;
+                const shareable = shareableFlag === true;
+                const trending = trendCount > 0;
+
+                let score = 0;
+                if (lightSnack) score += w.lightSnack || 0;
+                if (shareable) score += w.shareable || 0;
+                if (trending) score += w.trending || 0;
+                if (trendCount > 0) score += 2;
+
+                return {
+                    row,
+                    score,
+                    trendCount,
+                    calories,
+                    lightSnack,
+                    shareable,
+                    trending,
+                };
+            });
+
+            scoredSnacks.sort((a, b) => {
+                if (b.score !== a.score) return b.score - a.score;
+                if (b.trendCount !== a.trendCount) return b.trendCount - a.trendCount;
+                const aCal = a.calories == null ? Number.MAX_SAFE_INTEGER : a.calories;
+                const bCal = b.calories == null ? Number.MAX_SAFE_INTEGER : b.calories;
+                if (aCal !== bCal) return aCal - bCal;
+                return a.row.price - b.row.price;
+            });
+
+            const top = scoredSnacks[0];
+            bestSnack = {
+                id: top.row.id,
+                name: top.row.name,
+                category: top.row.category,
+                price: top.row.price,
+                image: top.row.image || null,
+                description: top.row.description || null,
+                calories: top.calories,
+                shareable: top.row.shareable == null ? null : !!top.row.shareable,
+                score: top.score,
+                trendCount: top.trendCount,
+                lightSnack: top.lightSnack,
+                trending: top.trending,
+            };
+        }
+
+        res.json({
+            coffee: bestCoffee,
+            snack: bestSnack,
+        });
+    });
+});
+
+// -----------------------------------------------------
+// TRENDING ITEMS (LAST 72 HOURS)
+// -----------------------------------------------------
+app.get('/api/trending', (req, res) => {
+    const now = new Date();
+    const seventyTwoHoursAgo = new Date(now.getTime() - 72 * 60 * 60 * 1000);
+    const cutoffTime = seventyTwoHoursAgo.toISOString();
+
+    db.all("SELECT * FROM orders WHERE date >= ?", [cutoffTime], (err, rows) => {
+        if (err) {
+            console.error('Trending query error:', err);
+            return res.status(500).json({ error: 'Failed to fetch trending items' });
+        }
+
+        // Parse orders and extract items
+        const itemOrderCounts = new Map(); // item_id -> { count: number, mostRecentTime: string }
+        
+        rows.forEach(orderRow => {
+            try {
+                const items = JSON.parse(orderRow.items);
+                const orderDate = orderRow.date;
+                
+                // Use a Set to track unique items in this order (count order, not quantity)
+                const uniqueItemIds = new Set();
+                items.forEach(item => {
+                    uniqueItemIds.add(item.id);
+                });
+                
+                // Count each unique item once per order
+                uniqueItemIds.forEach(itemId => {
+                    if (!itemOrderCounts.has(itemId)) {
+                        itemOrderCounts.set(itemId, {
+                            count: 0,
+                            mostRecentTime: orderDate
+                        });
+                    }
+                    const entry = itemOrderCounts.get(itemId);
+                    entry.count += 1;
+                    // Update most recent time if this order is newer
+                    if (orderDate > entry.mostRecentTime) {
+                        entry.mostRecentTime = orderDate;
+                    }
+                });
+            } catch (parseErr) {
+                console.error('Error parsing order items:', parseErr);
+            }
+        });
+
+        // Convert to array and sort
+        const trendingItems = Array.from(itemOrderCounts.entries()).map(([itemId, data]) => ({
+            itemId,
+            recentOrderCount: data.count,
+            mostRecentTime: data.mostRecentTime
+        }));
+
+        // Sort by count (desc), then by mostRecentTime (desc)
+        trendingItems.sort((a, b) => {
+            if (b.recentOrderCount !== a.recentOrderCount) {
+                return b.recentOrderCount - a.recentOrderCount;
+            }
+            return new Date(b.mostRecentTime) - new Date(a.mostRecentTime);
+        });
+
+        // Only proceed if we have at least 3 items
+        if (trendingItems.length < 3) {
+            return res.json({ items: [] });
+        }
+
+        // Limit to top 5
+        const topItems = trendingItems.slice(0, 5);
+        const itemIds = topItems.map(item => item.itemId);
+
+        // Fetch menu item details
+        const placeholders = itemIds.map(() => '?').join(',');
+        db.all(
+            `SELECT * FROM menu_items WHERE id IN (${placeholders})`,
+            itemIds,
+            (err2, menuRows) => {
+                if (err2) {
+                    console.error('Menu items query error:', err2);
+                    return res.status(500).json({ error: 'Failed to fetch menu items' });
+                }
+
+                // Map menu items by ID and attach order count
+                const menuMap = new Map(menuRows.map(row => [row.id, row]));
+                const result = topItems
+                    .map(trendingItem => {
+                        const menuItem = menuMap.get(trendingItem.itemId);
+                        if (!menuItem) return null;
+                        return {
+                            ...menuItem,
+                            recentOrderCount: trendingItem.recentOrderCount
+                        };
+                    })
+                    .filter(item => item !== null);
+
+                res.json({ items: result });
+            }
+        );
+    });
 });
 
 // -----------------------------------------------------
