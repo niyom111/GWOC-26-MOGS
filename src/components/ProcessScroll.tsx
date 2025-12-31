@@ -113,14 +113,14 @@ const ProcessScroll: React.FC = () => {
                         <motion.span
                             initial={{ opacity: 0 }}
                             whileInView={{ opacity: 1 }}
-                            className="text-[#CE2029] text-xs font-sans uppercase tracking-[0.5em] mb-6"
+                            className="text-[#A35D36] text-xs font-sans uppercase tracking-[0.5em] mb-6"
                         >
                             The Ritual
                         </motion.span>
                         <h2 className="text-7xl md:text-[8rem] font-serif leading-[0.85] tracking-tighter mb-12">
                             From<br />
                             Bean To<br />
-                            <span className="italic text-zinc-400">Oblivion.</span>
+                            <span className="italic text-zinc-400">Cup.</span>
                         </h2>
                         <div className="flex items-center gap-4">
                             <div className="w-12 h-12 rounded-full border border-black/20 flex items-center justify-center">
@@ -148,7 +148,7 @@ const ProcessScroll: React.FC = () => {
                 <div className="absolute bottom-0 left-0 w-full h-2 bg-black/10">
                     <motion.div
                         style={{ scaleX: scrollYProgress }}
-                        className="h-full bg-[#CE2029] origin-left"
+                        className="h-full bg-[#A35D36] origin-left"
                     />
                 </div>
             </div>

@@ -76,26 +76,26 @@ const MarqueeSection: React.FC = () => {
 
                 {/* Lane 1: Product Focus - Bold & Direct */}
                 <ParallaxText baseVelocity={-1.5}>
-                    <span className="text-[5rem] md:text-[9rem] mx-4 font-black tracking-tighter text-[#1A1A1A]">100% ROBUSTA</span>
-                    <span className="text-3xl md:text-5xl mx-4 self-center text-[#CE2029]">✦</span>
-                    <span className="text-[5rem] md:text-[9rem] mx-4 font-black tracking-tighter text-[#CE2029]">DOUBLE CAFFEINE</span>
-                    <span className="text-3xl md:text-5xl mx-4 self-center text-[#CE2029]">✦</span>
-                    <span className="text-[5rem] md:text-[9rem] mx-4 font-black tracking-tighter text-[#1A1A1A]">SINGLE ORIGIN</span>
-                    <span className="text-3xl md:text-5xl mx-4 self-center text-[#CE2029]">✦</span>
+                    <span className="text-[3rem] md:text-[5rem] mx-4 font-black tracking-tighter text-[#1A1A1A]">100% ROBUSTA</span>
+                    <span className="text-xl md:text-3xl mx-4 self-center text-[#A35D36]">✦</span>
+                    <span className="text-[3rem] md:text-[5rem] mx-4 font-black tracking-tighter text-[#A35D36]">DOUBLE CAFFEINE</span>
+                    <span className="text-xl md:text-3xl mx-4 self-center text-[#A35D36]">✦</span>
+                    <span className="text-[3rem] md:text-[5rem] mx-4 font-black tracking-tighter text-[#1A1A1A]">SINGLE ORIGIN</span>
+                    <span className="text-xl md:text-3xl mx-4 self-center text-[#A35D36]">✦</span>
                 </ParallaxText>
 
                 {/* Lane 2: Brand/Venue Context - Artistic & Elegant */}
                 <ParallaxText baseVelocity={1}>
-                    <span className="text-[5rem] md:text-[9rem] mx-4 font-black text-transparent stroke-black stroke-2" style={{ WebkitTextStroke: '1px #1A1A1A' }}>ART GALLERY</span>
-                    <span className="text-[5rem] md:text-[9rem] mx-4 font-serif italic text-[#CE2029] px-4 font-light">Espresso Bar</span>
-                    <span className="text-[5rem] md:text-[9rem] mx-4 font-black text-transparent stroke-black stroke-2" style={{ WebkitTextStroke: '1px #1A1A1A' }}>WORKSHOPS</span>
+                    <span className="text-[3rem] md:text-[5rem] mx-4 font-black text-transparent stroke-black stroke-1" style={{ WebkitTextStroke: '1px #1A1A1A' }}>ART GALLERY</span>
+                    <span className="text-[3rem] md:text-[5rem] mx-4 font-serif italic text-[#A35D36] px-4 font-light">Espresso Bar</span>
+                    <span className="text-[3rem] md:text-[5rem] mx-4 font-black text-transparent stroke-black stroke-1" style={{ WebkitTextStroke: '1px #1A1A1A' }}>WORKSHOPS</span>
                 </ParallaxText>
 
                 {/* Lane 3: Vibe/Philosophy - Heavy & Impactful */}
                 <ParallaxText baseVelocity={-2}>
-                    <span className="text-[5rem] md:text-[9rem] mx-4 font-black tracking-tight text-zinc-900">WAKE UP</span>
-                    <span className="text-[5rem] md:text-[9rem] mx-4 font-serif italic text-zinc-400 font-light">To Real Energy</span>
-                    <span className="text-[5rem] md:text-[9rem] mx-4 font-black tracking-tight text-zinc-900">NO COMPROMISE</span>
+                    <span className="text-[3rem] md:text-[5rem] mx-4 font-black tracking-tight text-[#1A1A1A]">WAKE UP</span>
+                    <span className="text-[3rem] md:text-[5rem] mx-4 font-serif italic text-[#1A1A1A] px-2 font-light opacity-60">To Real Energy</span>
+                    <span className="text-[3rem] md:text-[5rem] mx-4 font-black tracking-tight text-[#1A1A1A]">NO COMPROMISE</span>
                 </ParallaxText>
 
             </motion.div>

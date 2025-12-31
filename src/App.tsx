@@ -26,8 +26,6 @@ import ChatWidget from './components/ChatWidget';
 import MarqueeSection from './components/MarqueeSection';
 import ManifestoSection from './components/ManifestoSection';
 import ProcessScroll from './components/ProcessScroll';
-import BrewProtocols from './components/BrewProtocols';
-import SensoryProfile from './components/SensoryProfile';
 import StatsSection from './components/StatsSection';
 
 
@@ -170,8 +168,6 @@ const App: React.FC = () => {
                 <StatsSection />
                 <ManifestoSection />
                 <ProcessScroll />
-                <BrewProtocols />
-                <SensoryProfile />
                 <GalleryTeaser onNavigate={() => navigateTo(Page.ART)} />
                 <MenuPreview onAddToCart={addToCart} onGoToMenu={() => navigateTo(Page.MENU)} />
                 <Reviews />
