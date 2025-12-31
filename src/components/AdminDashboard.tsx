@@ -43,7 +43,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
 
   const tabs = [
     { id: 'overview' as const, label: 'Overview', icon: LayoutDashboard },
-    { id: 'coffee' as const, label: 'Coffee Menu', icon: Coffee },
+    { id: 'coffee' as const, label: 'Menu', icon: Coffee },
     { id: 'orders' as const, label: 'Orders', icon: ClipboardList },
     { id: 'art' as const, label: 'Art Gallery', icon: Palette },
     { id: 'workshops' as const, label: 'Workshops', icon: Calendar },
@@ -113,6 +113,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
   const [editingCoffee, setEditingCoffee] = useState<CoffeeAdminItem | null>(null);
   const [coffeeDraft, setCoffeeDraft] = useState<Partial<CoffeeAdminItem>>({});
   const [newCategoryName, setNewCategoryName] = useState('');
+  const [itemKind, setItemKind] = useState<'beverage' | 'food'>('beverage');
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<CoffeeAdminItem | ArtAdminItem | null>(null);
@@ -231,6 +232,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
     setEditingCoffee(null);
     setNewCategoryName('');
     const defaultCategory = categoryOptions[0] || 'Robusta Specialty (Cold - Non Milk)';
+    setItemKind('beverage');
     setCoffeeDraft({
       name: '',
       description: '',
@@ -238,6 +240,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
       price: 0,
       caffeine: 'High',
       image: '/media/pic1.jpeg',
+      caffeine_mg: null,
+      milk_based: 0,
+      calories: null,
+      shareable: 0,
+      intensity_level: null,
+      tags: '',
     });
     setCoffeeModalOpen(true);
   };
@@ -245,6 +253,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
   const openCoffeeModalForEdit = (item: CoffeeAdminItem) => {
     setEditingCoffee(item);
     setNewCategoryName('');
+    const isFoodCategory = item.category.trim().toUpperCase().includes('FOOD');
+    setItemKind(isFoodCategory ? 'food' : 'beverage');
     setCoffeeDraft(item);
     setCoffeeModalOpen(true);
   };
@@ -303,13 +313,33 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
     }
 
     console.log("Saving coffee item", coffeeDraft);
+
+    // Normalise boolean-like fields to 0/1 integers for the database schema
+    const normalizedDraft: Partial<CoffeeAdminItem> = {
+      ...coffeeDraft,
+      name: draftName,
+      category: finalCategory,
+      price: Number(coffeeDraft.price),
+      milk_based:
+        itemKind === 'beverage'
+          ? (coffeeDraft.milk_based ? 1 : 0)
+          : null,
+      calories:
+        itemKind === 'food'
+          ? (coffeeDraft.calories != null ? Number(coffeeDraft.calories) : null)
+          : null,
+      shareable:
+        itemKind === 'food'
+          ? (coffeeDraft.shareable ? 1 : 0)
+          : null,
+      caffeine_mg:
+        itemKind === 'beverage'
+          ? (coffeeDraft.caffeine_mg != null ? Number(coffeeDraft.caffeine_mg) : null)
+          : null,
+    };
+
     if (editingCoffee) {
-      updateMenuItem(editingCoffee.id, {
-        ...coffeeDraft, // Send all fields in draft to avoid data loss
-        name: draftName,
-        category: finalCategory,
-        price: Number(coffeeDraft.price),
-      });
+      updateMenuItem(editingCoffee.id, normalizedDraft);
       showToast('Item updated successfully', 'success');
     } else {
       const newItem: CoffeeAdminItem = {
@@ -317,9 +347,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
         name: draftName,
         category: finalCategory,
         price: Number(coffeeDraft.price),
-        caffeine: 'High',
-        image: '/media/pic1.jpeg',
-        description: '',
+        caffeine: coffeeDraft.caffeine || 'High',
+        caffeine_mg: normalizedDraft.caffeine_mg ?? null,
+        milk_based: normalizedDraft.milk_based ?? null,
+        calories: normalizedDraft.calories ?? null,
+        shareable: normalizedDraft.shareable ?? null,
+        intensity_level: coffeeDraft.intensity_level ?? null,
+        image: coffeeDraft.image || '/media/pic1.jpeg',
+        description: coffeeDraft.description || '',
+        tags: coffeeDraft.tags || '',
       };
       console.log("Adding new coffee item", newItem);
       addMenuItem(newItem);
@@ -387,6 +423,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
 
   const activeTabLabel = tabs.find(t => t.id === activeTab)?.label;
 
+  // Classification helpers for beverages vs food based on category naming
+  const foodItems = menuItems.filter(item => item.category.trim().toUpperCase().includes('FOOD'));
+  const beverageItems = menuItems.filter(item => !item.category.trim().toUpperCase().includes('FOOD'));
+  const beverageCount = beverageItems.length;
+  const foodCount = foodItems.length;
+
   return (
     <div className="flex h-screen bg-[#F9F8F4] pt-10 text-[#0a0a0a]">
       {/* Sidebar */}
@@ -450,7 +492,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
               className="inline-flex items-center space-x-2 px-6 py-3 bg-[#0a0a0a] text-[#F9F8F4] text-[11px] uppercase tracking-[0.3em] font-bold hover:bg-black transition-all"
             >
               <Plus className="w-4 h-4" />
-              <span>Add Coffee Item</span>
+              <span>Add New Item</span>
             </button>
           )}
 
@@ -478,7 +520,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
         {/* Tab content */}
         {activeTab === 'overview' && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <OverviewCard label="Coffee Items" value={menuItems.length} />
+            <OverviewCard label="Beverages" value={beverageCount} />
+            <OverviewCard label="Food" value={foodCount} />
             <OverviewCard label="Artworks" value={artItems.length} />
             <OverviewCard label="Workshops" value={workshops.length} />
           </div>
@@ -520,7 +563,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
             className="w-full max-w-xl bg-[#F9F8F4] border border-black/10 rounded-xl shadow-xl p-8"
           >
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-serif italic">{editingCoffee ? 'Edit Coffee Item' : 'Add Coffee Item'}</h2>
+              <h2 className="text-2xl font-serif italic">{editingCoffee ? 'Edit Item' : 'Add New Item'}</h2>
               <button
                 onClick={closeCoffeeModal}
                 className="text-xs uppercase tracking-[0.25em] text-zinc-500 hover:text-black"
@@ -530,6 +573,29 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
             </div>
 
             <div className="space-y-4 font-sans text-sm">
+              {/* Item Kind - UI-only classification */}
+              <div>
+                <label className="block text-[11px] uppercase tracking-[0.25em] mb-1">Item Kind</label>
+                <div className="flex gap-4 text-[12px]">
+                  <label className="inline-flex items-center gap-2">
+                    <input
+                      type="radio"
+                      checked={itemKind === 'beverage'}
+                      onChange={() => setItemKind('beverage')}
+                    />
+                    <span>Beverage</span>
+                  </label>
+                  <label className="inline-flex items-center gap-2">
+                    <input
+                      type="radio"
+                      checked={itemKind === 'food'}
+                      onChange={() => setItemKind('food')}
+                    />
+                    <span>Food</span>
+                  </label>
+                </div>
+              </div>
+
               <div>
                 <label className="block text-[11px] uppercase tracking-[0.25em] mb-1">Name</label>
                 <input
@@ -575,6 +641,83 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
                     />
                   )}
                 </div>
+              </div>
+
+              {/* Beverage-specific fields */}
+              {itemKind === 'beverage' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[11px] uppercase tracking-[0.25em] mb-1">Caffeine (mg)</label>
+                    <input
+                      type="number"
+                      value={coffeeDraft.caffeine_mg ?? ''}
+                      onChange={e => handleCoffeeDraftChange('caffeine_mg', e.target.value ? Number(e.target.value) : null)}
+                      className="w-full bg-transparent border-b border-black/20 py-2 text-sm outline-none focus:border-black"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2 pt-4 md:pt-6">
+                    <input
+                      type="checkbox"
+                      checked={!!coffeeDraft.milk_based}
+                      onChange={e => handleCoffeeDraftChange('milk_based', e.target.checked ? 1 : 0)}
+                    />
+                    <span className="text-[11px] uppercase tracking-[0.25em]">Contains Milk</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Food-specific fields */}
+              {itemKind === 'food' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[11px] uppercase tracking-[0.25em] mb-1">Calories (per serving)</label>
+                    <input
+                      type="number"
+                      value={coffeeDraft.calories ?? ''}
+                      onChange={e => handleCoffeeDraftChange('calories', e.target.value ? Number(e.target.value) : null)}
+                      className="w-full bg-transparent border-b border-black/20 py-2 text-sm outline-none focus:border-black"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2 pt-4 md:pt-6">
+                    <input
+                      type="checkbox"
+                      checked={!!coffeeDraft.shareable}
+                      onChange={e => handleCoffeeDraftChange('shareable', e.target.checked ? 1 : 0)}
+                    />
+                    <span className="text-[11px] uppercase tracking-[0.25em]">Good for Sharing</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Shared fields */}
+              <div>
+                <label className="block text-[11px] uppercase tracking-[0.25em] mb-1">Image</label>
+                <input
+                  value={coffeeDraft.image || ''}
+                  onChange={e => handleCoffeeDraftChange('image', e.target.value)}
+                  className="w-full bg-transparent border-b border-black/20 py-2 text-sm outline-none focus:border-black"
+                  placeholder="/media/pic1.jpeg"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] uppercase tracking-[0.25em] mb-1">Description</label>
+                <textarea
+                  value={coffeeDraft.description || ''}
+                  onChange={e => handleCoffeeDraftChange('description', e.target.value)}
+                  className="w-full bg-transparent border-b border-black/20 py-2 text-sm outline-none focus:border-black min-h-[60px]"
+                  placeholder="Short description for staff and baristas"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] uppercase tracking-[0.25em] mb-1">Tags</label>
+                <input
+                  value={coffeeDraft.tags || ''}
+                  onChange={e => handleCoffeeDraftChange('tags', e.target.value)}
+                  className="w-full bg-transparent border-b border-black/20 py-2 text-sm outline-none focus:border-black"
+                  placeholder="cold, strong, black, robusta"
+                />
               </div>
 
               <div className="flex justify-end gap-4 pt-4 text-[11px] uppercase tracking-[0.25em]">
@@ -764,7 +907,7 @@ const CoffeeTable: React.FC<{
     <table className="w-full text-left font-sans text-sm">
       <thead className="bg-[#F9F8F4] text-[10px] uppercase tracking-[0.25em] text-zinc-500">
         <tr>
-          <th className="px-6 py-3 font-semibold">Coffee</th>
+          <th className="px-6 py-3 font-semibold">Item</th>
           <th className="px-6 py-3 font-semibold">Category</th>
           <th className="px-6 py-3 font-semibold">Price (₹)</th>
           <th className="px-6 py-3 font-semibold">Actions</th>

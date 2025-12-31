@@ -1,9 +1,10 @@
 
 import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { motion as motionBase } from 'framer-motion';
-import { Search, Filter } from 'lucide-react';
+import { Search, Filter, X } from 'lucide-react';
 import { CoffeeItem } from '../types';
 import { useDataContext } from '../DataContext';
+import BrewDeskPopup from './BrewDeskPopup';
 
 // Fix for framer-motion type mismatch in the current environment
 const motion = motionBase as any;
@@ -204,6 +205,23 @@ interface MenuPageProps {
   onAddToCart: (item: CoffeeItem) => void;
 }
 
+interface TrendingItem {
+  id: string;
+  name: string;
+  category: string;
+  price: number;
+  caffeine: string;
+  caffeine_mg?: number | null;
+  milk_based?: number | null;
+  calories?: number | null;
+  shareable?: number | null;
+  intensity_level?: string | null;
+  image: string;
+  description: string;
+  tags?: string;
+  recentOrderCount: number;
+}
+
 const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
   const { menuItems } = useDataContext();
   const [search, setSearch] = useState('');
@@ -211,6 +229,8 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
   const [activeCategoryId, setActiveCategoryId] = useState<string>('');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const toastTimeoutRef = useRef<number | null>(null);
+  const [showBrewDesk, setShowBrewDesk] = useState(false);
+  const [trendingItems, setTrendingItems] = useState<TrendingItem[]>([]);
 
   useEffect(() => {
     return () => {
@@ -218,6 +238,29 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
         window.clearTimeout(toastTimeoutRef.current);
       }
     };
+  }, []);
+
+  // Fetch trending items
+  useEffect(() => {
+    const fetchTrending = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/trending');
+        if (response.ok) {
+          const data = await response.json();
+          if (data.items && data.items.length >= 3) {
+            setTrendingItems(data.items);
+          } else {
+            setTrendingItems([]);
+          }
+        } else {
+          setTrendingItems([]);
+        }
+      } catch (error) {
+        console.error('Error fetching trending items:', error);
+        setTrendingItems([]);
+      }
+    };
+    fetchTrending();
   }, []);
 
   // Set initial active category once we have data
@@ -445,23 +488,101 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
                 />
               </div>
 
-              <div className="flex items-center gap-2 text-sm font-sans">
-                <Filter className="w-4 h-4 text-zinc-500" />
-                <select
-                  value={sortBy}
-                  onChange={e => setSortBy(e.target.value as any)}
-                  className="bg-transparent border-b border-black/20 py-2 text-[10px] md:text-xs uppercase tracking-[0.25em] outline-none focus:border-black"
+              <div className="flex flex-col items-end gap-2 text-sm font-sans md:items-center md:flex-row">
+                <div className="flex items-center gap-2">
+                  <Filter className="w-4 h-4 text-zinc-500" />
+                  <select
+                    value={sortBy}
+                    onChange={e => setSortBy(e.target.value as any)}
+                    className="bg-transparent border-b border-black/20 py-2 text-[10px] md:text-xs uppercase tracking-[0.25em] outline-none focus:border-black"
+                  >
+                    <option value="default">Sort by</option>
+                    <option value="price-asc">Price: Low to High</option>
+                    <option value="price-desc">Price: High to Low</option>
+                  </select>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowBrewDesk(true)}
+className="px-4 py-2 rounded-full border border-black/15 text-[10px] uppercase tracking-[0.25em] text-zinc-600 bg-white/40 hover:bg-black/5 hover:text-[#0a0a0a] transition-colors"
                 >
-                  <option value="default">Sort by</option>
-                  <option value="price-asc">Price: Low to High</option>
-                  <option value="price-desc">Price: High to Low</option>
-                </select>
+                  Help me choose
+                </button>
               </div>
             </div>
           </div>
 
           {/* Sections list */}
           <div className="space-y-10">
+            {/* Trending Now Section */}
+            {trendingItems.length >= 3 && (
+              <section
+                id="trending-now"
+                className="scroll-mt-28"
+              >
+                <div className="mb-4">
+                  <h2 className="text-3xl md:text-4xl font-serif italic tracking-tight">
+                    Trending Now
+                  </h2>
+                </div>
+
+                <div>
+                  {trendingItems.map(item => {
+                    // Find the category group for this item
+                    const canonicalCategory = item.category.trim().toUpperCase();
+                    const group = canonicalCategory.split('(')[0].trim();
+                    
+                    const cartItem: CoffeeItem = {
+                      id: item.id,
+                      name: item.name,
+                      notes: group,
+                      caffeine: item.caffeine || 'High',
+                      intensity: 4,
+                      image: item.image || '/media/menu-placeholder.jpg',
+                      price: item.price,
+                      description: item.description || item.category || item.name,
+                    };
+
+                    return (
+                      <div
+                        key={item.id}
+                        className="flex items-center justify-between gap-4 py-3 border-b border-black/10 hover:bg-black/5 transition-all duration-200 hover:opacity-90"
+                      >
+                        <div className="flex-1">
+                          <span className="font-medium text-[15px] font-serif">
+                            {item.name}
+                          </span>
+                          <p className="text-[11px] text-zinc-500 mt-0.5 font-sans">
+                            Popular in the last 72 hours
+                          </p>
+                        </div>
+
+                        <div className="flex items-center gap-4">
+                          <span className="text-sm font-semibold font-sans">
+                            ₹{item.price}
+                          </span>
+                          <button
+                            onClick={() => {
+                              onAddToCart(cartItem);
+                              setToastMessage(`${item.name} added to cart`);
+                              if (toastTimeoutRef.current) {
+                                window.clearTimeout(toastTimeoutRef.current);
+                              }
+                              toastTimeoutRef.current = window.setTimeout(() => {
+                                setToastMessage(null);
+                              }, 1500);
+                            }}
+                            className="px-4 py-2 text-[10px] uppercase tracking-[0.3em] font-sans border border-black/40 rounded-full hover:bg-[#0a0a0a] hover:text-[#F9F8F4] transition-colors"
+                          >
+                            Add to Cart
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
             {filteredCategories.map(category => (
               <section
                 key={category.id}
@@ -519,6 +640,18 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
         >
           {toastMessage}
         </motion.div>
+      )}
+
+      {showBrewDesk && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="absolute top-6 right-6 text-white text-xs uppercase tracking-[0.25em] flex items-center gap-2 cursor-pointer" onClick={() => setShowBrewDesk(false)}>
+            <span>Close</span>
+            <X className="w-4 h-4" />
+          </div>
+          <div className="mx-4">
+            <BrewDeskPopup onClose={() => setShowBrewDesk(false)} onAddToCart={onAddToCart} />
+          </div>
+        </div>
       )}
     </div>
   );

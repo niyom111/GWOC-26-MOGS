@@ -1,7 +1,7 @@
 import sqlite3 from 'sqlite3';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import fs from 'fs';
+import { runMigrations } from './migrations/migrate.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -114,116 +114,25 @@ const defaultData = {
     ]
 };
 
-export function initDb() {
+export async function initDb() {
+    // Run migrations first to ensure schema is up to date
+    try {
+        console.log("Running database migrations...");
+        await runMigrations();
+    } catch (error) {
+        console.error("Migration failed:", error);
+        throw error;
+    }
+
+    // Then seed data if needed
     return new Promise((resolve, reject) => {
         db.serialize(() => {
-            // Menu Items Table
-            db.run(`CREATE TABLE IF NOT EXISTS menu_items (
-        id TEXT PRIMARY KEY,
-        name TEXT NOT NULL,
-        category TEXT NOT NULL,
-        price INTEGER NOT NULL,
-        caffeine TEXT,
-        image TEXT,
-        description TEXT,
-        tags TEXT
-      )`);
-
-            // Art Items Table
-            db.run(`CREATE TABLE IF NOT EXISTS art_items (
-        id TEXT PRIMARY KEY,
-        title TEXT NOT NULL,
-        artist TEXT NOT NULL,
-        price INTEGER NOT NULL,
-        status TEXT,
-        image TEXT,
-        stock INTEGER DEFAULT 1
-      )`);
-
-            // Workshops Table
-            db.run(`CREATE TABLE IF NOT EXISTS workshops (
-        id TEXT PRIMARY KEY,
-        title TEXT NOT NULL,
-        datetime TEXT NOT NULL,
-        seats INTEGER NOT NULL,
-        booked INTEGER NOT NULL,
-        price INTEGER NOT NULL
-      )`);
-
-            // Orders Table
-            db.run(`CREATE TABLE IF NOT EXISTS orders (
-        id TEXT PRIMARY KEY,
-        customer TEXT NOT NULL,
-        items TEXT NOT NULL,
-        total INTEGER NOT NULL,
-        date TEXT,
-        pickupTime TEXT,
-        payment_status TEXT,
-        payment_method TEXT,
-        razorpay_order_id TEXT,
-        razorpay_payment_id TEXT
-      )`);
-
-            // MIGRATION: Attempt to add stock column if it doesn't exist
-            db.run("ALTER TABLE art_items ADD COLUMN stock INTEGER DEFAULT 1", (err) => {
-                // If error is "duplicate column name", we ignore it.
-                if (err && !err.message.includes("duplicate column name")) {
-                    // Log other errors but don't crash, though it might be relevant
-                    console.log("Migration check (stock column):", err.message);
-                }
-            });
-
-            // MIGRATION: Add payment columns if they don't exist
-            db.run("ALTER TABLE orders ADD COLUMN payment_status TEXT", (err) => {
-                if (err && !err.message.includes("duplicate column name")) {
-                    console.log("Migration check (payment_status column):", err.message);
-                }
-            });
-            db.run("ALTER TABLE orders ADD COLUMN payment_method TEXT", (err) => {
-                if (err && !err.message.includes("duplicate column name")) {
-                    console.log("Migration check (payment_method column):", err.message);
-                }
-            });
-            db.run("ALTER TABLE orders ADD COLUMN razorpay_order_id TEXT", (err) => {
-                if (err && !err.message.includes("duplicate column name")) {
-                    console.log("Migration check (razorpay_order_id column):", err.message);
-                }
-            });
-            db.run("ALTER TABLE orders ADD COLUMN razorpay_payment_id TEXT", (err) => {
-                if (err && !err.message.includes("duplicate column name")) {
-                    console.log("Migration check (razorpay_payment_id column):", err.message);
-                }
-            });
-
-            // MIGRATION: Add artist_name, artist_bio, description columns to art_items
-            db.run("ALTER TABLE art_items ADD COLUMN artist_name TEXT", (err) => {
-                if (err && !err.message.includes("duplicate column name")) {
-                    console.log("Migration check (artist_name column):", err.message);
-                } else {
-                    // Migrate existing artist data to artist_name if artist_name was just created
-                    db.run("UPDATE art_items SET artist_name = artist WHERE artist_name IS NULL AND artist IS NOT NULL AND artist != ''", (updateErr) => {
-                        if (updateErr) {
-                            console.log("Migration data copy (artist -> artist_name):", updateErr.message);
-                        }
-                    });
-                }
-            });
-            db.run("ALTER TABLE art_items ADD COLUMN artist_bio TEXT", (err) => {
-                if (err && !err.message.includes("duplicate column name")) {
-                    console.log("Migration check (artist_bio column):", err.message);
-                }
-            });
-            db.run("ALTER TABLE art_items ADD COLUMN description TEXT", (err) => {
-                if (err && !err.message.includes("duplicate column name")) {
-                    console.log("Migration check (description column):", err.message);
-                }
-            });
-
             // SEED DATA
             db.get("SELECT count(*) as count FROM menu_items", (err, row) => {
                 if (!err && row.count === 0) {
                     console.log("Seeding Menu Items...");
-                    const stmt = db.prepare("INSERT INTO menu_items VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+                    // Explicitly list columns so new nullable columns take their defaults/NULL
+                    const stmt = db.prepare("INSERT INTO menu_items (id, name, category, price, caffeine, image, description, tags) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
                     defaultData.menuItems.forEach(item => {
                         stmt.run(item.id, item.name, item.category, item.price, item.caffeine, item.image, item.description, item.tags || '');
                     });

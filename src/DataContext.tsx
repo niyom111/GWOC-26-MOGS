@@ -8,10 +8,21 @@ export interface CoffeeAdminItem {
   // Category label, can be predefined or custom
   category: string;
   price: number;
-  // kept for legacy but not exposed directly in UI
-  caffeine: 'High' | 'Extreme' | 'Very High';
+
+  // Legacy label (e.g. "High", "Extreme"); kept for compatibility with chatbot logic
+  caffeine: string;
+
+  // New schema-aligned fields (all optional on the client side)
+  caffeine_mg?: number | null;
+  milk_based?: number | null; // 0/1 integer flag
+
+  calories?: number | null;
+  shareable?: number | null; // 0/1 integer flag
+
+  intensity_level?: string | null;
   image: string;
   description: string;
+  tags?: string;
 }
 
 export interface ArtAdminItem {
