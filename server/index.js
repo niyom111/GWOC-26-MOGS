@@ -1,6 +1,6 @@
+import './env.js'; // MUST BE FIRST
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import multer from 'multer';
 import Razorpay from 'razorpay';
 import crypto from 'crypto';
@@ -13,72 +13,6 @@ import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
-// Safely load .env file - try multiple paths
-const possiblePaths = [
-    path.join(__dirname, '../.env'),           // Relative to server directory
-    path.resolve(process.cwd(), '.env'),       // Current working directory
-    path.join(process.cwd(), '.env')           // Alternative cwd path
-];
-
-let envLoaded = false;
-for (const envPath of possiblePaths) {
-    const envPathAbsolute = path.resolve(envPath);
-    if (fs.existsSync(envPath)) {
-        console.log('🔍 Found .env file at:', envPathAbsolute);
-
-        // Read file to check for errors
-        const fileContent = fs.readFileSync(envPath, 'utf8');
-        const hasRazorpayKeyId = fileContent.includes('RAZORPAY_KEY_ID');
-        const hasRazorpaySecret = fileContent.includes('RAZORPAY_KEY_SECRET');
-        const allLines = fileContent.split('\n');
-        const nonEmptyLines = allLines.filter(line => line.trim().length > 0);
-
-        // Check if file is empty or has no content
-        if (fileContent.trim().length === 0) {
-            console.error('❌ ERROR: .env file is EMPTY!');
-            console.error('   File location:', envPathAbsolute);
-            console.error('   Please add the following to your .env file:');
-            console.error('   RAZORPAY_KEY_ID=your_key_id_here');
-            console.error('   RAZORPAY_KEY_SECRET=your_secret_here');
-            console.error('   VITE_RAZORPAY_KEY_ID=your_key_id_here');
-            console.error('   (No spaces around the = sign, no quotes needed)');
-        } else if (!hasRazorpayKeyId || !hasRazorpaySecret) {
-            console.error('❌ ERROR: Razorpay variables not found in .env file!');
-            console.error('   File location:', envPathAbsolute);
-            console.error('   File size:', fileContent.length, 'bytes');
-            console.error('   Non-empty lines:', nonEmptyLines.length);
-            if (nonEmptyLines.length > 0) {
-                console.error('   First few lines in file:');
-                nonEmptyLines.slice(0, 3).forEach((line, idx) => {
-                    console.error(`     ${idx + 1}. ${line.trim().substring(0, 60)}`);
-                });
-            }
-            console.error('   Required variables:');
-            console.error('   - RAZORPAY_KEY_ID');
-            console.error('   - RAZORPAY_KEY_SECRET');
-            console.error('   - VITE_RAZORPAY_KEY_ID');
-        }
-
-        const result = dotenv.config({ path: envPath });
-
-        if (result.error) {
-            console.error('❌ Error loading .env file:', result.error);
-        } else {
-            console.log('✅ .env file loaded successfully from:', envPathAbsolute);
-            envLoaded = true;
-            break;
-        }
-    }
-}
-
-if (!envLoaded) {
-    console.warn('⚠️  .env file not found in any of these locations:');
-    possiblePaths.forEach(p => console.warn('   -', path.resolve(p)));
-    // Try loading from current working directory as final fallback
-    dotenv.config();
-    console.log('🔄 Attempted to load .env from current working directory');
-}
 
 // Initialize Razorpay with safe error handling
 let razorpayInstance = null;
@@ -296,7 +230,7 @@ app.post('/api/art', async (req, res) => {
         const { id, title, price, status, image, stock, artist_name, artist_bio, description } = req.body;
         // 'artist' column still exists in DB for backward compatibility, use artist_name if provided
         const artist = artist_name || "";
-        
+
         const { data, error } = await db.from('art_items').insert({
             id,
             title,
@@ -496,14 +430,14 @@ app.post('/api/recommendations/context', async (req, res) => {
 
         const strengthWeights = {
             Energetic: { light: 2, medium: 1, strong: -1 },
-            Weak:      { light: -1, medium: 1, strong: 3 },
-            Comfort:   { light: 1, medium: 3, strong: 1 },
+            Weak: { light: -1, medium: 1, strong: 3 },
+            Comfort: { light: 1, medium: 3, strong: 1 },
         };
 
         const snackWeights = {
-            Work:    { lightSnack: 3, shareable: -1, trending: 0 },
+            Work: { lightSnack: 3, shareable: -1, trending: 0 },
             Hangout: { lightSnack: 0, shareable: 3, trending: 1 },
-            Chill:   { lightSnack: 0, shareable: 1, trending: 3 },
+            Chill: { lightSnack: 0, shareable: 1, trending: 3 },
         };
 
         // Get menu items with trending data
@@ -680,19 +614,19 @@ app.get('/api/trending', async (req, res) => {
 
         // Parse orders and extract items
         const itemOrderCounts = new Map(); // item_id -> { count: number, mostRecentTime: string }
-        
+
         (rows || []).forEach(orderRow => {
             try {
                 // PostgreSQL JSONB fields are already objects, but handle string case too
                 const items = typeof orderRow.items === 'string' ? JSON.parse(orderRow.items) : orderRow.items;
                 const orderDate = orderRow.date;
-                
+
                 // Use a Set to track unique items in this order (count order, not quantity)
                 const uniqueItemIds = new Set();
                 items.forEach(item => {
                     uniqueItemIds.add(item.id);
                 });
-                
+
                 // Count each unique item once per order
                 uniqueItemIds.forEach(itemId => {
                     if (!itemOrderCounts.has(itemId)) {
@@ -971,149 +905,149 @@ app.post('/api/chat', async (req, res) => {
             return res.json({ reply: `Upcoming Workshops:\n\n${workshops}` });
         }
 
-    // === C. MENU RECOMMENDATION DOMAIN ===
-    const isFollowUp = msg.includes('then') || msg.includes('what about') || msg.includes('how about') || msg.includes('and');
+        // === C. MENU RECOMMENDATION DOMAIN ===
+        const isFollowUp = msg.includes('then') || msg.includes('what about') || msg.includes('how about') || msg.includes('and');
 
-    // DETECT CURRENT CONTEXT
-    const foodKeywords = ['food', 'eat', 'snack', 'bite', 'hungry', 'side', 'bagel', 'croissant', 'fries', 'pizza', 'sandwich', 'burger'];
-    const drinkKeywords = ['drink', 'coffee', 'tea', 'latte', 'brew', 'sip', 'thirsty', 'cold', 'hot', 'refreshing', 'shake'];
+        // DETECT CURRENT CONTEXT
+        const foodKeywords = ['food', 'eat', 'snack', 'bite', 'hungry', 'side', 'bagel', 'croissant', 'fries', 'pizza', 'sandwich', 'burger'];
+        const drinkKeywords = ['drink', 'coffee', 'tea', 'latte', 'brew', 'sip', 'thirsty', 'cold', 'hot', 'refreshing', 'shake'];
 
-    let currentContext = null;
-    if (foodKeywords.some(k => msg.includes(k))) currentContext = 'food';
-    else if (drinkKeywords.some(k => msg.includes(k))) currentContext = 'drink';
+        let currentContext = null;
+        if (foodKeywords.some(k => msg.includes(k))) currentContext = 'food';
+        else if (drinkKeywords.some(k => msg.includes(k))) currentContext = 'drink';
 
-    // Merge Context
-    let activeContext = currentContext;
-    if (isFollowUp && !activeContext && session.lastContext) {
-        activeContext = session.lastContext;
-    }
-
-    // Refine Drink Context
-    let subCategory = null;
-    if (activeContext === 'drink' || !activeContext) {
-        if (msg.includes('tea') || (session.lastCategory === 'tea' && isFollowUp)) subCategory = 'tea';
-        else if (msg.includes('coffee') || (session.lastCategory === 'coffee' && isFollowUp)) subCategory = 'coffee';
-        else if (msg.includes('shake') || (session.lastCategory === 'shake' && isFollowUp)) subCategory = 'shake';
-
-        if (subCategory) activeContext = 'drink';
-    }
-
-    // EXECUTE MENU QUERY
-    // Only enter if explicit triggers OR context OR Tired (which implies drink)
-    if (isRecTrigger || isPriceSort || isFollowUp || activeContext || isTired) {
-
-        let query = db.from('menu_items').select('*');
-        let limit = 3;
-
-        // ENERGY LOGIC (Updates Context IMPLICITLY)
-        if (isTired) {
-            query = query.or('caffeine.eq.Very High,caffeine.eq.Extreme');
-            activeContext = 'drink';
-            limit = 1; // Give the BEST energy boost
+        // Merge Context
+        let activeContext = currentContext;
+        if (isFollowUp && !activeContext && session.lastContext) {
+            activeContext = session.lastContext;
         }
 
-        // FILTERING
-        if (activeContext === 'food') {
-            query = query.or('category.ilike.%Food%,tags.ilike.%food%,tags.ilike.%snack%,tags.ilike.%meal%');
-        } else if (activeContext === 'drink') {
-            query = query.not('category', 'ilike', '%Food%');
-            // Subcategory Filtering
-            if (subCategory === 'coffee') {
-                query = query.or('category.ilike.%Robusta%,category.ilike.%Blend%,tags.ilike.%coffee%');
-            }
-            if (subCategory === 'tea') {
-                query = query.or('category.ilike.%Tea%,tags.ilike.%tea%');
-            }
-            if (subCategory === 'shake') {
-                query = query.or('category.ilike.%Shake%,tags.ilike.%milk%');
-            }
+        // Refine Drink Context
+        let subCategory = null;
+        if (activeContext === 'drink' || !activeContext) {
+            if (msg.includes('tea') || (session.lastCategory === 'tea' && isFollowUp)) subCategory = 'tea';
+            else if (msg.includes('coffee') || (session.lastCategory === 'coffee' && isFollowUp)) subCategory = 'coffee';
+            else if (msg.includes('shake') || (session.lastCategory === 'shake' && isFollowUp)) subCategory = 'shake';
+
+            if (subCategory) activeContext = 'drink';
         }
 
-        // PRICE SORTING
-        const isCheapest = msg.includes('cheap') || msg.includes('lowest') || msg.includes('least');
-        const isExpensive = msg.includes('expensive') || msg.includes('highest') || msg.includes('most');
+        // EXECUTE MENU QUERY
+        // Only enter if explicit triggers OR context OR Tired (which implies drink)
+        if (isRecTrigger || isPriceSort || isFollowUp || activeContext || isTired) {
 
-        if (isPriceSort) {
-            limit = 1;
-            if (isCheapest) {
-                query = query.order('price', { ascending: true });
-            } else if (isExpensive) {
-                query = query.order('price', { ascending: false });
-            }
-        }
-        // Note: For random, we'll fetch more and shuffle in JS
+            let query = db.from('menu_items').select('*');
+            let limit = 3;
 
-        // TASTE / FLAVOR MATCHING
-        const flavorKeywords = ['strong', 'sweet', 'cold', 'hot', 'fruity', 'milky', 'creamy', 'chocolate', 'spicy', 'savory'];
-        const foundFlavors = flavorKeywords.filter(k => msg.includes(k));
-        if (foundFlavors.length > 0) {
-            const flavorConditions = foundFlavors.map(f => `tags.ilike.%${f}%`).join(',');
-            query = query.or(flavorConditions);
-        }
-
-        // Fetch more rows for random selection if needed
-        const fetchLimit = isPriceSort ? limit : Math.min(limit * 3, 50);
-        query = query.limit(fetchLimit);
-
-        const { data: rows, error } = await query;
-
-        if (error) return res.json({ reply: "I'm having a brain freeze. Try again?" });
-
-        // UPDATE SESSION MEMORY
-        if (sessionId) {
-            if (activeContext) sessions[sessionId].lastContext = activeContext;
-            if (subCategory) sessions[sessionId].lastCategory = subCategory;
-        }
-
-        // Shuffle if not price sorted (to simulate RANDOM())
-        let shuffledRows = rows || [];
-        if (!isPriceSort && shuffledRows.length > 0) {
-            shuffledRows = shuffledRows.sort(() => Math.random() - 0.5).slice(0, limit);
-        }
-
-        if (shuffledRows.length === 0) {
-            if (isPriceSort) return res.json({ reply: `I couldn't find any items matching those criteria.` });
-
-            // FALLTHROUGH to Knowledge if Menu search fails (e.g. "Suggest story?")
-            const fuseKnowledge = getFuseKnowledge();
-            if (fuseKnowledge) {
-                const fuseRes = fuseKnowledge.search(msg);
-                if (fuseRes.length > 0) return res.json({ reply: fuseRes[0].item.response });
+            // ENERGY LOGIC (Updates Context IMPLICITLY)
+            if (isTired) {
+                query = query.or('caffeine.eq.Very High,caffeine.eq.Extreme');
+                activeContext = 'drink';
+                limit = 1; // Give the BEST energy boost
             }
 
-            return res.json({ reply: "I'm not sure. Try asking for 'coffee', 'food', or 'help'." });
+            // FILTERING
+            if (activeContext === 'food') {
+                query = query.or('category.ilike.%Food%,tags.ilike.%food%,tags.ilike.%snack%,tags.ilike.%meal%');
+            } else if (activeContext === 'drink') {
+                query = query.not('category', 'ilike', '%Food%');
+                // Subcategory Filtering
+                if (subCategory === 'coffee') {
+                    query = query.or('category.ilike.%Robusta%,category.ilike.%Blend%,tags.ilike.%coffee%');
+                }
+                if (subCategory === 'tea') {
+                    query = query.or('category.ilike.%Tea%,tags.ilike.%tea%');
+                }
+                if (subCategory === 'shake') {
+                    query = query.or('category.ilike.%Shake%,tags.ilike.%milk%');
+                }
+            }
+
+            // PRICE SORTING
+            const isCheapest = msg.includes('cheap') || msg.includes('lowest') || msg.includes('least');
+            const isExpensive = msg.includes('expensive') || msg.includes('highest') || msg.includes('most');
+
+            if (isPriceSort) {
+                limit = 1;
+                if (isCheapest) {
+                    query = query.order('price', { ascending: true });
+                } else if (isExpensive) {
+                    query = query.order('price', { ascending: false });
+                }
+            }
+            // Note: For random, we'll fetch more and shuffle in JS
+
+            // TASTE / FLAVOR MATCHING
+            const flavorKeywords = ['strong', 'sweet', 'cold', 'hot', 'fruity', 'milky', 'creamy', 'chocolate', 'spicy', 'savory'];
+            const foundFlavors = flavorKeywords.filter(k => msg.includes(k));
+            if (foundFlavors.length > 0) {
+                const flavorConditions = foundFlavors.map(f => `tags.ilike.%${f}%`).join(',');
+                query = query.or(flavorConditions);
+            }
+
+            // Fetch more rows for random selection if needed
+            const fetchLimit = isPriceSort ? limit : Math.min(limit * 3, 50);
+            query = query.limit(fetchLimit);
+
+            const { data: rows, error } = await query;
+
+            if (error) return res.json({ reply: "I'm having a brain freeze. Try again?" });
+
+            // UPDATE SESSION MEMORY
+            if (sessionId) {
+                if (activeContext) sessions[sessionId].lastContext = activeContext;
+                if (subCategory) sessions[sessionId].lastCategory = subCategory;
+            }
+
+            // Shuffle if not price sorted (to simulate RANDOM())
+            let shuffledRows = rows || [];
+            if (!isPriceSort && shuffledRows.length > 0) {
+                shuffledRows = shuffledRows.sort(() => Math.random() - 0.5).slice(0, limit);
+            }
+
+            if (shuffledRows.length === 0) {
+                if (isPriceSort) return res.json({ reply: `I couldn't find any items matching those criteria.` });
+
+                // FALLTHROUGH to Knowledge if Menu search fails (e.g. "Suggest story?")
+                const fuseKnowledge = getFuseKnowledge();
+                if (fuseKnowledge) {
+                    const fuseRes = fuseKnowledge.search(msg);
+                    if (fuseRes.length > 0) return res.json({ reply: fuseRes[0].item.response });
+                }
+
+                return res.json({ reply: "I'm not sure. Try asking for 'coffee', 'food', or 'help'." });
+            }
+
+            // SMART RESPONSE GENERATION
+            const item = shuffledRows[0];
+
+            if (isTired) {
+                return res.json({ reply: `Need a boost? The **${item.name}** packs **${item.caffeine} Caffeine**. It will wake you up!` });
+            }
+
+            if (isPriceSort) {
+                const adj = isCheapest ? "cheapest" : "most premium";
+                const cat = activeContext ? activeContext : "item";
+                return res.json({ reply: `The **${adj} ${cat}** we have is the **${item.name}** at ₹${item.price}.` });
+            }
+
+            const itemTags = item.tags ? item.tags.split(',').slice(0, 3).join(', ') : 'a great choice';
+            return res.json({
+                reply: `I suggest the **${item.name}** (₹${item.price}).\n\nIt's ${itemTags}.`
+            });
         }
 
-        // SMART RESPONSE GENERATION
-        const item = shuffledRows[0];
-
-        if (isTired) {
-            return res.json({ reply: `Need a boost? The **${item.name}** packs **${item.caffeine} Caffeine**. It will wake you up!` });
+        // --- FALLBACK: KNOWLEDGE BASE ---
+        const fuseKnowledge = getFuseKnowledge();
+        if (fuseKnowledge) {
+            const results = fuseKnowledge.search(msg);
+            if (results.length > 0) return res.json({ reply: results[0].item.response });
         }
 
-        if (isPriceSort) {
-            const adj = isCheapest ? "cheapest" : "most premium";
-            const cat = activeContext ? activeContext : "item";
-            return res.json({ reply: `The **${adj} ${cat}** we have is the **${item.name}** at ₹${item.price}.` });
-        }
+        // --- FALLBACK: GENERAL MENU/HELP ---
+        if (msg.includes('menu')) return res.json({ reply: "Ask me to 'suggest a drink' or 'show food options'!" });
 
-        const itemTags = item.tags ? item.tags.split(',').slice(0, 3).join(', ') : 'a great choice';
-        return res.json({
-            reply: `I suggest the **${item.name}** (₹${item.price}).\n\nIt's ${itemTags}.`
-        });
-    }
-
-    // --- FALLBACK: KNOWLEDGE BASE ---
-    const fuseKnowledge = getFuseKnowledge();
-    if (fuseKnowledge) {
-        const results = fuseKnowledge.search(msg);
-        if (results.length > 0) return res.json({ reply: results[0].item.response });
-    }
-
-    // --- FALLBACK: GENERAL MENU/HELP ---
-    if (msg.includes('menu')) return res.json({ reply: "Ask me to 'suggest a drink' or 'show food options'!" });
-
-    res.json({ reply: "I didn't quite catch that. Im a smart barista, try asking me 'What is the cheapest coffee?' or 'Suggest a snack'!" });
+        res.json({ reply: "I didn't quite catch that. Im a smart barista, try asking me 'What is the cheapest coffee?' or 'Suggest a snack'!" });
     } catch (error) {
         console.error('Chat endpoint error:', error);
         res.json({ reply: "I'm having trouble right now. Please try again!" });

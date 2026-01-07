@@ -25,7 +25,27 @@ const EMAIL_CONFIG_HOSTING = {
   ADMIN_EMAIL: 'robustecafe@gmail.com'
 };
 
+
 const WorkshopPage: React.FC = () => {
+  // Check for missing keys on mount
+  React.useEffect(() => {
+    const missingKeys: string[] = [];
+    if (!EMAIL_CONFIG_RESERVATION.SERVICE_ID) missingKeys.push('VITE_EMAILJS_WORKSHOP_RESERVE_SERVICE_ID');
+    if (!EMAIL_CONFIG_RESERVATION.PUBLIC_KEY) missingKeys.push('VITE_EMAILJS_WORKSHOP_RESERVE_PUBLIC_KEY');
+    if (!EMAIL_CONFIG_RESERVATION.TEMPLATE_ID_USER) missingKeys.push('VITE_EMAILJS_WORKSHOP_RESERVE_TEMPLATE_ID');
+    
+    if (!EMAIL_CONFIG_HOSTING.SERVICE_ID) missingKeys.push('VITE_EMAILJS_HOST_SERVICE_ID');
+    if (!EMAIL_CONFIG_HOSTING.PUBLIC_KEY) missingKeys.push('VITE_EMAILJS_HOST_PUBLIC_KEY');
+    if (!EMAIL_CONFIG_HOSTING.TEMPLATE_ID_ADMIN) missingKeys.push('VITE_EMAILJS_HOST_TEMPLATE_ID');
+
+    if (missingKeys.length > 0) {
+      console.warn('⚠️ [Workshops] Missing EmailJS Configuration Keys:', missingKeys.join(', '));
+      console.warn('   Please check your .env file.');
+    } else {
+        console.log('✅ [Workshops] EmailJS Configuration loaded successfully.');
+    }
+  }, []);
+
   const [workshops, setWorkshops] = useState(INITIAL_WORKSHOPS);
   const [reservationEmails, setReservationEmails] = useState<{ [key: string]: string }>({});
   const [reservingId, setReservingId] = useState<string | null>(null);

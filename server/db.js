@@ -7,24 +7,31 @@ import fs from 'fs';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Load environment variables
-const possiblePaths = [
-    join(__dirname, '../.env'),
-    join(process.cwd(), '.env'),
-    join(process.cwd(), '../.env')
-];
+// Environment variables are loaded by index.js before this file is imported
+// But we'll do a fallback check just in case this file is run standalone (e.g. scripts)
+if (!process.env.SUPABASE_URL) {
+    // Only load if not already loaded
+    console.log('Checking environment in db.js (fallback)...');
+    const { dirname, join } = await import('path');
+    const { fileURLToPath } = await import('url');
+    const { existsSync } = await import('fs');
+    const dotenv = await import('dotenv');
 
-let envLoaded = false;
-for (const envPath of possiblePaths) {
-    if (fs.existsSync(envPath)) {
-        dotenv.config({ path: envPath });
-        envLoaded = true;
-        break;
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = dirname(__filename);
+
+    const possiblePaths = [
+        join(__dirname, '../.env'),
+        join(__dirname, '../../.env'),
+        join(process.cwd(), '.env')
+    ];
+
+    for (const envPath of possiblePaths) {
+        if (existsSync(envPath)) {
+            dotenv.config({ path: envPath });
+            break;
+        }
     }
-}
-
-if (!envLoaded) {
-    dotenv.config();
 }
 
 // Get Supabase credentials from environment

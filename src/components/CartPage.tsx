@@ -36,8 +36,17 @@ const CartPage: React.FC<CartPageProps> = ({
 
   // Log missing config
   useEffect(() => {
-    if (!EMAILJS_SERVICE_ID || !EMAILJS_TEMPLATE_ID_COUNTER || !EMAILJS_PUBLIC_KEY) {
-      console.error('EmailJS configuration missing. Check your .env file.');
+    const missingKeys: string[] = [];
+    if (!EMAILJS_SERVICE_ID) missingKeys.push('VITE_EMAILJS_SERVICE_ID');
+    if (!EMAILJS_TEMPLATE_ID_COUNTER) missingKeys.push('VITE_EMAILJS_TEMPLATE_ID_COUNTER');
+    if (!EMAILJS_TEMPLATE_ID_ONLINE) missingKeys.push('VITE_EMAILJS_TEMPLATE_ID_ONLINE');
+    if (!EMAILJS_PUBLIC_KEY) missingKeys.push('VITE_EMAILJS_PUBLIC_KEY');
+
+    if (missingKeys.length > 0) {
+      console.warn('⚠️ [Cart] Missing EmailJS Configuration Keys:', missingKeys.join(', '));
+      console.warn('   Please check your .env file.');
+    } else {
+      console.log('✅ [Cart] EmailJS Configuration loaded successfully.');
     }
   }, []);
 
@@ -138,22 +147,33 @@ const CartPage: React.FC<CartPageProps> = ({
         // Order saved successfully - now try to send email (non-blocking)
         try {
           const itemsHTML = generateEmailHTML(cart);
+          // Shotgun approach: send email in multiple common fields to ensure template matches one
+          const templateParams = {
+            to_name: name,
+            to_email: email,
+            email: email,     // Helper: In case template uses {{email}}
+            reply_to: email,  // Helper: In case template uses {{reply_to}}
+            recipient: email, // Helper: In case template uses {{recipient}}
+            order_id: order.id,
+            message: itemsHTML,
+            total_price: total.toFixed(0),
+            pickup_time: pickupTime,
+          };
+
+          console.log('[Cart] Sending EmailJS with params:', templateParams);
+
           await emailjs.send(
             EMAILJS_SERVICE_ID,
             EMAILJS_TEMPLATE_ID_COUNTER,
-            {
-              to_name: name,
-              to_email: email,
-              order_id: order.id,
-              message: itemsHTML,
-              total_price: total.toFixed(0),
-              pickup_time: pickupTime,
-            },
+            templateParams,
             EMAILJS_PUBLIC_KEY
           );
-        } catch (emailError) {
-          // Email failed but order was saved - log it but don't fail the checkout
-          console.warn('Email sending failed (order was saved):', emailError);
+          console.log('[Cart] Email sent successfully');
+        } catch (emailError: any) {
+          // Email failed but order was saved
+          console.error('Email sending failed:', emailError);
+          // ALERT THE USER so they know why
+          alert(`Order Placed, but Email Failed: ${emailError?.text || emailError?.message || 'Unknown error'}`);
         }
 
         onClearCart();
@@ -163,6 +183,8 @@ const CartPage: React.FC<CartPageProps> = ({
       }
     } catch (err: any) {
       console.error('Checkout error:', err);
+      // Alert explicit error
+      alert(`Checkout Failed: ${err.message || 'Unknown error'}`);
       setError(err.message || 'Failed to process order. Please try again or inform staff.');
       setSubmitting(false);
     }
@@ -199,6 +221,9 @@ const CartPage: React.FC<CartPageProps> = ({
   // Handle Razorpay payment
   const handleRazorpayPayment = async (orderData: any) => {
     if (!RAZORPAY_KEY_ID) {
+      const msg = 'Payment service unavailable. Missing Razorpay Key. Please check console/env.';
+      console.error(msg);
+      alert(msg);
       setError('Payment service unavailable. Please use Pay at Counter option.');
       setSubmitting(false);
       return;
@@ -264,17 +289,24 @@ const CartPage: React.FC<CartPageProps> = ({
             // Payment verified and order saved - now try to send email (non-blocking)
             try {
               const itemsHTML = generateEmailHTML(orderData.items);
+              const templateParams = {
+                to_name: orderData.customer.name,
+                to_email: orderData.customer.email,
+                email: orderData.customer.email,    // Helper
+                reply_to: orderData.customer.email, // Helper
+                recipient: orderData.customer.email,// Helper
+                order_id: orderData.id,
+                message: itemsHTML,
+                total_price: orderData.total.toFixed(0),
+                pickup_time: orderData.pickupTime,
+              };
+
+              console.log('[Payment] Sending EmailJS with params:', templateParams);
+
               await emailjs.send(
                 EMAILJS_SERVICE_ID,
                 EMAILJS_TEMPLATE_ID_ONLINE,
-                {
-                  to_name: orderData.customer.name,
-                  to_email: orderData.customer.email,
-                  order_id: orderData.id,
-                  message: itemsHTML,
-                  total_price: orderData.total.toFixed(0),
-                  pickup_time: orderData.pickupTime,
-                },
+                templateParams,
                 EMAILJS_PUBLIC_KEY
               );
               console.log('[PAYMENT] Email receipt sent successfully');
