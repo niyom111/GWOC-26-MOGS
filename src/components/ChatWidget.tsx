@@ -1,31 +1,41 @@
 import { useState, useRef, useEffect } from 'react';
-import { MessageCircle, X, Send, Loader2, Coffee } from 'lucide-react'; // Added Coffee icon!
+import { MessageCircle, X, Send, Loader2, Coffee, Minimize2, Maximize2 } from 'lucide-react';
+import './ChatWidget.css';
+
+interface ApiResponse {
+  action?: 'navigate' | 'respond';
+  parameters?: {
+    route?: string;
+    message?: string;
+  };
+  reply?: string;
+  error?: string;
+}
 
 export default function ChatWidget() {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<{ text: string; isUser: boolean }[]>([]);
+  const [isMinimized, setIsMinimized] = useState(false);
+  const [messages, setMessages] = useState<{ text: string; isUser: boolean }[]>([
+    { text: "Hi! I'm your Rabuste Barista. Ask me about our menu, calories, or for a recommendation!", isUser: false }
+  ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const scrollToBottom = () => {
+  useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, isOpen, isLoading]);
+
+  // --- HELPER TO CLEAN TEXT ON FRONTEND ---
+  const cleanText = (text: string) => {
+    if (!text) return "";
+    return text
+      .replace(/\*\*/g, "") // Remove bold markers
+      .replace(/__/g, "")   // Remove italics markers
+      .replace(/^\*/gm, "•"); // Turn list stars into bullets
   };
 
-  // 1. SESSION ID MANAGEMENT
-  const [sessionId, setSessionId] = useState('');
-
-  useEffect(() => {
-    let storedSession = localStorage.getItem('chatSessionId');
-    if (!storedSession) {
-      storedSession = 'sess_' + Math.random().toString(36).substr(2, 9);
-      localStorage.setItem('chatSessionId', storedSession);
-    }
-    setSessionId(storedSession);
-    scrollToBottom();
-  }, [messages]);
-
-  const sendMessage = async () => {
+  const handleSend = async () => {
     if (!input.trim()) return;
 
     const userMessage = input;
@@ -37,109 +47,117 @@ export default function ChatWidget() {
       const response = await fetch('http://localhost:5000/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: userMessage,
-          sessionId: sessionId, // SEND SESSION ID
-          history: messages.map(m => ({
-            role: m.isUser ? "user" : "model",
-            parts: [{ text: m.text }]
-          }))
-        })
+        body: JSON.stringify({ message: userMessage }),
       });
 
-      const data = await response.json();
-      if (data.error) throw new Error(data.details);
+      if (!response.ok) {
+        throw new Error(`Server Error: ${response.status}`);
+      }
 
-      setMessages(prev => [...prev, { text: data.reply, isUser: false }]);
-    } catch (error) {
-      setMessages(prev => [...prev, { text: "⚠️ The barista is busy right now. Please try again.", isUser: false }]);
+      const data: ApiResponse = await response.json();
+
+      let botResponse = "I didn't catch that.";
+      
+      if (data.action === 'navigate' && data.parameters?.route) {
+        botResponse = `Taking you to the ${data.parameters.route.replace('/', '')} page...`;
+        setTimeout(() => { window.location.href = data.parameters?.route || '/'; }, 1500);
+      } else if (data.action === 'respond' && data.parameters?.message) {
+        botResponse = data.parameters.message;
+      } else if (data.reply) {
+        botResponse = data.reply;
+      } else if (data.error) {
+        botResponse = `Server Error: ${data.error}`;
+      }
+
+      // Clean the text before setting it
+      setMessages(prev => [...prev, { text: cleanText(botResponse), isUser: false }]);
+
+    } catch (error: any) {
+      console.error("Chat Error:", error);
+      setMessages(prev => [...prev, { text: "⚠️ Connection Error. Is the server running?", isUser: false }]);
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 font-sans">
-      {/* 1. THE FLOATING BUTTON (Cream Color to pop against dark site) */}
+    <div className="chat-widget-container" style={{ position: 'fixed', bottom: '20px', right: '20px', zIndex: 9999 }}>
+      
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="bg-[#F3E5AB] hover:bg-[#e6d690] text-[#2C1810] rounded-full p-4 shadow-2xl transition-all transform hover:scale-105 flex items-center gap-2 border-2 border-[#2C1810]"
+          className="chat-widget-button flex items-center justify-center rounded-full shadow-lg transition-transform hover:scale-110"
+          style={{ backgroundColor: '#2C1810', width: '60px', height: '60px' }} 
         >
-          {/* Changed icon to Coffee cup if you want, or keep MessageCircle */}
-          <MessageCircle size={28} strokeWidth={2.5} />
+          <MessageCircle className="text-[#F3E5AB]" size={30} />
         </button>
       )}
 
-      {/* 2. THE CHAT WINDOW */}
       {isOpen && (
-        <div className="bg-[#FAF9F6] rounded-2xl shadow-2xl w-[calc(100vw-3rem)] sm:w-96 flex flex-col border-2 border-[#2C1810] overflow-hidden" style={{ height: 'min(550px, 75vh)' }}>
-
-          {/* Header: Dark Espresso Background */}
-          <div className="bg-[#2C1810] text-[#F3E5AB] p-4 flex justify-between items-center shadow-md">
-            <div className="flex items-center gap-2">
+        <div className={`chat-window bg-white rounded-xl shadow-2xl overflow-hidden flex flex-col transition-all duration-300 ${isMinimized ? 'h-[60px]' : 'h-[500px]'}`} 
+             style={{ width: '350px', border: '1px solid #2C1810' }}>
+          
+          <div className="chat-header p-4 flex justify-between items-center text-[#F3E5AB]" style={{ backgroundColor: '#2C1810' }}>
+            <div className="flex items-center gap-2 cursor-pointer" onClick={() => setIsMinimized(!isMinimized)}>
               <Coffee size={20} />
-              <div>
-                <h3 className="font-bold text-lg tracking-wide">RABUSTE</h3>
-                <p className="text-xs text-[#d4a373]">Virtual Barista</p>
+              <div className="flex flex-col">
+                <span className="font-bold leading-tight">RABUSTE</span>
+                <span className="text-[10px] font-normal opacity-80">AI Assistant</span>
               </div>
             </div>
-            <button onClick={() => setIsOpen(false)} className="hover:text-white transition-colors">
-              <X size={22} />
-            </button>
-          </div>
-
-          {/* Messages Area: Off-white "Parchment" color */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[#FAF9F6]">
-            {messages.length === 0 && (
-              <div className="text-center mt-10 opacity-60">
-                <Coffee className="w-12 h-12 mx-auto text-[#2C1810] mb-2" />
-                <p className="text-[#2C1810] text-sm">Welcome to Rabuste.<br />How can I help you brew today?</p>
-              </div>
-            )}
-
-            {messages.map((msg, index) => (
-              <div key={index} className={`flex ${msg.isUser ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[85%] p-3 text-sm shadow-sm whitespace-pre-line ${msg.isUser
-                  ? 'bg-[#2C1810] text-[#F3E5AB] rounded-2xl rounded-br-sm' // User: Espresso color
-                  : 'bg-[#EFEBE9] text-[#2C1810] border border-[#d7ccc8] rounded-2xl rounded-bl-sm' // Bot: Milk foam color
-                  }`}>
-                  {msg.text}
-                </div>
-              </div>
-            ))}
-
-            {isLoading && (
-              <div className="flex justify-start">
-                <div className="bg-[#EFEBE9] p-3 rounded-2xl rounded-bl-sm border border-[#d7ccc8] flex items-center gap-2">
-                  <Loader2 className="w-4 h-4 animate-spin text-[#2C1810]" />
-                  <span className="text-xs text-[#5d4037]">Brewing answer...</span>
-                </div>
-              </div>
-            )}
-            <div ref={messagesEndRef} />
-          </div>
-
-          {/* Input Area */}
-          <div className="p-4 bg-white border-t border-[#e0e0e0]">
-            <div className="flex gap-2 bg-[#F5F5F5] rounded-full px-2 py-1 border border-[#e0e0e0] focus-within:border-[#2C1810] focus-within:ring-1 focus-within:ring-[#2C1810] transition-all">
-              <input
-                type="text"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
-                placeholder="Ask about our roasts..."
-                className="flex-1 bg-transparent px-3 py-2 text-sm outline-none text-[#2C1810] placeholder:text-gray-400"
-              />
-              <button
-                onClick={sendMessage}
-                disabled={isLoading || !input.trim()}
-                className="text-[#2C1810] hover:bg-[#e0e0e0] p-2 rounded-full transition-colors disabled:opacity-30"
-              >
-                <Send size={18} />
-              </button>
+            <div className="flex items-center gap-2">
+              <button onClick={() => setIsMinimized(!isMinimized)} className="hover:opacity-80"><Minimize2 size={16} /></button>
+              <button onClick={() => setIsOpen(false)} className="hover:opacity-80"><X size={20} /></button>
             </div>
           </div>
+
+          {!isMinimized && (
+            <>
+              <div className="chat-messages flex-1 overflow-y-auto p-4 flex flex-col gap-3 bg-[#FAF9F6]">
+                {messages.map((msg, index) => (
+                  <div key={index} 
+                       className={`message p-3 rounded-lg max-w-[85%] text-sm ${msg.isUser ? 'self-end' : 'self-start'}`}
+                       style={{
+                         whiteSpace: 'pre-wrap', // Essential for lists!
+                         backgroundColor: msg.isUser ? '#2C1810' : '#EFEBE9',
+                         color: msg.isUser ? '#F3E5AB' : '#2C1810',
+                         border: msg.isUser ? 'none' : '1px solid #D7CCC8',
+                         borderRadius: '8px'
+                       }}>
+                    {msg.text}
+                  </div>
+                ))}
+                
+                {isLoading && (
+                  <div className="bg-[#EFEBE9] p-3 rounded-lg flex items-center gap-2 text-[#2C1810] text-sm w-fit border border-[#D7CCC8]">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Brewing answer...</span>
+                  </div>
+                )}
+                <div ref={messagesEndRef} />
+              </div>
+
+              <div className="chat-input-area p-3 border-t border-gray-200 bg-white flex gap-2">
+                <input
+                  type="text"
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                  placeholder="Ask about menu, calories..."
+                  disabled={isLoading}
+                  className="flex-1 p-2 border border-gray-300 rounded-md focus:outline-none focus:border-[#2C1810] text-sm"
+                />
+                <button 
+                  onClick={handleSend} 
+                  disabled={isLoading || !input.trim()}
+                  className="p-2 rounded-md disabled:opacity-50"
+                  style={{ backgroundColor: '#2C1810', color: '#F3E5AB' }}
+                >
+                  <Send size={18} />
+                </button>
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>

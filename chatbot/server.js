@@ -18,112 +18,102 @@ if (!process.env.GEMINI_API_KEY) {
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-// --- 🧠 MENU KNOWLEDGE BASE (Updated from your MenuPage.tsx) ---
 const MENU_KQ = `
-CURRENT RABUSTE MENU & PRICING (Currency: INR ₹):
+CURRENT RABUSTE MENU:
 
-ROBUSTA SPECIALTY (COLD - NON MILK)
-- Iced Americano: ₹160
-- Iced Espresso: ₹130
-- Iced Espresso Tonic: ₹250
-- Iced Espresso Red Bull: ₹290
-- Cranberry Tonic: ₹270
+ROBUSTA SPECIALTY
+• Iced Americano: ₹160 (5 kcal)
+• Iced Espresso: ₹130 (5 kcal)
+• Iced Espresso Tonic: ₹250 (70 kcal)
+• Iced Espresso Red Bull: ₹290 (115 kcal)
+• Cranberry Tonic: ₹270 (90 kcal)
 
-ROBUSTA SPECIALTY (COLD - MILK BASED)
-- Iced Latte: ₹220
-- Affogato: ₹250
-- Classic Frappe: ₹250
-- Hazelnut Frappe: ₹260
-- Caramel Frappe: ₹260
-- Mocha: ₹270
-- Biscoff: ₹270
-- Vietnamese: ₹240
-- Cafe Suda: ₹250
-- Robco (Signature): ₹290
+MILK BASED
+• Iced Latte: ₹220 (180 kcal)
+• Affogato: ₹250 (250 kcal)
+• Classic Frappe: ₹250 (350 kcal)
+• Hazelnut Frappe: ₹260 (380 kcal)
+• Mocha: ₹270 (320 kcal)
+• Vietnamese: ₹240 (250 kcal)
 
-HOT CLASSICS
-- Hot Americano: ₹150
-- Hot Espresso: ₹130
-- Hot Latte: ₹190
-- Hot Flat White: ₹180
-- Hot Cappuccino: ₹180
-- Robusta Mocha: ₹230
+FOOD & SNACKS
+• Fries: ₹150 (320 kcal)
+• Potato Wedges: ₹170 (290 kcal)
+• Pizza: ₹300 (600 kcal)
+• Bagels: ₹100-150 (240+ kcal)
+• Croissants: ₹150 (280 kcal)
 
-MANUAL BREWS
-- V60 Pour Over (Hot/Cold): ₹220/₹230
-- Classic Cold Brew: ₹220
-- Cold Brew Tonic: ₹270
-- Cold Brew Red Bull: ₹290
-
-SHAKES & TEA
-- Chocolate/Biscoff/Nutella Shakes: ₹220-₹260
-- Lemon/Peach Ice Tea: ₹210
-- Ginger Fizz: ₹250
-
-FOOD & BAGELS
-- Fries: ₹150
-- Potato Wedges: ₹170
-- Veg Nuggets: ₹190
-- Pizza: ₹300
-- Bagels (Plain/Cream Cheese/Jalapeno/Pesto): ₹100-₹230
-- Croissants (Butter/Nutella/Cream Cheese): ₹150-₹240
+NAVIGATION:
+- Menu Page: /menu
+- Workshops: /workshops
+- Art Gallery: /art
+- About Us: /about
 `;
 
-app.post('/chat', async (req, res) => {
-  const { message, history } = req.body;
+app.post('/api/chat', async (req, res) => {
+  const { message } = req.body;
   
-  console.log("📩 User asked:", message);
-
   try {
-    const SYSTEM_INSTRUCTION = `
-      You are Rabuste BrewDesk, the official coffee assistant for the Rabuste café website.
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
-      IDENTITY & GREETING RULES:
-      1. Your name is "Rabuste BrewDesk".
-      2. Greet the user ONLY in the very first message of the conversation.
-      3. Do NOT repeat "I'm Rabuste BrewDesk" in every subsequent reply. Just answer the question directly.
+    const prompt = `
+    You are "Rabuste Bot".
+    
+    KNOWLEDGE BASE:
+    ${MENU_KQ}
 
-      YOUR KNOWLEDGE BASE:
-      ${MENU_KQ}
+    STRICT FORMATTING RULES:
+    1. DO NOT use asterisks (**) anywhere.
+    2. DO NOT use bold text.
+    3. Use simple bullets (•) for lists.
+    4. Put every item on a new line.
+    5. Keep it clean and simple.
 
-      FORMATTING RULES (CRITICAL):
-      - Do NOT use Markdown bolding (like **text**) because it looks messy in the chat window.
-      - Use simple dashes (-) for lists.
-      - Put every menu item on its own new line.
-      - Add an empty line between categories.
-      - Keep it clean and vertical.
+    YOUR GOAL:
+    1. Answer questions about menu/calories.
+    2. If user says "Go to menu" etc, output JSON: {"action": "navigate", "parameters": {"route": "/menu"}}
 
-      ROLE:
-      - Suggest drinks based on mood.
-      - If asked for the menu, list the categories clearly.
-      - If asked about non-coffee topics, politely decline.
+    User Message: "${message}"
     `;
 
-    const model = genAI.getGenerativeModel({ 
-      model: "gemini-2.5-flash", 
-      systemInstruction: SYSTEM_INSTRUCTION 
-    });
+    const result = await model.generateContent(prompt);
+    let responseText = result.response.text();
 
-    const chat = model.startChat({
-      history: history || [], 
-    });
+    // --- THE FIX: FORCEFULLY REMOVE ASTERSISKS & CLEANUP ---
+    responseText = responseText
+      .replace(/\*\*/g, '')   // Remove **
+      .replace(/\*/g, '•')    // Replace single * with bullet
+      .replace(/```json/g, '')
+      .replace(/```/g, '')
+      .trim();
 
-    const result = await chat.sendMessage(message);
-    const response = await result.response;
-    const text = response.text();
+    let apiResponse;
+    try {
+      if (responseText.startsWith('{') && responseText.includes('"action": "navigate"')) {
+        apiResponse = JSON.parse(responseText);
+      } else {
+        apiResponse = {
+          action: 'respond',
+          parameters: { message: responseText }
+        };
+      }
+    } catch (e) {
+      apiResponse = {
+        action: 'respond',
+        parameters: { message: responseText }
+      };
+    }
 
-    console.log("✅ Bot replied:", text);
-    res.json({ reply: text });
+    res.json(apiResponse);
 
   } catch (error) {
-    console.error("❌ Error:", error.message);
+    console.error("Gemini Error:", error);
     res.status(500).json({ 
-      error: "Failed to fetch response", 
-      details: error.message 
+      error: "Connection error. Please try again." 
     });
   }
 });
 
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
+  console.log(`🚀 Clean Server running on http://localhost:${PORT}`);
 });

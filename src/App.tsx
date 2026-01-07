@@ -23,6 +23,10 @@ import { motion as motionBase, AnimatePresence } from 'framer-motion';
 import { DataProvider } from './DataContext';
 
 import ChatWidget from './components/ChatWidget';
+import MarqueeSection from './components/MarqueeSection';
+import ManifestoSection from './components/ManifestoSection';
+import ProcessScroll from './components/ProcessScroll';
+import StatsSection from './components/StatsSection';
 
 
 // Fix for framer-motion type mismatch in the current environment
@@ -159,7 +163,11 @@ const App: React.FC = () => {
             {currentPage === Page.HOME && (
               <>
                 <Hero />
+                <MarqueeSection />
                 <StickySection />
+                <StatsSection />
+                <ManifestoSection />
+                <ProcessScroll />
                 <GalleryTeaser onNavigate={() => navigateTo(Page.ART)} />
                 <MenuPreview onAddToCart={addToCart} onGoToMenu={() => navigateTo(Page.MENU)} />
                 <Reviews />

@@ -1,26 +1,27 @@
 import React, { useState } from 'react';
-import { motion as motionBase, AnimatePresence as AnimatePresenceBase } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Send, X, CheckCircle2, Loader2 } from 'lucide-react';
 import emailjs from '@emailjs/browser';
 
-// Fix for framer-motion type mismatch
-const motion = motionBase as any;
-const AnimatePresence = AnimatePresenceBase as any;
-
 // Initial Data
 const INITIAL_WORKSHOPS = [
-  { id: '1', name: "Latte Art Basics", desc: "Master the classic heart and rosetta using Robusta's thick crema.", date: "Oct 24", time: "10:00 AM", seats: 3, img: "https://images.unsplash.com/photo-1541167760496-162955ed8a9f?auto=format&fit=crop&q=80&w=1000" },
-  { id: '2', name: "Canvas & Coffee", desc: "A painting session using coffee-based pigments and watercolors.", date: "Oct 28", time: "6:00 PM", seats: 5, img: "https://images.unsplash.com/photo-1513364776144-60967b0f800f?auto=format&fit=crop&q=80&w=1000" },
-  { id: '3', name: "The Robusta Brew", desc: "Deep dive into temperature and pressure variables for high-caffeine extraction.", date: "Nov 02", time: "8:00 AM", seats: 2, img: "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&q=80&w=1000" },
+  { id: '1', name: "Latte Art Basics", desc: "Master the classic heart and rosetta using Robusta's thick crema.", date: "Oct 24", time: "10:00 AM", seats: 10, img: "https://images.unsplash.com/photo-1541167760496-162955ed8a9f?auto=format&fit=crop&q=80&w=1000" },
+  { id: '2', name: "Canvas & Coffee", desc: "A painting session using coffee-based pigments and watercolors.", date: "Oct 28", time: "6:00 PM", seats: 10, img: "https://images.unsplash.com/photo-1513364776144-60967b0f800f?auto=format&fit=crop&q=80&w=1000" },
+  { id: '3', name: "The Robusta Brew", desc: "Deep dive into temperature and pressure variables for high-caffeine extraction.", date: "Nov 02", time: "8:00 AM", seats: 4, img: "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&q=80&w=1000" },
 ];
 
 // --- CONFIGURATION ---
-const EMAIL_CONFIG = {
-  SERVICE_ID: 'service_rrhbhig',
-  PUBLIC_KEY: 'JflxB5iRv21YjgFDq',
-  TEMPLATE_ID_ADMIN: 'template_bpj493v',
-  TEMPLATE_ID_USER: 'template_n2on6k9',
+const EMAIL_CONFIG_RESERVATION = {
+  SERVICE_ID: import.meta.env.VITE_EMAILJS_WORKSHOP_RESERVE_SERVICE_ID,
+  PUBLIC_KEY: import.meta.env.VITE_EMAILJS_WORKSHOP_RESERVE_PUBLIC_KEY,
+  TEMPLATE_ID_USER: import.meta.env.VITE_EMAILJS_WORKSHOP_RESERVE_TEMPLATE_ID,
+  ADMIN_EMAIL: 'robustecafe@gmail.com'
+};
 
+const EMAIL_CONFIG_HOSTING = {
+  SERVICE_ID: import.meta.env.VITE_EMAILJS_HOST_SERVICE_ID,
+  PUBLIC_KEY: import.meta.env.VITE_EMAILJS_HOST_PUBLIC_KEY,
+  TEMPLATE_ID_ADMIN: import.meta.env.VITE_EMAILJS_HOST_TEMPLATE_ID,
   ADMIN_EMAIL: 'robustecafe@gmail.com'
 };
 
@@ -28,22 +29,46 @@ const WorkshopPage: React.FC = () => {
   const [workshops, setWorkshops] = useState(INITIAL_WORKSHOPS);
   const [reservationEmails, setReservationEmails] = useState<{ [key: string]: string }>({});
   const [reservingId, setReservingId] = useState<string | null>(null);
-  const [hostForm, setHostForm] = useState({ idea: '', dates: '', contact: '' });
+
+  // Updated Host Form State
+  const [hostForm, setHostForm] = useState({
+    contact_email: '',
+    preferred_date: '',
+    workshop_details: ''
+  });
+
   const [isHosting, setIsHosting] = useState(false);
   const [modalContent, setModalContent] = useState<{ title: string; body: string } | null>(null);
 
   // --- HANDLERS ---
 
   const handleReservationEmailChange = (id: string, value: string) => {
-    setReservationEmails(prev => ({ ...prev, [id]: value }));
+    setReservationEmails(prev => ({ ...prev, [id]: value.toLowerCase() }));
   };
 
-  const handleHostChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const formatDateInput = (value: string) => {
+    // Remove non-numeric chars
+    const cleaned = value.replace(/\D/g, '');
+
+    // Auto-format as DD/MM/YYYY
+    if (cleaned.length <= 2) return cleaned;
+    if (cleaned.length <= 4) return `${cleaned.slice(0, 2)}/${cleaned.slice(2)}`;
+    return `${cleaned.slice(0, 2)}/${cleaned.slice(2, 4)}/${cleaned.slice(4, 8)}`;
+  };
+
+  const handleHostChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setHostForm(prev => ({ ...prev, [name]: value }));
+
+    if (name === 'preferred_date') {
+      setHostForm(prev => ({ ...prev, [name]: formatDateInput(value) }));
+    } else if (name === 'contact_email') {
+      setHostForm(prev => ({ ...prev, [name]: value.toLowerCase() }));
+    } else {
+      setHostForm(prev => ({ ...prev, [name]: value }));
+    }
   };
 
-  // 1. RESERVE SPOT -> Sends Email to USER
+  // 1. RESERVE SPOT -> Sends Email to USER (Existing Logic)
   const handleReserveSubmit = (e: React.FormEvent, workshopId: string) => {
     e.preventDefault();
     const userEmail = reservationEmails[workshopId];
@@ -56,13 +81,13 @@ const WorkshopPage: React.FC = () => {
 
     // Params for User Email Template
     const templateParams = {
-      to_email: userEmail,           // IMPORTANT: Configure your EmailJS template to send to {{to_email}}
+      to_email: userEmail,
       workshop_name: workshop.name,
       workshop_date: `${workshop.date} @ ${workshop.time}`,
-      reply_to: EMAIL_CONFIG.ADMIN_EMAIL
+      reply_to: EMAIL_CONFIG_RESERVATION.ADMIN_EMAIL
     };
 
-    emailjs.send(EMAIL_CONFIG.SERVICE_ID, EMAIL_CONFIG.TEMPLATE_ID_USER, templateParams, EMAIL_CONFIG.PUBLIC_KEY)
+    emailjs.send(EMAIL_CONFIG_RESERVATION.SERVICE_ID, EMAIL_CONFIG_RESERVATION.TEMPLATE_ID_USER, templateParams, EMAIL_CONFIG_RESERVATION.PUBLIC_KEY)
       .then(() => {
         // Success: Decrement Seat
         setWorkshops(prev => prev.map(w => {
@@ -84,36 +109,36 @@ const WorkshopPage: React.FC = () => {
       .catch((err) => {
         console.error("Reservation Failed:", err);
         setReservingId(null);
-        alert("Failed to send reservation. Check Service ID or Template ID.");
+        alert("Failed to send reservation. Please try again later.");
       });
   };
 
-  // 2. HOST PROPOSAL -> Sends Email to ADMIN
+  // 2. HOST PROPOSAL -> Sends Email to ADMIN (New Logic)
   const handleHostSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setIsHosting(true);
 
-    // Params for Admin Email Template
+    // Params for Admin Email Template (New Keys)
     const templateParams = {
-      to_email: EMAIL_CONFIG.ADMIN_EMAIL, // Sends to Cafe
-      from_name: hostForm.contact,
-      message: hostForm.idea,
-      dates: hostForm.dates
+      contact_email: hostForm.contact_email,
+      preferred_date: hostForm.preferred_date,
+      workshop_details: hostForm.workshop_details,
+      to_name: "Rabuste Cafe Team"
     };
 
-    emailjs.send(EMAIL_CONFIG.SERVICE_ID, EMAIL_CONFIG.TEMPLATE_ID_ADMIN, templateParams, EMAIL_CONFIG.PUBLIC_KEY)
+    emailjs.send(EMAIL_CONFIG_HOSTING.SERVICE_ID, EMAIL_CONFIG_HOSTING.TEMPLATE_ID_ADMIN, templateParams, EMAIL_CONFIG_HOSTING.PUBLIC_KEY)
       .then(() => {
         setIsHosting(false);
-        setHostForm({ idea: '', dates: '', contact: '' });
+        setHostForm({ contact_email: '', preferred_date: '', workshop_details: '' });
         setModalContent({
           title: "Proposal Received.",
-          body: "Your workshop concept has been sent to our curation team. We will review your dates and reach out via email shortly."
+          body: "Your workshop concept has been sent to our curation team. We will review your details and reach out via email shortly."
         });
       })
       .catch((err) => {
         console.error("Hosting Failed:", err);
         setIsHosting(false);
-        alert("Failed to send proposal. Check Service ID or Template ID.");
+        alert("Failed to send proposal. Please check your connection and try again.");
       });
   };
 
@@ -158,7 +183,7 @@ const WorkshopPage: React.FC = () => {
                   </div>
                   <div className="flex justify-between border-b border-black/5 pb-2">
                     <span className="text-zinc-400">Available</span>
-                    <span className={w.seats < 3 ? 'text-red-500' : 'text-emerald-600'}>{w.seats} spots left</span>
+                    <span className={w.seats <= 4 ? 'text-red-500' : 'text-emerald-600'}>{w.seats} spots left</span>
                   </div>
                 </div>
 
@@ -170,7 +195,7 @@ const WorkshopPage: React.FC = () => {
                     value={reservationEmails[w.id] || ''}
                     onChange={(e) => handleReservationEmailChange(w.id, e.target.value)}
                     placeholder={isSoldOut ? "REGISTRATION CLOSED" : "EMAIL ADDRESS"}
-                    className="w-full bg-[#f9f9f9] border-b border-black/10 p-3 text-[10px] font-sans uppercase tracking-widest outline-none focus:border-black transition-all text-black disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full bg-[#f9f9f9] border-b border-black/10 p-3 text-[10px] font-sans lowercase tracking-widest outline-none focus:border-black transition-all text-black disabled:opacity-50 disabled:cursor-not-allowed placeholder:uppercase"
                   />
 
                   <button
@@ -206,37 +231,42 @@ const WorkshopPage: React.FC = () => {
               Have a craft or idea to share? We provide the canvas, the audience, and the coffee.
             </p>
 
-            <form onSubmit={handleHostSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
+            <form onSubmit={handleHostSubmit} className="grid grid-cols-1 gap-6 md:gap-8">
               <input
-                name="idea"
-                value={hostForm.idea}
-                onChange={handleHostChange}
-                required
-                placeholder="WORKSHOP IDEA"
-                className="bg-transparent border-b border-white/20 p-3 md:p-4 text-[10px] font-sans uppercase tracking-widest outline-none focus:border-white transition-all text-white placeholder:text-zinc-600"
-              />
-              <input
-                name="dates"
-                value={hostForm.dates}
-                onChange={handleHostChange}
-                required
-                placeholder="PREFERRED DATES"
-                className="bg-transparent border-b border-white/20 p-3 md:p-4 text-[10px] font-sans uppercase tracking-widest outline-none focus:border-white transition-all text-white placeholder:text-zinc-600"
-              />
-              <input
-                name="contact"
+                name="contact_email"
                 type="email"
-                value={hostForm.contact}
+                value={hostForm.contact_email}
                 onChange={handleHostChange}
                 required
                 placeholder="CONTACT EMAIL"
-                className="bg-transparent border-b border-white/20 p-3 md:p-4 text-[10px] font-sans uppercase tracking-widest outline-none focus:border-white transition-all md:col-span-2 text-white placeholder:text-zinc-600"
+                className="bg-transparent border-b border-white/20 p-3 md:p-4 text-[10px] font-sans lowercase tracking-widest outline-none focus:border-white transition-all text-white placeholder:text-zinc-600 placeholder:uppercase"
+              />
+
+              <input
+                name="preferred_date"
+                type="text"
+                value={hostForm.preferred_date}
+                onChange={handleHostChange}
+                required
+                maxLength={10}
+                placeholder="PREFERRED DATE (DD/MM/YYYY)"
+                className="bg-transparent border-b border-white/20 p-3 md:p-4 text-[10px] font-sans uppercase tracking-widest outline-none focus:border-white transition-all text-white placeholder:text-zinc-600"
+              />
+
+              <textarea
+                name="workshop_details"
+                value={hostForm.workshop_details}
+                onChange={handleHostChange}
+                required
+                rows={4}
+                placeholder="DETAILED WORKSHOP IDEA (Theme, format, requirements, etc.)"
+                className="bg-transparent border-b border-white/20 p-3 md:p-4 text-[10px] font-sans uppercase tracking-widest outline-none focus:border-white transition-all text-white placeholder:text-zinc-600 resize-none"
               />
 
               <button
                 type="submit"
                 disabled={isHosting}
-                className="md:col-span-2 py-4 md:py-5 border border-white/20 hover:bg-white hover:text-black transition-all text-[10px] md:text-[11px] uppercase tracking-[0.4em] font-bold flex items-center justify-center space-x-4 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="py-4 md:py-5 border border-white/20 hover:bg-white hover:text-black transition-all text-[10px] md:text-[11px] uppercase tracking-[0.4em] font-bold flex items-center justify-center space-x-4 disabled:opacity-50 disabled:cursor-not-allowed mt-4"
               >
                 {isHosting ? (
                   <>
