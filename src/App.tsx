@@ -23,7 +23,7 @@ import { motion as motionBase, AnimatePresence } from 'framer-motion';
 import { DataProvider } from './DataContext';
 
 import ChatWidget from './components/ChatWidget';
-import MarqueeSection from './components/MarqueeSection';
+
 import ManifestoSection from './components/ManifestoSection';
 import ProcessScroll from './components/ProcessScroll';
 import StatsSection from './components/StatsSection';
@@ -163,8 +163,7 @@ const App: React.FC = () => {
             {currentPage === Page.HOME && (
               <>
                 <Hero />
-                <MarqueeSection />
-                <StickySection />
+                <StickySection onNavigate={navigateTo} />
                 <StatsSection />
                 <ManifestoSection />
                 <ProcessScroll />

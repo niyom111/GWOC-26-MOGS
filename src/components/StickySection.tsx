@@ -5,7 +5,13 @@ import { motion as motionBase, useScroll, useTransform } from 'framer-motion';
 // Fix for framer-motion type mismatch in the current environment
 const motion = motionBase as any;
 
-const StickySection: React.FC = () => {
+import { Page } from '../types';
+
+interface StickySectionProps {
+  onNavigate: (page: Page) => void;
+}
+
+const StickySection: React.FC<StickySectionProps> = ({ onNavigate }) => {
   const containerRef = React.useRef(null);
   const { scrollYProgress } = useScroll({
     target: containerRef,
@@ -19,7 +25,7 @@ const StickySection: React.FC = () => {
     <section ref={containerRef} id="standard" className="relative min-h-[180vh] bg-[#F9F8F4] pt-10 md:pt-14 pb-24 md:pb-28 px-6 md:px-16">
       <div className="max-w-6xl mx-auto flex flex-col lg:flex-row gap-28">
         {/* Left Sticky Content */}
-        <div className="lg:w-[46%] lg:sticky lg:top-40 h-fit self-start z-10 pt-10">
+        <div className="lg:w-[46%] lg:sticky lg:top-20 h-fit self-start z-10 pt-10">
           <motion.div
             initial="hidden"
             whileInView="visible"
@@ -77,6 +83,7 @@ const StickySection: React.FC = () => {
               </motion.div>
 
               <motion.button
+                onClick={() => onNavigate(Page.AWARENESS)}
                 variants={{
                   hidden: { opacity: 0, x: -20 },
                   visible: { opacity: 1, x: 0, transition: { duration: 0.8 } }
@@ -95,7 +102,7 @@ const StickySection: React.FC = () => {
         </div>
 
         {/* Right Scrolling Parallax Images */}
-        <div className="lg:w-[54%] lg:pl-24 xl:pl-32 pt-24 lg:pt-80 flex flex-col gap-16 items-end justify-center">
+        <div className="lg:w-[54%] lg:pl-24 xl:pl-32 pt-24 lg:pt-32 flex flex-col gap-16 items-end justify-center">
           <motion.div
             className="relative w-full lg:w-full h-[600px] bg-zinc-100 overflow-hidden shadow-2xl rounded-2xl"
           >
