@@ -6,16 +6,17 @@
 export async function generateKnowledgeFromDatabase(db) {
     const knowledgeEntries = [];
 
-    return new Promise((resolve, reject) => {
+    try {
         // Generate knowledge from menu items
-        db.all("SELECT * FROM menu_items", [], (err, menuRows) => {
-            if (err) {
-                console.error("Error fetching menu items for knowledge:", err);
-                menuRows = [];
-            }
+        const { data: menuRows, error: menuError } = await db
+            .from('menu_items')
+            .select('*');
 
+        if (menuError) {
+            console.error("Error fetching menu items for knowledge:", menuError);
+        } else {
             // Generate knowledge entries for each menu item
-            menuRows.forEach(item => {
+            (menuRows || []).forEach(item => {
                 const name = item.name || '';
                 const nameLower = name.toLowerCase();
                 const category = item.category || '';
@@ -86,100 +87,105 @@ export async function generateKnowledgeFromDatabase(db) {
                     response: response
                 });
             });
+        }
 
-            // Generate knowledge from art items (only available ones)
-            db.all("SELECT * FROM art_items WHERE status = 'Available'", [], (err, artRows) => {
-                if (err) {
-                    console.error("Error fetching art items for knowledge:", err);
-                    artRows = [];
-                }
+        // Generate knowledge from art items (only available ones)
+        const { data: artRows, error: artError } = await db
+            .from('art_items')
+            .select('*')
+            .eq('status', 'Available');
 
-                artRows.forEach(item => {
-                    const title = item.title || '';
-                    const artist = item.artist || '';
-                    const price = item.price || 0;
-                    const titleLower = title.toLowerCase();
-                    const artistLower = artist.toLowerCase();
+        if (artError) {
+            console.error("Error fetching art items for knowledge:", artError);
+        } else {
+            (artRows || []).forEach(item => {
+                const title = item.title || '';
+                const artist = item.artist_name || item.artist || '';
+                const price = item.price || 0;
+                const titleLower = title.toLowerCase();
+                const artistLower = artist.toLowerCase();
 
-                    const entryTags = [
-                        titleLower,
-                        artistLower,
-                        'art',
-                        'gallery',
-                        'painting',
-                        'art piece',
-                        `art by ${artistLower}`,
-                        `${titleLower} by ${artistLower}`
-                    ];
+                const entryTags = [
+                    titleLower,
+                    artistLower,
+                    'art',
+                    'gallery',
+                    'painting',
+                    'art piece',
+                    `art by ${artistLower}`,
+                    `${titleLower} by ${artistLower}`
+                ];
 
-                    const response = `**"${title}"** by ${artist} is available in our gallery for ₹${price}. It's a stunning piece that would make a great addition to any collection.`;
+                const response = `**"${title}"** by ${artist} is available in our gallery for ₹${price}. It's a stunning piece that would make a great addition to any collection.`;
 
-                    knowledgeEntries.push({
-                        tags: entryTags,
-                        response: response
-                    });
-
-                    // Add specific question variations
-                    knowledgeEntries.push({
-                        tags: [`what is ${titleLower}`, `tell me about ${titleLower}`, `${titleLower} price`, `art by ${artistLower}`],
-                        response: response
-                    });
+                knowledgeEntries.push({
+                    tags: entryTags,
+                    response: response
                 });
 
-                // Generate knowledge from workshops
-                db.all("SELECT * FROM workshops", [], (err, workshopRows) => {
-                    if (err) {
-                        console.error("Error fetching workshops for knowledge:", err);
-                        workshopRows = [];
-                    }
-
-                    workshopRows.forEach(item => {
-                        const title = item.title || '';
-                        const datetime = item.datetime || '';
-                        const price = item.price || 0;
-                        const seats = item.seats || 0;
-                        const booked = item.booked || 0;
-                        const available = seats - booked;
-                        const titleLower = title.toLowerCase();
-
-                        const entryTags = [
-                            titleLower,
-                            'workshop',
-                            'class',
-                            'course',
-                            'learn',
-                            'training',
-                            `${titleLower} workshop`
-                        ];
-
-                        let response = `**${title}** is an upcoming workshop on ${datetime}`;
-                        if (price > 0) {
-                            response += ` for ₹${price}`;
-                        } else {
-                            response += ` (free)`;
-                        }
-                        if (available > 0) {
-                            response += `. ${available} seats available out of ${seats} total.`;
-                        } else {
-                            response += `. Currently SOLD OUT.`;
-                        }
-
-                        knowledgeEntries.push({
-                            tags: entryTags,
-                            response: response
-                        });
-
-                        // Add specific question variations
-                        knowledgeEntries.push({
-                            tags: [`what is ${titleLower}`, `tell me about ${titleLower}`, `${titleLower} workshop`, `workshop ${titleLower}`],
-                            response: response
-                        });
-                    });
-
-                    resolve(knowledgeEntries);
+                // Add specific question variations
+                knowledgeEntries.push({
+                    tags: [`what is ${titleLower}`, `tell me about ${titleLower}`, `${titleLower} price`, `art by ${artistLower}`],
+                    response: response
                 });
             });
-        });
-    });
-}
+        }
 
+        // Generate knowledge from workshops
+        const { data: workshopRows, error: workshopError } = await db
+            .from('workshops')
+            .select('*');
+
+        if (workshopError) {
+            console.error("Error fetching workshops for knowledge:", workshopError);
+        } else {
+            (workshopRows || []).forEach(item => {
+                const title = item.title || '';
+                const datetime = item.datetime || '';
+                const price = item.price || 0;
+                const seats = item.seats || 0;
+                const booked = item.booked || 0;
+                const available = seats - booked;
+                const titleLower = title.toLowerCase();
+
+                const entryTags = [
+                    titleLower,
+                    'workshop',
+                    'class',
+                    'course',
+                    'learn',
+                    'training',
+                    `${titleLower} workshop`
+                ];
+
+                let response = `**${title}** is an upcoming workshop on ${datetime}`;
+                if (price > 0) {
+                    response += ` for ₹${price}`;
+                } else {
+                    response += ` (free)`;
+                }
+                if (available > 0) {
+                    response += `. ${available} seats available out of ${seats} total.`;
+                } else {
+                    response += `. Currently SOLD OUT.`;
+                }
+
+                knowledgeEntries.push({
+                    tags: entryTags,
+                    response: response
+                });
+
+                // Add specific question variations
+                knowledgeEntries.push({
+                    tags: [`what is ${titleLower}`, `tell me about ${titleLower}`, `${titleLower} workshop`, `workshop ${titleLower}`],
+                    response: response
+                });
+            });
+        }
+
+        return knowledgeEntries;
+    } catch (error) {
+        console.error("Error generating knowledge from database:", error);
+        return knowledgeEntries; // Return what we have so far
+    }
+}

@@ -1,14 +1,47 @@
-import sqlite3 from 'sqlite3';
+import { createClient } from '@supabase/supabase-js';
+import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import { runMigrations } from './migrations/migrate.js';
+import fs from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const dbPath = join(__dirname, 'rabuste.db');
-console.log("--> USING DATABASE AT:", dbPath);
-const db = new sqlite3.Database(dbPath);
+// Load environment variables
+const possiblePaths = [
+    join(__dirname, '../.env'),
+    join(process.cwd(), '.env'),
+    join(process.cwd(), '../.env')
+];
+
+let envLoaded = false;
+for (const envPath of possiblePaths) {
+    if (fs.existsSync(envPath)) {
+        dotenv.config({ path: envPath });
+        envLoaded = true;
+        break;
+    }
+}
+
+if (!envLoaded) {
+    dotenv.config();
+}
+
+// Get Supabase credentials from environment
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseAnonKey) {
+    console.error('❌ ERROR: Supabase credentials not found in environment variables!');
+    console.error('   Required: SUPABASE_URL and SUPABASE_ANON_KEY');
+    console.error('   Please add these to your .env file');
+    throw new Error('Supabase credentials missing');
+}
+
+console.log('✅ Connecting to Supabase at:', supabaseUrl);
+
+// Create Supabase client
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // Default data (mirrors DataContext.tsx)
 const defaultData = {
@@ -114,63 +147,74 @@ const defaultData = {
     ]
 };
 
+/**
+ * Initialize database - seed default data if tables are empty
+ */
 export async function initDb() {
-    // Run migrations first to ensure schema is up to date
     try {
-        console.log("Running database migrations...");
-        await runMigrations();
+        // Check if menu_items table is empty and seed if needed
+        const { data: menuData, error: menuError } = await supabase
+            .from('menu_items')
+            .select('id')
+            .limit(1);
+
+        if (menuError) {
+            console.error('Error checking menu_items:', menuError);
+            throw menuError;
+        }
+
+        if (!menuData || menuData.length === 0) {
+            console.log('Seeding Menu Items...');
+            const { error: insertError } = await supabase
+                .from('menu_items')
+                .insert(defaultData.menuItems.map(item => ({
+                    id: item.id,
+                    name: item.name,
+                    category: item.category,
+                    price: item.price,
+                    caffeine: item.caffeine,
+                    image: item.image,
+                    description: item.description,
+                    tags: item.tags || ''
+                })));
+
+            if (insertError) {
+                console.error('Error seeding menu items:', insertError);
+                throw insertError;
+            }
+            console.log('✅ Menu items seeded successfully');
+        }
+
+        // Check if workshops table is empty and seed if needed
+        const { data: workshopData, error: workshopError } = await supabase
+            .from('workshops')
+            .select('id')
+            .limit(1);
+
+        if (workshopError) {
+            console.error('Error checking workshops:', workshopError);
+            throw workshopError;
+        }
+
+        if (!workshopData || workshopData.length === 0) {
+            console.log('Seeding Workshops...');
+            const { error: insertError } = await supabase
+                .from('workshops')
+                .insert(defaultData.workshops);
+
+            if (insertError) {
+                console.error('Error seeding workshops:', insertError);
+                throw insertError;
+            }
+            console.log('✅ Workshops seeded successfully');
+        }
+
+        console.log('✅ Database initialized successfully');
     } catch (error) {
-        console.error("Migration failed:", error);
+        console.error('❌ Database initialization failed:', error);
         throw error;
     }
-
-    // Then seed data if needed
-    return new Promise((resolve, reject) => {
-        db.serialize(() => {
-            // SEED DATA
-            db.get("SELECT count(*) as count FROM menu_items", (err, row) => {
-                if (!err && row.count === 0) {
-                    console.log("Seeding Menu Items...");
-                    // Explicitly list columns so new nullable columns take their defaults/NULL
-                    const stmt = db.prepare("INSERT INTO menu_items (id, name, category, price, caffeine, image, description, tags) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-                    defaultData.menuItems.forEach(item => {
-                        stmt.run(item.id, item.name, item.category, item.price, item.caffeine, item.image, item.description, item.tags || '');
-                    });
-                    stmt.finalize();
-                }
-            });
-
-            // FIXED: Only seed Art items if the table is completely empty.
-            // This prevents deleted items from reappearing on server restart.
-            // FIXED: Only seed Art items if the table is completely empty.
-            // This prevents deleted items from reappearing on server restart.
-            /*
-            db.get("SELECT count(*) as count FROM art_items", (err, row) => {
-                if (!err && row.count === 0) {
-                    console.log("Seeding Art Items...");
-                    const stmt = db.prepare("INSERT INTO art_items (id, title, artist, price, status, image, stock) VALUES (?, ?, ?, ?, ?, ?, ?)");
-                    defaultData.artItems.forEach(item => {
-                        stmt.run(item.id, item.title, item.artist, item.price, item.status, item.image, item.stock || 1);
-                    });
-                    stmt.finalize();
-                }
-            });
-            */
-
-            db.get("SELECT count(*) as count FROM workshops", (err, row) => {
-                if (!err && row.count === 0) {
-                    console.log("Seeding Workshops...");
-                    const stmt = db.prepare("INSERT INTO workshops VALUES (?, ?, ?, ?, ?, ?)");
-                    defaultData.workshops.forEach(item => {
-                        stmt.run(item.id, item.title, item.datetime, item.seats, item.booked, item.price);
-                    });
-                    stmt.finalize();
-                    console.log("Database initialized.");
-                }
-                resolve();
-            });
-        });
-    });
 }
 
-export { db };
+// Export Supabase client for direct use
+export { supabase as db };
