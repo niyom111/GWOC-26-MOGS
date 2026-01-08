@@ -407,9 +407,8 @@ app.post('/api/orders', async (req, res) => {
         });
     }
 });
-
 // -----------------------------------------------------
-// BREWDESK VIBE-BASED RECOMMENDATIONS
+// BREWDESK VIBE-BASED RECOMMENDATIONS (SMART SHUFFLE)
 // -----------------------------------------------------
 app.post('/api/recommendations/context', async (req, res) => {
     try {
@@ -421,175 +420,195 @@ app.post('/api/recommendations/context', async (req, res) => {
             return res.status(400).json({ error: 'Invalid mood or activity' });
         }
 
-        const classifyStrength = (mg) => {
-            if (mg == null) return 'medium';
-            if (mg < 140) return 'light';
-            if (mg <= 220) return 'medium';
-            return 'strong';
-        };
+        // 1. Fetch Data & Prepare Items
+        const { data: menuData, error: menuError } = await db.from('menu_items').select('*');
+        if (menuError) throw new Error('Failed to fetch menu');
 
-        const strengthWeights = {
-            Energetic: { light: 2, medium: 1, strong: -1 },
-            Weak: { light: -1, medium: 1, strong: 3 },
-            Comfort: { light: 1, medium: 3, strong: 1 },
-        };
-
-        const snackWeights = {
-            Work: { lightSnack: 3, shareable: -1, trending: 0 },
-            Hangout: { lightSnack: 0, shareable: 3, trending: 1 },
-            Chill: { lightSnack: 0, shareable: 1, trending: 3 },
-        };
-
-        // Get menu items with trending data
-        const { data: menuData, error: menuError } = await db
-            .from('menu_items')
-            .select('*');
-
-        if (menuError) {
-            console.error('BrewDesk query error:', menuError);
-            return res.status(500).json({ error: 'Failed to compute recommendations' });
-        }
-
-        // Get trending items
+        // Get trending items with error handling
         const { data: trendingData, error: trendingError } = await db
             .from('trending_items_7d')
             .select('*');
 
         if (trendingError) {
-            console.error('Trending query error:', trendingError);
-            // Continue without trending data
+            console.error('Trending query error (non-fatal):', trendingError);
         }
-
-        // Create a map of trending items for quick lookup
         const trendingMap = new Map();
-        (trendingData || []).forEach(item => {
-            trendingMap.set(item.item_id, item.total_quantity || 0);
-        });
+        (trendingData || []).forEach(item => trendingMap.set(item.item_id, item.total_quantity || 0));
 
-        // Combine menu items with trending data
-        const rows = (menuData || []).map(m => ({
+        const menuItems = (menuData || []).map(m => ({
             ...m,
             trendCount: trendingMap.get(m.id) || 0
         }));
 
-        // Snacks: category contains "Food & Bagels"
-        const snacks = rows.filter((row) =>
-            row.category && row.category.toLowerCase().includes('food & bagels')
-        );
+        // -----------------------------------------------------
+        // CORE LOGIC (User Provided)
+        // -----------------------------------------------------
 
-        // Coffee/Drinks: everything else
-        const coffees = rows.filter((row) => !snacks.includes(row));
+        // 2. Helper to classify coffee strength based on caffeine
+        const classifyStrength = (mg) => {
+            if (mg == null) return 'medium'; // Default
+            if (mg < 100) return 'light';    // Tea, Single Shot
+            if (mg < 115) return 'medium';   // Mild (gap 100-115)
+            return 'strong';                 // Americano(120), Double(128), Red Bull(150), Cold Brew(200)
+        };
+
+        // 3. Define Scoring Weights
+
+        // COFFEE WEIGHTS
+        const moodWeights = {
+            Energetic: { light: 2, medium: 1, strong: -2 }, // Keep it light
+            Weak: { light: -2, medium: 1, strong: 4 },      // Need power
+            Comfort: { light: 1, medium: 3, strong: 0 },    // Warm/Cozy
+        };
+
+        const activityCoffeeWeights = {
+            Work: { light: 0, medium: 1, strong: 3 },       // Focus booster
+            Hangout: { light: 1, medium: 2, strong: 0 },    // Social sipping
+            Chill: { light: 3, medium: 1, strong: -1 },     // Relaxing
+        };
+
+        // SNACK WEIGHTS
+        const activitySnackWeights = {
+            Work: { lightSnack: 3, shareable: -1, heavy: -2 },  // Clean eating
+            Hangout: { lightSnack: 1, shareable: 4, heavy: 1 }, // Sharing is caring
+            Chill: { lightSnack: 1, shareable: 1, heavy: 3 },   // Indulge
+        };
+
+        const moodSnackWeights = {
+            Energetic: { lightSnack: 2, shareable: 0, heavy: -1 },
+            Weak: { lightSnack: -1, shareable: 0, heavy: 3 },   // Sugar/Carb loading
+            Comfort: { lightSnack: 0, shareable: 0, heavy: 3 }, // Comfort food
+        };
+
+        // 4. Filter Items
+        const snacks = menuItems.filter(item =>
+            (item.category && item.category.toLowerCase().includes('food')) ||
+            (item.category && item.category.toLowerCase().includes('bagel')) ||
+            item.name.toLowerCase().includes('croissant')
+        );
+        const coffees = menuItems.filter(item => !snacks.includes(item));
 
         let bestCoffee = null;
-        if (coffees.length > 0) {
-            const moodWeights = strengthWeights[mood];
-
-            const scoredCoffees = coffees.map((row) => {
-                const caffeineMg = typeof row.caffeine_mg === 'number' ? row.caffeine_mg : null;
-                const strength = classifyStrength(caffeineMg);
-                let score = moodWeights[strength] || 0;
-
-                const trendCount = row.trendCount || 0;
-                if (trendCount > 0) score += 2;
-
-                return {
-                    row,
-                    score,
-                    strength,
-                    trendCount,
-                    caffeineMg,
-                };
-            });
-
-            scoredCoffees.sort((a, b) => {
-                if (b.score !== a.score) return b.score - a.score;
-                if (b.trendCount !== a.trendCount) return b.trendCount - a.trendCount;
-                const aMg = a.caffeineMg == null ? 0 : a.caffeineMg;
-                const bMg = b.caffeineMg == null ? 0 : b.caffeineMg;
-                if (bMg !== aMg) return bMg - aMg;
-                return a.row.price - b.row.price;
-            });
-
-            const top = scoredCoffees[0];
-            bestCoffee = {
-                id: top.row.id,
-                name: top.row.name,
-                category: top.row.category,
-                price: top.row.price,
-                image: top.row.image || null,
-                description: top.row.description || null,
-                caffeine_mg: typeof top.row.caffeine_mg === 'number' ? top.row.caffeine_mg : null,
-                milk_based: top.row.milk_based == null ? null : !!top.row.milk_based,
-                score: top.score,
-                trendCount: top.trendCount,
-                strength: top.strength,
-                trending: top.trendCount > 0,
-            };
-        }
-
         let bestSnack = null;
-        if (snacks.length > 0) {
-            const w = snackWeights[activity];
 
-            const scoredSnacks = snacks.map((row) => {
-                const calories = typeof row.calories === 'number' ? row.calories : null;
-                const shareableFlag = row.shareable == null ? null : !!row.shareable;
-                const trendCount = row.trendCount || 0;
+        // --- LOGIC: PROCESS COFFEE ---
+        if (coffees.length > 0) {
+            const mWeight = moodWeights[mood];
+            const aWeight = activityCoffeeWeights[activity];
 
-                const lightSnack = calories != null && calories <= 250;
-                const shareable = shareableFlag === true;
-                const trending = trendCount > 0;
+            const scoredCoffees = coffees.map((item) => {
+                const caffeineMg = item.caffeine_mg || 0;
+                const strength = classifyStrength(caffeineMg);
 
                 let score = 0;
-                if (lightSnack) score += w.lightSnack || 0;
-                if (shareable) score += w.shareable || 0;
-                if (trending) score += w.trending || 0;
-                if (trendCount > 0) score += 2;
+                score += mWeight[strength] || 0;
+                score += aWeight[strength] || 0;
 
-                return {
-                    row,
-                    score,
-                    trendCount,
-                    calories,
-                    lightSnack,
-                    shareable,
-                    trending,
-                };
+                // Bonus for trending items
+                if (item.trendCount > 0) score += 1;
+
+                return { item, score, strength, caffeineMg };
             });
 
-            scoredSnacks.sort((a, b) => {
+            // Sort: Score DESC, then context-specific tie-breakers
+            scoredCoffees.sort((a, b) => {
                 if (b.score !== a.score) return b.score - a.score;
-                if (b.trendCount !== a.trendCount) return b.trendCount - a.trendCount;
-                const aCal = a.calories == null ? Number.MAX_SAFE_INTEGER : a.calories;
-                const bCal = b.calories == null ? Number.MAX_SAFE_INTEGER : b.calories;
-                if (aCal !== bCal) return aCal - bCal;
-                return a.row.price - b.row.price;
+                // If Work/Weak, prioritize higher caffeine
+                if ((activity === 'Work' || mood === 'Weak') && b.caffeineMg !== a.caffeineMg) {
+                    return b.caffeineMg - a.caffeineMg;
+                }
+                return a.item.price - b.item.price; // Cheaper tie-breaker
             });
 
-            const top = scoredSnacks[0];
-            bestSnack = {
-                id: top.row.id,
-                name: top.row.name,
-                category: top.row.category,
-                price: top.row.price,
-                image: top.row.image || null,
-                description: top.row.description || null,
-                calories: top.calories,
-                shareable: top.row.shareable == null ? null : !!top.row.shareable,
-                score: top.score,
-                trendCount: top.trendCount,
-                lightSnack: top.lightSnack,
-                trending: top.trending,
-            };
+            // SMART SHUFFLE: Pick randomly from the "Top Tier"
+            const topScore = scoredCoffees[0].score;
+            const topTier = scoredCoffees.filter(i => i.score >= topScore - 0.5);
+            const safePool = topTier.slice(0, 3); // Top 3 max
+
+            const picked = safePool[Math.floor(Math.random() * safePool.length)];
+
+            if (picked) {
+                bestCoffee = picked.item;
+                // Preserve metadata for UI
+                bestCoffee.strengthLabel = picked.strength;
+                bestCoffee.trending = picked.item.trendCount > 0;
+            }
         }
 
+        // --- LOGIC: PROCESS SNACKS ---
+        if (snacks.length > 0) {
+            const aWeight = activitySnackWeights[activity];
+            const mWeight = moodSnackWeights[mood];
+
+            const scoredSnacks = snacks.map((item) => {
+                const calories = item.calories || 0;
+                const shareable = !!item.shareable;
+
+                const isLight = calories <= 250;
+                const isHeavy = calories > 350;
+
+                let score = 0;
+                // Activity scores
+                if (isLight) score += aWeight.lightSnack;
+                if (shareable) score += aWeight.shareable;
+                if (isHeavy) score += aWeight.heavy;
+
+                // Mood scores
+                if (isLight) score += mWeight.lightSnack;
+                if (shareable) score += mWeight.shareable;
+                if (isHeavy) score += mWeight.heavy;
+
+                if (item.trendCount > 0) score += 1;
+
+                return { item, score };
+            });
+
+            scoredSnacks.sort((a, b) => b.score - a.score);
+
+            // SMART SHUFFLE for Snacks
+            const topScore = scoredSnacks[0].score;
+            const topTier = scoredSnacks.filter(i => i.score >= topScore - 0.5);
+            const safePool = topTier.slice(0, 3);
+
+            const picked = safePool[Math.floor(Math.random() * safePool.length)];
+
+            if (picked) {
+                bestSnack = picked.item;
+                bestSnack.trending = picked.item.trendCount > 0;
+            }
+        }
+
+        // Construct Response
         res.json({
-            coffee: bestCoffee,
-            snack: bestSnack,
+            coffee: bestCoffee ? {
+                id: bestCoffee.id,
+                name: bestCoffee.name,
+                description: bestCoffee.description,
+                price: bestCoffee.price,
+                image: bestCoffee.image,
+                caffeine_mg: bestCoffee.caffeine_mg,
+                calories: bestCoffee.calories,
+                tags: [
+                    bestCoffee.strengthLabel ? bestCoffee.strengthLabel.charAt(0).toUpperCase() + bestCoffee.strengthLabel.slice(1) : '',
+                    bestCoffee.trending ? 'Trending' : ''
+                ].filter(Boolean),
+                reason: `Matches your ${mood} mood for ${activity}`
+            } : null,
+            snack: bestSnack ? {
+                id: bestSnack.id,
+                name: bestSnack.name,
+                description: bestSnack.description,
+                price: bestSnack.price,
+                image: bestSnack.image,
+                calories: bestSnack.calories,
+                shareable: bestSnack.shareable,
+                tags: [bestSnack.shareable ? 'Shareable' : 'Single', bestSnack.trending ? 'Trending' : ''].filter(Boolean)
+            } : null
         });
+
     } catch (error) {
-        console.error('Recommendations error:', error);
-        res.status(500).json({ error: 'Failed to compute recommendations' });
+        console.error('Recommendation Error:', error);
+        res.status(500).json({ error: error.message });
     }
 });
 
