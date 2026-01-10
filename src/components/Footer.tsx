@@ -47,6 +47,8 @@ const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
               { label: 'Find Store', action: () => onNavigate(Page.FIND_STORE) },
               { label: 'FAQ', action: () => onNavigate(Page.FAQ) },
               { label: 'Menu', action: () => onNavigate(Page.MENU) },
+              { label: 'Portal', action: () => onNavigate(Page.ADMIN) },
+              { label: 'Employee', action: () => onNavigate(Page.EMPLOYEE) },
             ].map((link) => (
               <li key={link.label}>
                 <button

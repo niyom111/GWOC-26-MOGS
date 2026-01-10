@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Coffee, Palette, Users, ArrowRight, CheckCircle,
@@ -404,7 +405,10 @@ const FranchisePage: React.FC = () => {
                     </p>
                     <div className="flex flex-col md:flex-row gap-4 justify-center">
                         <button
-                            onClick={() => setIsModalOpen(true)}
+                            onClick={() => {
+                                console.log('[FranchisePage] Opening modal...');
+                                setIsModalOpen(true);
+                            }}
                             className="inline-block px-10 py-5 bg-white text-black font-bold uppercase tracking-[0.2em] rounded-full hover:bg-zinc-200 transition-colors"
                         >
                             Apply Now
@@ -428,101 +432,99 @@ const FranchisePage: React.FC = () => {
             </div>
 
             {/* MODAL */}
-            <AnimatePresence>
-                {isModalOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-6">
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                            className="bg-[#F9F8F4] w-full max-w-lg rounded-2xl shadow-xl overflow-hidden"
-                        >
-                            <div className="bg-[#1A1A1A] text-[#F9F8F4] px-8 py-6 flex justify-between items-center">
-                                <h3 className="text-2xl font-serif">Partnership Inquiry</h3>
-                                <button onClick={() => setIsModalOpen(false)} className="text-white/60 hover:text-white">
-                                    <X className="w-6 h-6" />
-                                </button>
-                            </div>
+            {isModalOpen && typeof document !== 'undefined' && createPortal(
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-6 font-sans">
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        className="bg-[#F9F8F4] w-full max-w-lg rounded-2xl shadow-xl overflow-hidden relative z-[10000]"
+                    >
+                        <div className="bg-[#1A1A1A] text-[#F9F8F4] px-8 py-6 flex justify-between items-center">
+                            <h3 className="text-2xl font-serif">Partnership Inquiry</h3>
+                            <button onClick={() => setIsModalOpen(false)} className="text-white/60 hover:text-white transition-colors">
+                                <X className="w-6 h-6" />
+                            </button>
+                        </div>
 
-                            <div className="p-8">
-                                {formStatus === 'success' ? (
-                                    <div className="text-center py-10">
-                                        <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                                            <CheckCircle className="w-8 h-8" />
-                                        </div>
-                                        <h4 className="text-2xl font-serif mb-2">Received!</h4>
-                                        <p className="text-zinc-600 font-sans">We will review your application and get back to you soon.</p>
+                        <div className="p-8 max-h-[80vh] overflow-y-auto">
+                            {formStatus === 'success' ? (
+                                <div className="text-center py-10">
+                                    <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                                        <CheckCircle className="w-8 h-8" />
                                     </div>
-                                ) : (
-                                    <form onSubmit={handleSubmit} className="space-y-6">
-                                        <div>
-                                            <label className="block text-xs uppercase tracking-widest font-bold mb-2">Full Name</label>
-                                            <input
-                                                type="text"
-                                                name="full_name"
-                                                required
-                                                value={formData.full_name}
-                                                onChange={handleInputChange}
-                                                className="w-full bg-white border border-black/10 px-4 py-3 rounded-lg outline-none focus:border-black transition-colors"
-                                                placeholder="John Doe"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs uppercase tracking-widest font-bold mb-2">Contact Number</label>
-                                            <input
-                                                type="tel"
-                                                name="contact_number"
-                                                required
-                                                value={formData.contact_number}
-                                                onChange={handleInputChange}
-                                                className="w-full bg-white border border-black/10 px-4 py-3 rounded-lg outline-none focus:border-black transition-colors"
-                                                placeholder="+91 98765 43210"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs uppercase tracking-widest font-bold mb-2">Email Address</label>
-                                            <input
-                                                type="email"
-                                                name="email"
-                                                value={formData.email}
-                                                onChange={handleInputChange}
-                                                className="w-full bg-white border border-black/10 px-4 py-3 rounded-lg outline-none focus:border-black transition-colors"
-                                                placeholder="john@example.com"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs uppercase tracking-widest font-bold mb-2">Tell us about yourself</label>
-                                            <textarea
-                                                name="enquiry"
-                                                required
-                                                value={formData.enquiry}
-                                                onChange={handleInputChange}
-                                                className="w-full bg-white border border-black/10 px-4 py-3 rounded-lg outline-none focus:border-black transition-colors h-32 resize-none"
-                                                placeholder="Why do you want to partner with Rabuste?"
-                                            ></textarea>
-                                        </div>
+                                    <h4 className="text-2xl font-serif mb-2">Received!</h4>
+                                    <p className="text-zinc-600 font-sans">We will review your application and get back to you soon.</p>
+                                </div>
+                            ) : (
+                                <form onSubmit={handleSubmit} className="space-y-6">
+                                    <div>
+                                        <label className="block text-xs uppercase tracking-widest font-bold mb-2">Full Name</label>
+                                        <input
+                                            type="text"
+                                            name="full_name"
+                                            required
+                                            value={formData.full_name}
+                                            onChange={handleInputChange}
+                                            className="w-full bg-white border border-black/10 px-4 py-3 rounded-lg outline-none focus:border-black transition-colors"
+                                            placeholder="John Doe"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs uppercase tracking-widest font-bold mb-2">Contact Number</label>
+                                        <input
+                                            type="tel"
+                                            name="contact_number"
+                                            required
+                                            value={formData.contact_number}
+                                            onChange={handleInputChange}
+                                            className="w-full bg-white border border-black/10 px-4 py-3 rounded-lg outline-none focus:border-black transition-colors"
+                                            placeholder="+91 98765 43210"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs uppercase tracking-widest font-bold mb-2">Email Address</label>
+                                        <input
+                                            type="email"
+                                            name="email"
+                                            value={formData.email}
+                                            onChange={handleInputChange}
+                                            className="w-full bg-white border border-black/10 px-4 py-3 rounded-lg outline-none focus:border-black transition-colors"
+                                            placeholder="john@example.com"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs uppercase tracking-widest font-bold mb-2">Tell us about yourself</label>
+                                        <textarea
+                                            name="enquiry"
+                                            required
+                                            value={formData.enquiry}
+                                            onChange={handleInputChange}
+                                            className="w-full bg-white border border-black/10 px-4 py-3 rounded-lg outline-none focus:border-black transition-colors h-32 resize-none"
+                                            placeholder="Why do you want to partner with Rabuste?"
+                                        ></textarea>
+                                    </div>
 
-                                        <button
-                                            type="submit"
-                                            disabled={formStatus === 'submitting'}
-                                            className="w-full bg-[#1A1A1A] text-white font-bold uppercase tracking-[0.2em] py-4 rounded-lg hover:bg-black transition-colors disabled:opacity-50"
-                                        >
-                                            {formStatus === 'submitting' ? 'Sending...' : 'Submit Application'}
-                                        </button>
+                                    <button
+                                        type="submit"
+                                        disabled={formStatus === 'submitting'}
+                                        className="w-full bg-[#1A1A1A] text-white font-bold uppercase tracking-[0.2em] py-4 rounded-lg hover:bg-black transition-colors disabled:opacity-50"
+                                    >
+                                        {formStatus === 'submitting' ? 'Sending...' : 'Submit Application'}
+                                    </button>
 
-                                        {formStatus === 'error' && (
-                                            <div className="bg-red-50 border border-red-200 text-red-600 p-3 rounded-lg text-center text-xs">
-                                                <p className="font-bold">Submission Failed</p>
-                                                <p>{errorMessage}</p>
-                                            </div>
-                                        )}
-                                    </form>
-                                )}
-                            </div>
-                        </motion.div>
-                    </div>
-                )}
-            </AnimatePresence>
+                                    {formStatus === 'error' && (
+                                        <div className="bg-red-50 border border-red-200 text-red-600 p-3 rounded-lg text-center text-xs">
+                                            <p className="font-bold">Submission Failed</p>
+                                            <p>{errorMessage}</p>
+                                        </div>
+                                    )}
+                                </form>
+                            )}
+                        </div>
+                    </motion.div>
+                </div>,
+                document.body
+            )}
 
         </div>
     );

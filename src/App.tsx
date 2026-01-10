@@ -19,6 +19,9 @@ import AdminDashboard from './components/AdminDashboard';
 import FindStorePage from './components/FindStorePage';
 import RobustaStory from './components/RobustaStory';
 import FAQPage from './components/FAQPage';
+import FranchisePage from './components/FranchisePage';
+import TrackOrderPage from './components/TrackOrderPage';
+import EmployeeDashboard from './components/EmployeeDashboard';
 import { motion as motionBase, AnimatePresence } from 'framer-motion';
 import { DataProvider } from './DataContext';
 
@@ -51,6 +54,12 @@ const App: React.FC = () => {
         return Page.ROBUSTA_STORY;
       case '/faq':
         return Page.FAQ;
+      case '/franchise':
+        return Page.FRANCHISE;
+      case '/track-order':
+        return Page.TRACK_ORDER;
+      case '/employee':
+        return Page.EMPLOYEE;
       case '/admin':
         return Page.ADMIN;
       default:
@@ -76,6 +85,12 @@ const App: React.FC = () => {
         return '/robusta-story';
       case Page.FAQ:
         return '/faq';
+      case Page.FRANCHISE:
+        return '/franchise';
+      case Page.TRACK_ORDER:
+        return '/track-order';
+      case Page.EMPLOYEE:
+        return '/employee';
       case Page.ADMIN:
         return '/admin';
       case Page.HOME:
@@ -220,6 +235,18 @@ const App: React.FC = () => {
 
             {currentPage === Page.FAQ && (
               <FAQPage />
+            )}
+
+            {currentPage === Page.FRANCHISE && (
+              <FranchisePage />
+            )}
+
+            {currentPage === Page.TRACK_ORDER && (
+              <TrackOrderPage onNavigate={navigateTo} />
+            )}
+
+            {currentPage === Page.EMPLOYEE && (
+              <EmployeeDashboard onNavigate={navigateTo} onBack={() => navigateTo(Page.HOME)} />
             )}
 
             {currentPage === Page.ADMIN && (

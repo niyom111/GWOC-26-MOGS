@@ -1,5 +1,6 @@
 
 import React, { useEffect, useMemo, useState, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { motion as motionBase } from 'framer-motion';
 import { Search, Filter, X } from 'lucide-react';
 import { CoffeeItem } from '../types';
@@ -642,16 +643,18 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
         </motion.div>
       )}
 
-      {showBrewDesk && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-          <div className="absolute top-6 right-6 text-white text-xs uppercase tracking-[0.25em] flex items-center gap-2 cursor-pointer" onClick={() => setShowBrewDesk(false)}>
-            <span>Close</span>
-            <X className="w-4 h-4" />
-          </div>
-          <div className="mx-4">
+      {showBrewDesk && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 font-sans">
+          <div className="absolute inset-0" onClick={() => setShowBrewDesk(false)} />
+          <div className="relative z-[10000] w-full max-w-lg">
+            <div className="absolute -top-12 right-0 text-white text-xs uppercase tracking-[0.25em] flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => setShowBrewDesk(false)}>
+              <span>Close</span>
+              <X className="w-4 h-4" />
+            </div>
             <BrewDeskPopup onClose={() => setShowBrewDesk(false)} onAddToCart={onAddToCart} />
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
