@@ -64,7 +64,7 @@ const StatBlock: React.FC<{
     index: number
 }> = ({ value, label, sub, index }) => {
     const ref = useRef(null);
-    const isInView = useInView(ref, { once: true, margin: "-100px" });
+    const isInView = useInView(ref, { once: false, margin: "-100px" });
 
     return (
         <motion.div

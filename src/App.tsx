@@ -14,14 +14,11 @@ import AwarenessPage from './components/AwarenessPage';
 import Footer from './components/Footer';
 import PaymentFailurePage from './components/PaymentFailurePage';
 import AdminDashboard from './components/AdminDashboard';
-import FranchisePage from './components/FranchisePage';
 
 
 import FindStorePage from './components/FindStorePage';
 import RobustaStory from './components/RobustaStory';
 import FAQPage from './components/FAQPage';
-import TrackOrderPage from './components/TrackOrderPage';
-import EmployeeDashboard from './components/EmployeeDashboard';
 import { motion as motionBase, AnimatePresence } from 'framer-motion';
 import { DataProvider } from './DataContext';
 
@@ -56,12 +53,6 @@ const App: React.FC = () => {
         return Page.FAQ;
       case '/admin':
         return Page.ADMIN;
-      case '/track-order':
-        return Page.TRACK_ORDER;
-      case '/employee':
-        return Page.EMPLOYEE;
-      case '/franchise':
-        return Page.FRANCHISE;
       default:
         return Page.HOME;
     }
@@ -87,12 +78,6 @@ const App: React.FC = () => {
         return '/faq';
       case Page.ADMIN:
         return '/admin';
-      case Page.TRACK_ORDER:
-        return '/track-order';
-      case Page.EMPLOYEE:
-        return '/employee';
-      case Page.FRANCHISE:
-        return '/franchise';
       case Page.HOME:
       default:
         return '/';
@@ -137,7 +122,7 @@ const App: React.FC = () => {
     if (window.location.pathname !== newPath) {
       window.history.pushState({ page }, '', newPath);
     }
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    // Scroll is now handled by ScrollToTop component on mount
     setCurrentPage(page);
   };
 
@@ -162,6 +147,14 @@ const App: React.FC = () => {
 
   const cartCount = cart.reduce((acc, item) => acc + item.quantity, 0);
 
+  // ScrollToTop component to reset scroll only when new page mounts
+  const ScrollToTop = () => {
+    React.useLayoutEffect(() => {
+      window.scrollTo(0, 0);
+    }, []);
+    return null;
+  };
+
   return (
     <DataProvider>
       <div className="min-h-screen font-sans bg-[#F9F8F4] text-[#1A1A1A]">
@@ -170,11 +163,12 @@ const App: React.FC = () => {
         <AnimatePresence mode="wait">
           <motion.div
             key={currentPage}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.6 }}
+            initial={{ opacity: 0, y: 20, filter: 'blur(10px)' }}
+            animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+            exit={{ opacity: 0, y: -20, filter: 'blur(10px)' }}
+            transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }} // Custom cubic-bezier for liquid smooth feel
           >
+            <ScrollToTop />
             {currentPage === Page.HOME && (
               <>
                 <Hero />
@@ -228,24 +222,12 @@ const App: React.FC = () => {
               <FAQPage />
             )}
 
-            {currentPage === Page.FRANCHISE && (
-              <FranchisePage />
-            )}
-
             {currentPage === Page.ADMIN && (
               <AdminRoute>
                 {handleLogout => (
                   <AdminDashboard onBack={() => navigateTo(Page.HOME)} onLogout={handleLogout} />
                 )}
               </AdminRoute>
-            )}
-
-            {currentPage === Page.TRACK_ORDER && (
-              <TrackOrderPage onNavigate={navigateTo} />
-            )}
-
-            {currentPage === Page.EMPLOYEE && (
-              <EmployeeDashboard onNavigate={navigateTo} onBack={() => navigateTo(Page.HOME)} />
             )}
           </motion.div>
         </AnimatePresence>

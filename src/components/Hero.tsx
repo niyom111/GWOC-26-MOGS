@@ -56,37 +56,18 @@ const Hero: React.FC = () => {
         </motion.div>
 
         <motion.p
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 1.2, duration: 1.2, ease: "easeOut" }}
-          className="mt-16 text-2xl md:text-3xl font-serif text-[#F9F8F4] tracking-wide text-centre"
+          initial={{ opacity: 0, clipPath: 'inset(0 100% 0 0)' }}
+          animate={{ opacity: 1, clipPath: 'inset(0 0% 0 0)' }}
+          transition={{ delay: 1.5, duration: 2, ease: [0.22, 1, 0.36, 1] }}
+          className="mt-16 text-6xl md:text-8xl font-script text-[#F9F8F4] tracking-wide text-center pt-4"
         >
-          Reclaiming the Robusta Standard.
+          Robusta at Rabuste
         </motion.p>
 
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1.5, duration: 1 }}
-          className="mt-20"
-        >
-          <a href="#standard" className="group flex flex-col items-center">
-            <span className="text-[9px] uppercase tracking-[0.4em] mb-4 text-white/40 group-hover:text-white transition-colors">Start the Ritual</span>
-            <motion.div
-              animate={{ y: [0, 10, 0] }}
-              transition={{ repeat: Infinity, duration: 2 }}
-              className="w-px h-16 bg-gradient-to-b from-white/10 to-white/60"
-            />
-          </a>
-        </motion.div>
+
       </div>
 
-      <motion.div
-        style={{ opacity }}
-        className="absolute bottom-10 left-10 text-[8px] uppercase tracking-[0.5em] text-white/40 font-sans"
-      >
-        Exhibition Mode [On]
-      </motion.div>
+
     </section>
   );
 };
