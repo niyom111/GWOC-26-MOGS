@@ -738,6 +738,156 @@ app.post('/api/recommendations/context', async (req, res) => {
 });
 
 // -----------------------------------------------------
+// FRANCHISE MANAGEMENT ENDPOINTS
+// -----------------------------------------------------
+
+// 1. SETTINGS (Contact Number)
+app.get('/api/franchise/settings', async (req, res) => {
+    try {
+        const { data, error } = await db.from('franchise_settings').select('*').limit(1).single();
+        if (error && error.code !== 'PGRST116') { // PGRST116 is "Row not found"
+            return res.status(500).json({ error: error.message });
+        }
+        // Return default if not found
+        res.json(data || { contact_number: '+91 98765 43210' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.post('/api/franchise/settings', async (req, res) => {
+    try {
+        const { contact_number } = req.body;
+        if (!contact_number) return res.status(400).json({ error: 'Contact number is required' });
+
+        // Check if a row exists
+        const { data: existing } = await db.from('franchise_settings').select('id').limit(1);
+
+        let result;
+        if (existing && existing.length > 0) {
+            // Update
+            result = await db.from('franchise_settings').update({ contact_number, updated_at: new Date() }).eq('id', existing[0].id).select();
+        } else {
+            // Insert
+            result = await db.from('franchise_settings').insert({ contact_number }).select();
+        }
+
+        if (result.error) return res.status(500).json({ error: result.error.message });
+        res.json(result.data[0]);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// 2. FAQS
+app.get('/api/franchise/faq', async (req, res) => {
+    try {
+        const { data, error } = await db.from('franchise_faq').select('*').order('created_at', { ascending: true });
+        if (error) return res.status(500).json({ error: error.message });
+        res.json(data || []);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.post('/api/franchise/faq', async (req, res) => {
+    try {
+        const { question, answer } = req.body;
+        if (!question || !answer) return res.status(400).json({ error: 'Question and Answer are required' });
+
+        const { data, error } = await db.from('franchise_faq').insert({ question, answer }).select().single();
+        if (error) return res.status(500).json({ error: error.message });
+        res.json(data);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.put('/api/franchise/faq/:id', async (req, res) => {
+    try {
+        const { question, answer } = req.body;
+        const updates = { updated_at: new Date() };
+        if (question) updates.question = question;
+        if (answer) updates.answer = answer;
+
+        const { error } = await db.from('franchise_faq').update(updates).eq('id', req.params.id);
+        if (error) return res.status(500).json({ error: error.message });
+        res.json({ message: 'Updated' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.delete('/api/franchise/faq/:id', async (req, res) => {
+    try {
+        const { error } = await db.from('franchise_faq').delete().eq('id', req.params.id);
+        if (error) return res.status(500).json({ error: error.message });
+        res.json({ message: 'Deleted' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// 3. ENQUIRIES
+app.get('/api/franchise/enquiries', async (req, res) => {
+    try {
+        const { data, error } = await db.from('franchise_enquiries').select('*').order('created_at', { ascending: false });
+        if (error) return res.status(500).json({ error: error.message });
+        res.json(data || []);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.post('/api/franchise/enquire', async (req, res) => {
+    try {
+        const { full_name, contact_number, email, enquiry } = req.body;
+        if (!full_name || !contact_number || !enquiry) {
+            return res.status(400).json({ error: 'Name, Contact, and Enquiry are required' });
+        }
+
+        const { data, error } = await db.from('franchise_enquiries').insert({
+            full_name,
+            contact_number,
+            email,
+            enquiry,
+            status: 'New' // Default status
+        }).select().single();
+
+        if (error) return res.status(500).json({ error: error.message });
+        res.json({ message: 'Enquiry submitted successfully', id: data.id });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.put('/api/franchise/enquiries/:id/status', async (req, res) => {
+    try {
+        const { status } = req.body;
+        if (!status) return res.status(400).json({ error: 'Status is required' });
+
+        const { error } = await db.from('franchise_enquiries')
+            .update({ status })
+            .eq('id', req.params.id);
+
+        if (error) return res.status(500).json({ error: error.message });
+        res.json({ message: 'Status updated' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.delete('/api/franchise/enquiries/:id', async (req, res) => {
+    try {
+        const { error } = await db.from('franchise_enquiries').delete().eq('id', req.params.id);
+        if (error) return res.status(500).json({ error: error.message });
+        res.json({ message: 'Deleted' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// -----------------------------------------------------
 // TRENDING ITEMS (LAST 72 HOURS)
 // -----------------------------------------------------
 app.get('/api/trending', async (req, res) => {

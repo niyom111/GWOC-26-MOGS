@@ -48,5 +48,6 @@ export enum Page {
   LOGIN = 'login',
   PAYMENT_FAILURE = 'payment_failure',
   TRACK_ORDER = 'track_order',
-  EMPLOYEE = 'employee'
+  EMPLOYEE = 'employee',
+  FRANCHISE = 'franchise'
 }

@@ -21,6 +21,7 @@ const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage, cartCount }) =
     { label: 'Philosophy', page: Page.AWARENESS },
     { label: 'Find Store', page: Page.FIND_STORE },
     { label: 'Track Order', page: Page.TRACK_ORDER },
+    { label: 'Franchise', page: Page.FRANCHISE },
   ];
 
   const [menuOpen, setMenuOpen] = React.useState(false);
@@ -36,7 +37,7 @@ const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage, cartCount }) =
   // HOME (Dark Video): Text is White.
   // INNER (Light Cream): Text is Black.
   const textColorClass = isHome ? 'text-white' : 'text-[#0a0a0a]';
-  
+
   // LOGO FILTER:
   // Home: brightness-100 (Keeps it White/Original)
   // Inner: brightness-0 (Forces it to SOLID BLACK)
@@ -45,22 +46,21 @@ const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage, cartCount }) =
   // MENU BUTTON BACKGROUND:
   // Home: Dark glass effect.
   // Inner: Subtle dark ring for contrast against cream.
-  const menuButtonBg = isHome 
-    ? 'bg-black/50 border-white/10 backdrop-blur-md' 
+  const menuButtonBg = isHome
+    ? 'bg-black/50 border-white/10 backdrop-blur-md'
     : 'bg-black/5 border-black/10';
 
   return (
     <>
       {/* HEADER CONTAINER */}
-      <motion.header 
+      <motion.header
         initial={{ y: -100 }}
         animate={{ y: 0 }}
         className={`${isHome ? 'fixed' : 'relative'} top-0 left-0 w-full z-40 pointer-events-none`}
       >
         <div
-          className={`relative flex items-center px-6 ${
-            isHome ? 'py-1' : 'pt-2 pb-3'
-          }`}
+          className={`relative flex items-center px-6 ${isHome ? 'py-1' : 'pt-2 pb-3'
+            }`}
         >
           {/* LOGO (Inner Pages Only - or Conditional) */}
           {/* We show logo on inner pages to navigate home, but hide it on Admin. */}
@@ -72,43 +72,43 @@ const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage, cartCount }) =
               <img
                 src="/media/logo.png"
                 alt="Rabuste Logo"
-                className={`h-16 md:h-20 w-30 object-contain ${logoFilterClass}`} 
+                className={`h-16 md:h-20 w-30 object-contain ${logoFilterClass}`}
               />
             </button>
           )}
 
       {/* RIGHT SIDE ICONS */}
       {currentPage !== Page.ADMIN && (
-      <div className={`fixed top-4 right-4 z-50 flex items-center space-x-4 md:space-x-6 pointer-events-auto ${textColorClass}`}>
-            {/* Cart Button */}
-            <button 
-              onClick={() => handleNavigate(Page.CART)}
-              className="relative cursor-pointer opacity-100 hover:opacity-70 transition-opacity"
-            >
-              <ShoppingBag className="w-5 h-5" />
-              {cartCount > 0 && (
-                <motion.span 
-                  initial={{ scale: 0, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  // Badge Colors Flipped for Contrast
-                  className={`absolute -top-2 -right-2 text-[9px] w-4 h-4 flex items-center justify-center rounded-full font-black ${isHome ? 'bg-white text-black' : 'bg-black text-white'}`}
-                >
-                  {cartCount}
-                </motion.span>
-              )}
-            </button>
+        <div className={`fixed top-4 right-4 z-50 flex items-center space-x-4 md:space-x-6 pointer-events-auto ${textColorClass}`}>
+          {/* Cart Button */}
+          <button 
+            onClick={() => handleNavigate(Page.CART)}
+            className="relative cursor-pointer opacity-100 hover:opacity-70 transition-opacity"
+          >
+            <ShoppingBag className="w-5 h-5" />
+            {cartCount > 0 && (
+              <motion.span 
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                // Badge Colors Flipped for Contrast
+                className={`absolute -top-2 -right-2 text-[9px] w-4 h-4 flex items-center justify-center rounded-full font-black ${isHome ? 'bg-white text-black' : 'bg-black text-white'}`}
+              >
+                {cartCount}
+              </motion.span>
+            )}
+          </button>
 
-            {/* Hamburger Menu Button */}
-            <button
-              onClick={() => setMenuOpen(true)}
-              className="relative cursor-pointer hover:opacity-80 transition-opacity"
-              aria-label="Open navigation menu"
-            >
-              <span className={`inline-flex h-10 w-10 items-center justify-center rounded-full border ${menuButtonBg}`}>
-                <Menu className="w-5 h-5" />
-              </span>
-            </button>
-          </div>
+          {/* Hamburger Menu Button */}
+          <button
+            onClick={() => setMenuOpen(true)}
+            className="relative cursor-pointer hover:opacity-80 transition-opacity"
+            aria-label="Open navigation menu"
+          >
+            <span className={`inline-flex h-10 w-10 items-center justify-center rounded-full border ${menuButtonBg}`}>
+              <Menu className="w-5 h-5" />
+            </span>
+          </button>
+        </div>
       )}
         </div>
       </motion.header>

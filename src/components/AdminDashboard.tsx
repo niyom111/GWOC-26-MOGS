@@ -1,6 +1,6 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Coffee,
   Palette,
@@ -14,6 +14,11 @@ import {
   CheckCircle2,
   AlertTriangle,
   ClipboardList,
+  Settings,
+  HelpCircle,
+  MessageSquare,
+  X,
+  ChevronDown,
 } from 'lucide-react';
 import {
   useDataContext,
@@ -31,15 +36,24 @@ interface AdminDashboardProps {
 
 interface FranchiseEnquiry {
   id: string;
-  name: string;
-  contact: string;
-  location: string;
-  date: string;
+  full_name: string;
+  contact_number: string;
+  email: string;
+  enquiry: string;
+  created_at: string;
   read: boolean;
+  status?: string; // New, Contacted, In Progress, Converted, Closed
+}
+
+interface FranchiseFaqItem {
+  id: number; // DB uses int
+  question: string;
+  answer: string;
 }
 
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'coffee' | 'orders' | 'art' | 'workshops' | 'franchise'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'coffee' | 'orders' | 'art' | 'workshops' | 'franchise_enquiries' | 'franchise_faqs' | 'franchise_settings'>('overview');
+  const [isFranchiseOpen, setIsFranchiseOpen] = useState(false);
 
   const tabs = [
     { id: 'overview' as const, label: 'Overview', icon: LayoutDashboard },
@@ -47,7 +61,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
     { id: 'orders' as const, label: 'Orders', icon: ClipboardList },
     { id: 'art' as const, label: 'Art Gallery', icon: Palette },
     { id: 'workshops' as const, label: 'Workshops', icon: Calendar },
-    { id: 'franchise' as const, label: 'Franchise Enquiries', icon: Users },
+    { id: 'franchise_enquiries' as const, label: 'Franchise Enquiries', icon: MessageSquare },
+    { id: 'franchise_faqs' as const, label: 'Franchise FAQs', icon: HelpCircle },
+    { id: 'franchise_settings' as const, label: 'Franchise Settings', icon: Settings },
   ];
 
   const [toast, setToast] = useState<{
@@ -107,6 +123,115 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
 
   // Removed hardcoded enquiries
   const [enquiries, setEnquiries] = useState<FranchiseEnquiry[]>([]);
+  const [franchiseFaqs, setFranchiseFaqs] = useState<FranchiseFaqItem[]>([]);
+  const [franchiseContact, setFranchiseContact] = useState<string>('');
+  const [selectedEnquiry, setSelectedEnquiry] = useState<FranchiseEnquiry | null>(null);
+
+  const refreshEnquiries = () => {
+    fetch('http://localhost:5000/api/franchise/enquiries')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) setEnquiries(data);
+      })
+      .catch(err => console.error(err));
+  };
+
+  useEffect(() => {
+    // Fetch Enquiries
+    refreshEnquiries();
+
+    // Fetch FAQs
+    fetch('http://localhost:5000/api/franchise/faq')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) setFranchiseFaqs(data);
+      })
+      .catch(err => console.error(err));
+
+    // Fetch Settings
+    fetch('http://localhost:5000/api/franchise/settings')
+      .then(async res => {
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          if (err.error?.includes('relation')) showToast('Franchise tables missing', 'error');
+          return; // Stop if error
+        }
+        return res.json();
+      })
+      .then(data => {
+        if (data && data.contact_number) setFranchiseContact(data.contact_number);
+      })
+      .catch(err => console.error(err));
+  }, []);
+
+  const saveFranchiseContact = async (number: string) => {
+    try {
+      const res = await fetch('http://localhost:5000/api/franchise/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contact_number: number })
+      });
+      if (res.ok) {
+        setFranchiseContact(number);
+        showToast('Contact number updated', 'success');
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        if (errData.error?.includes('relation') || errData.error?.includes('franchise_')) {
+          showToast('Database tables missing. Run migration.', 'error');
+        } else {
+          showToast('Failed to update contact', 'error');
+        }
+      }
+    } catch (e) {
+      showToast('Error updating contact', 'error');
+    }
+  };
+
+  const addFaq = async (question: string, answer: string) => {
+    try {
+      const res = await fetch('http://localhost:5000/api/franchise/faq', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question, answer })
+      });
+      if (res.ok) {
+        const newFaq = await res.json();
+        if (newFaq && newFaq.id) {
+          setFranchiseFaqs(prev => [...prev, newFaq]);
+          showToast('FAQ added', 'success');
+        } else {
+          // Fallback refresh
+          const items = await (await fetch('http://localhost:5000/api/franchise/faq')).json();
+          setFranchiseFaqs(items);
+          showToast('FAQ added', 'success');
+        }
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        if (errData.error?.includes('relation') || errData.error?.includes('franchise_')) {
+          showToast('Database tables missing. Run migration.', 'error');
+        } else {
+          showToast('Failed to add FAQ', 'error');
+        }
+      }
+    } catch (e) {
+      showToast('Error adding FAQ', 'error');
+    }
+  };
+
+  const deleteFaq = async (id: number) => {
+    try {
+      const res = await fetch(`http://localhost:5000/api/franchise/faq/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setFranchiseFaqs(prev => prev.filter(f => f.id !== id));
+        showToast('FAQ deleted', 'success');
+      } else {
+        showToast('Failed to delete FAQ', 'error');
+      }
+    } catch (e) {
+      showToast('Error deleting FAQ', 'error');
+    }
+  };
+
 
   // Modal state for Coffee items
   const [coffeeModalOpen, setCoffeeModalOpen] = useState(false);
@@ -428,6 +553,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
   const beverageItems = menuItems.filter(item => !item.category.trim().toUpperCase().includes('FOOD'));
   const beverageCount = beverageItems.length;
   const foodCount = foodItems.length;
+  const enquiryCount = enquiries.length;
 
   return (
     <div className="flex h-screen bg-[#F9F8F4] pt-10 text-[#0a0a0a]">
@@ -438,12 +564,19 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
         </div>
 
         <nav className="flex-1 space-y-1 text-sm font-sans uppercase tracking-[0.18em]">
-          {tabs.map(tab => (
+          {/* Top Level Items */}
+          {[
+            { id: 'overview', label: 'Overview', icon: LayoutDashboard },
+            { id: 'coffee', label: 'Menu', icon: Coffee },
+            { id: 'orders', label: 'Orders', icon: ClipboardList },
+            { id: 'art', label: 'Art Gallery', icon: Palette },
+            { id: 'workshops', label: 'Workshops', icon: Calendar },
+          ].map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => setActiveTab(tab.id as any)}
               className={`w-full flex items-center space-x-3 px-3 py-2 text-left transition-all border-l-2 ${activeTab === tab.id
-                ? 'border-black font-semibold underline'
+                ? 'border-black font-semibold text-[#0a0a0a]'
                 : 'border-transparent text-zinc-500 hover:text-[#0a0a0a] hover:border-black/10'
                 }`}
             >
@@ -451,6 +584,54 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
               <span>{tab.label}</span>
             </button>
           ))}
+
+          {/* Franchise Section */}
+          <div className="pt-2">
+            <button
+              onClick={() => setIsFranchiseOpen(!isFranchiseOpen)}
+              className={`w-full flex items-center justify-between px-3 py-2 text-left transition-all border-l-2 ${['franchise_enquiries', 'franchise_faqs', 'franchise_settings'].includes(activeTab)
+                ? 'border-black text-[#0a0a0a]'
+                : 'border-transparent text-zinc-500 hover:text-[#0a0a0a] hover:border-black/10'
+                }`}
+            >
+              <div className="flex items-center space-x-3">
+                <Users className="w-4 h-4" />
+                <span>Franchise</span>
+              </div>
+              <ChevronDown
+                className={`w-4 h-4 transition-transform duration-200 ${isFranchiseOpen ? 'rotate-180' : ''}`}
+              />
+            </button>
+
+            <AnimatePresence>
+              {isFranchiseOpen && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  className="overflow-hidden"
+                >
+                  {[
+                    { id: 'franchise_enquiries', label: 'Enquiries', icon: MessageSquare },
+                    { id: 'franchise_faqs', label: 'FAQs', icon: HelpCircle },
+                    { id: 'franchise_settings', label: 'Settings', icon: Settings },
+                  ].map((sub) => (
+                    <button
+                      key={sub.id}
+                      onClick={() => setActiveTab(sub.id as any)}
+                      className={`w-full flex items-center space-x-3 px-3 py-2 pl-10 text-left transition-all ${activeTab === sub.id
+                        ? 'text-[#0a0a0a] font-semibold'
+                        : 'text-zinc-500 hover:text-[#0a0a0a]'
+                        }`}
+                    >
+                      <sub.icon className="w-3 h-3" />
+                      <span className="text-[10px] tracking-[0.25em]">{sub.label}</span>
+                    </button>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </nav>
 
         {/* Rabuste logo near bottom, above Exit button */}
@@ -524,6 +705,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
             <OverviewCard label="Food" value={foodCount} />
             <OverviewCard label="Artworks" value={artItems.length} />
             <OverviewCard label="Workshops" value={workshops.length} />
+            <OverviewCard label="Franchise Leads" value={enquiryCount} />
           </div>
         )}
 
@@ -545,11 +727,53 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
 
         {activeTab === 'workshops' && <WorkshopTable items={workshops} />}
 
-        {activeTab === 'franchise' && (
+        {activeTab === 'franchise_enquiries' && (
           <FranchiseTable
             items={enquiries}
             onMarkRead={markEnquiryRead}
             onDelete={deleteEnquiry}
+            onView={(item) => setSelectedEnquiry(item)}
+          />
+        )}
+
+        {/* Enquiry Modal */}
+        {selectedEnquiry && (
+          <EnquiryDetailModal
+            enquiry={selectedEnquiry}
+            onClose={() => setSelectedEnquiry(null)}
+            onUpdateStatus={async (id, status) => {
+              try {
+                const res = await fetch(`http://localhost:5000/api/franchise/enquiries/${id}/status`, {
+                  method: 'PUT',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ status })
+                });
+                if (res.ok) {
+                  showToast('Status updated', 'success');
+                  setSelectedEnquiry(null);
+                  refreshEnquiries(); // Refresh list
+                } else {
+                  showToast('Failed to update status', 'error');
+                }
+              } catch (e) {
+                showToast('Error updating status', 'error');
+              }
+            }}
+          />
+        )}
+
+        {activeTab === 'franchise_faqs' && (
+          <FranchiseFaqManager
+            items={franchiseFaqs}
+            onAdd={addFaq}
+            onDelete={deleteFaq}
+          />
+        )}
+
+        {activeTab === 'franchise_settings' && (
+          <FranchiseSettingsManager
+            contactNumber={franchiseContact}
+            onSave={saveFranchiseContact}
           />
         )}
       </main>
@@ -1106,53 +1330,262 @@ const FranchiseTable: React.FC<{
   items: FranchiseEnquiry[];
   onMarkRead: (id: string) => void;
   onDelete: (id: string) => void;
-}> = ({ items, onMarkRead, onDelete }) => (
-  <div className="bg-white border border-black/5 rounded-xl overflow-hidden">
-    <table className="w-full text-left font-sans text-sm">
-      <thead className="bg-[#F9F8F4] text-[10px] uppercase tracking-[0.25em] text-zinc-500">
-        <tr>
-          <th className="px-6 py-3 font-semibold">Name</th>
-          <th className="px-6 py-3 font-semibold">Contact</th>
-          <th className="px-6 py-3 font-semibold">Location Interest</th>
-          <th className="px-6 py-3 font-semibold">Date</th>
-          <th className="px-6 py-3 font-semibold">Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        {items.map(item => (
-          <tr
-            key={item.id}
-            className="border-t border-black/5 hover:bg-[#F9F8F4]/60 transition-colors"
+  onView: (item: FranchiseEnquiry) => void;
+}> = ({ items, onMarkRead, onDelete, onView }) => {
+  const [statusFilter, setStatusFilter] = useState('New');
+  const tabs = ['New', 'Contacted', 'In Progress', 'Converted', 'Closed'];
+
+  const filteredItems = items.filter(i => (i.status || 'New') === statusFilter);
+
+  return (
+    <div className="bg-white border border-black/5 rounded-xl overflow-hidden flex flex-col h-full min-h-[500px]">
+      {/* Status Tabs */}
+      <div className="flex border-b border-black/5 overflow-x-auto">
+        {tabs.map(tab => (
+          <button
+            key={tab}
+            onClick={() => setStatusFilter(tab)}
+            className={`px-6 py-4 text-[10px] uppercase tracking-[0.2em] font-bold border-b-2 transition-colors whitespace-nowrap ${statusFilter === tab
+              ? 'border-black text-black'
+              : 'border-transparent text-zinc-400 hover:text-zinc-600'
+              }`}
           >
-            <td className="px-6 py-4">
-              <span className="font-medium text-[15px]">{item.name}</span>
-            </td>
-            <td className="px-6 py-4 text-sm text-zinc-700">{item.contact}</td>
-            <td className="px-6 py-4 text-sm text-zinc-700">{item.location}</td>
-            <td className="px-6 py-4 text-sm text-zinc-700">{item.date}</td>
-            <td className="px-6 py-4">
-              <div className="flex gap-3 text-xs uppercase tracking-[0.2em]">
-                {!item.read && (
-                  <button
-                    onClick={() => onMarkRead(item.id)}
-                    className="text-emerald-700 hover:text-emerald-900"
-                  >
-                    Mark as Read
-                  </button>
-                )}
-                <button
-                  onClick={() => onDelete(item.id)}
-                  className="text-red-500 hover:text-red-600"
-                >
-                  Delete
-                </button>
-              </div>
-            </td>
-          </tr>
+            {tab}
+          </button>
         ))}
-      </tbody>
-    </table>
-  </div>
-);
+      </div>
+
+      <table className="w-full text-left font-sans text-sm">
+        <thead className="bg-[#F9F8F4] text-[10px] uppercase tracking-[0.25em] text-zinc-500">
+          <tr>
+            <th className="px-6 py-3 font-semibold">Name</th>
+            <th className="px-6 py-3 font-semibold">Contact</th>
+            <th className="px-6 py-3 font-semibold">Email</th>
+            <th className="px-6 py-3 font-semibold">Preview</th>
+            <th className="px-6 py-3 font-semibold">Date</th>
+            <th className="px-6 py-3 font-semibold">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {filteredItems.map(item => (
+            <tr
+              key={item.id}
+              onClick={() => onView(item)}
+              className="border-t border-black/5 hover:bg-[#F9F8F4]/60 transition-colors cursor-pointer group"
+            >
+              <td className="px-6 py-4">
+                <span className="font-medium text-[15px]">{item.full_name}</span>
+              </td>
+              <td className="px-6 py-4 text-sm text-zinc-700">{item.contact_number}</td>
+              <td className="px-6 py-4 text-sm text-zinc-700">{item.email}</td>
+              <td className="px-6 py-4 text-sm text-zinc-500 block max-w-xs truncate group-hover:text-black transition-colors">{item.enquiry}</td>
+              <td className="px-6 py-4 text-sm text-zinc-700">{new Date(item.created_at).toLocaleDateString()}</td>
+              <td className="px-6 py-4" onClick={e => e.stopPropagation()}>
+                <div className="flex gap-3 text-xs uppercase tracking-[0.2em]">
+                  <button
+                    onClick={() => onDelete(item.id)}
+                    className="text-red-500 hover:text-red-600 px-3 py-1 border border-red-100 rounded hover:bg-red-50"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </td>
+            </tr>
+          ))}
+          {filteredItems.length === 0 && (
+            <tr>
+              <td colSpan={6} className="px-6 py-20 text-center text-zinc-400 font-sans">
+                No enquiries in "{statusFilter}".
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+    </div>
+  );
+};
+
+const EnquiryDetailModal: React.FC<{
+  enquiry: FranchiseEnquiry;
+  onClose: () => void;
+  onUpdateStatus: (id: string, status: string) => void;
+}> = ({ enquiry, onClose, onUpdateStatus }) => {
+  const [status, setStatus] = useState(enquiry.status || 'New');
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <div className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+        <div className="px-8 py-6 border-b border-black/5 flex justify-between items-center bg-[#F9F8F4]">
+          <div>
+            <h2 className="text-xl font-serif">Enquiry Details</h2>
+            <p className="text-xs text-zinc-500 uppercase tracking-widest mt-1">ID: {enquiry.id}</p>
+          </div>
+          <button onClick={onClose} className="p-2 hover:bg-black/5 rounded-full text-zinc-500 hover:text-black transition-colors">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="p-8 overflow-y-auto font-sans space-y-8">
+          <div className="grid grid-cols-2 gap-8">
+            <div>
+              <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-2">Full Name</label>
+              <p className="text-lg font-medium">{enquiry.full_name}</p>
+            </div>
+            <div>
+              <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-2">Submitted On</label>
+              <p className="text-lg text-zinc-700">{new Date(enquiry.created_at).toLocaleString()}</p>
+            </div>
+            <div>
+              <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-2">Email</label>
+              <p className="text-lg text-zinc-700">{enquiry.email}</p>
+            </div>
+            <div>
+              <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-2">Contact Number</label>
+              <p className="text-lg text-zinc-700">{enquiry.contact_number}</p>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-4 bg-zinc-50 p-2 inline-block rounded">Message</label>
+            <div className="text-base leading-relaxed text-zinc-800 whitespace-pre-wrap bg-zinc-50 p-6 rounded-xl border border-black/5">
+              {enquiry.enquiry}
+            </div>
+          </div>
+
+          <div className="pt-6 border-t border-black/5">
+            <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-4">Pipeline Status</label>
+            <div className="relative">
+              <select
+                value={status}
+                onChange={(e) => setStatus(e.target.value)}
+                className="w-full bg-zinc-50 border border-black/10 px-4 py-3 rounded-lg appearance-none outline-none focus:border-black transition-colors font-sans text-sm"
+              >
+                {['New', 'Contacted', 'In Progress', 'Converted', 'Closed'].map(s => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+              <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none opacity-50">
+                <ChevronDown className="w-4 h-4" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-6 bg-zinc-50 border-t border-black/5 flex justify-end gap-4">
+          <button onClick={onClose} className="px-6 py-3 text-zinc-500 hover:text-black text-xs uppercase tracking-widest font-bold">Close</button>
+          <button
+            onClick={() => onUpdateStatus(enquiry.id, status)}
+            className="px-8 py-3 bg-black text-white text-xs uppercase tracking-widest font-bold rounded-lg hover:bg-zinc-800 shadow-lg"
+          >
+            Save Changes
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const FranchiseSettingsManager: React.FC<{
+  contactNumber: string;
+  onSave: (val: string) => void;
+}> = ({ contactNumber, onSave }) => {
+  const [val, setVal] = useState(contactNumber);
+  useEffect(() => { setVal(contactNumber) }, [contactNumber]);
+
+  return (
+    <div className="bg-white border border-black/5 rounded-xl p-8 max-w-xl">
+      <h3 className="text-2xl font-serif mb-6">Contact Settings</h3>
+      <div className="mb-6">
+        <label className="block text-xs uppercase tracking-[0.2em] text-zinc-500 mb-2">Franchise Phone Number</label>
+        <input
+          type="text"
+          value={val}
+          onChange={(e) => setVal(e.target.value)}
+          className="w-full bg-zinc-50 border border-black/10 px-4 py-3 rounded outline-none focus:border-black transition-colors"
+          placeholder="+91..."
+        />
+        <p className="text-[10px] text-zinc-400 mt-2">This number will be displayed on the Franchise page.</p>
+      </div>
+      <button
+        onClick={() => onSave(val)}
+        className="px-6 py-3 bg-black text-white text-xs uppercase tracking-[0.2em] hover:bg-zinc-800 transition-colors"
+      >
+        Save Changes
+      </button>
+    </div>
+  );
+};
+
+const FranchiseFaqManager: React.FC<{
+  items: FranchiseFaqItem[];
+  onAdd: (q: string, a: string) => void;
+  onDelete: (id: number) => void;
+}> = ({ items, onAdd, onDelete }) => {
+  const [q, setQ] = useState('');
+  const [a, setA] = useState('');
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!q || !a) return;
+    onAdd(q, a);
+    setQ('');
+    setA('');
+  };
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+      {/* List */}
+      <div className="space-y-4">
+        <h3 className="text-xl font-serif mb-4">Existing FAQs</h3>
+        {items.length === 0 && <p className="text-zinc-400 text-sm">No FAQs added yet.</p>}
+        {items.map(item => (
+          <div key={item.id} className="bg-white border border-black/5 p-6 rounded-xl relative group">
+            <button
+              onClick={() => onDelete(item.id)}
+              className="absolute top-4 right-4 text-zinc-300 hover:text-red-500 transition-colors"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+            <h4 className="font-serif font-bold mb-2 pr-8">{item.question}</h4>
+            <p className="text-sm text-zinc-600 font-sans">{item.answer}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Form */}
+      <div>
+        <h3 className="text-xl font-serif mb-4">Add New FAQ</h3>
+        <div className="bg-white border border-black/5 p-8 rounded-xl">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-[10px] uppercase tracking-[0.2em] text-zinc-500 mb-2">Question</label>
+              <input
+                className="w-full bg-zinc-50 border border-black/10 px-4 py-2 rounded outline-none focus:border-black"
+                value={q}
+                onChange={e => setQ(e.target.value)}
+                placeholder="e.g. What is the investment?"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] uppercase tracking-[0.2em] text-zinc-500 mb-2">Answer</label>
+              <textarea
+                className="w-full bg-zinc-50 border border-black/10 px-4 py-2 rounded outline-none focus:border-black min-h-[100px]"
+                value={a}
+                onChange={e => setA(e.target.value)}
+                placeholder="Enter detailed answer..."
+              />
+            </div>
+            <button
+              type="submit"
+              className="w-full py-3 bg-black text-white text-xs uppercase tracking-[0.2em] hover:bg-zinc-800 transition-colors"
+            >
+              Add FAQ
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export default AdminDashboard;
