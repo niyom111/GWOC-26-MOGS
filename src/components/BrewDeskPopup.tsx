@@ -84,11 +84,11 @@ const BrewDeskPopup: React.FC<BrewDeskPopupProps> = ({ onClose, onAddToCart }) =
     for (let i = 0; i < quantity; i++) {
       onAddToCart(item);
     }
-    
-    const message = quantity > 1 
+
+    const message = quantity > 1
       ? `${quantity}x ${itemName} added to cart`
       : `${itemName} added to cart`;
-    
+
     setToastMessage(message);
 
     if (toastTimeoutRef.current) {
@@ -100,7 +100,7 @@ const BrewDeskPopup: React.FC<BrewDeskPopupProps> = ({ onClose, onAddToCart }) =
   };
 
   return (
-    <div className="w-full max-w-lg bg-[#F9F8F4] border border-black/10 rounded-2xl shadow-xl p-6 md:p-8 font-sans">
+    <div className="w-full max-w-lg bg-[#F9F8F4] border border-black/10 rounded-2xl shadow-xl p-6 md:p-8 font-sans max-h-[85vh] overflow-y-auto no-scrollbar">
       {/* Header row */}
       <div className="flex items-center justify-between mb-6">
         <p className="text-[10px] uppercase tracking-[0.3em] text-zinc-500">BrewDesk Suggestion</p>
@@ -117,16 +117,16 @@ const BrewDeskPopup: React.FC<BrewDeskPopupProps> = ({ onClose, onAddToCart }) =
         Let me help you choose.
       </h2>
 
-      {/* Two-column layout: Activity / Mood */}
+      {/* Two-column layout: Activity / Mood - Symmetric */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         {/* ACTIVITY column */}
         <div>
-          <p className="text-[10px] uppercase tracking-[0.3em] text-zinc-500 mb-3">Activity</p>
-          <div className="flex flex-col gap-2">
+          <p className="text-[10px] uppercase tracking-[0.3em] text-zinc-500 mb-3 ml-1">Activity</p>
+          <div className="flex flex-col gap-3">
             {[
-              { key: 'work', label: 'WORK', hint: 'focus, productivity, clarity' },
-              { key: 'hangout', label: 'HANGOUT', hint: 'friends, conversation, laughter' },
-              { key: 'chill', label: 'CHILL', hint: 'relax, unwind, pause' },
+              { key: 'work', label: 'DEEP FOCUS', hint: 'productivity, flow, clarity' },
+              { key: 'hangout', label: 'CATCH UP', hint: 'friends, gossip, laughter' },
+              { key: 'chill', label: 'SLOW SIP', hint: 'peace, quiet, savoring' },
             ].map((opt) => {
               const selected = selectedActivityKey === opt.key;
               return (
@@ -138,17 +138,17 @@ const BrewDeskPopup: React.FC<BrewDeskPopupProps> = ({ onClose, onAddToCart }) =
                     setError(null);
                   }}
                   className={[
-                    'group w-full px-4 py-2.5 rounded-full text-[11px] uppercase tracking-[0.25em] border transition-all duration-200 flex flex-col items-center justify-center',
+                    'group w-full px-6 py-4 rounded-xl text-xs uppercase tracking-[0.25em] border transition-all duration-200 flex flex-col items-start justify-center text-left relative overflow-hidden',
                     selected
-                      ? 'bg-[#0a0a0a] text-[#F9F8F4] border-[#0a0a0a]'
-                      : 'bg-[#F9F8F4] text-zinc-600 border-zinc-300 hover:border-zinc-400',
+                      ? 'bg-[#0a0a0a] text-[#F9F8F4] border-[#0a0a0a] shadow-md'
+                      : 'bg-white text-zinc-600 border-zinc-200 hover:border-zinc-400 hover:bg-zinc-50',
                   ].join(' ')}
                 >
-                  <span>{opt.label}</span>
+                  <span className="relative z-10 font-semibold">{opt.label}</span>
                   <span
                     className={[
-                      'text-[9px] opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-visible:opacity-100',
-                      selected ? 'text-zinc-300' : 'text-zinc-400',
+                      'text-[10px] mt-1 font-sans normal-case tracking-normal transition-opacity duration-200',
+                      selected ? 'text-zinc-400 opacity-100' : 'text-zinc-400 opacity-60 group-hover:opacity-100',
                     ].join(' ')}
                   >
                     {opt.hint}
@@ -161,12 +161,12 @@ const BrewDeskPopup: React.FC<BrewDeskPopupProps> = ({ onClose, onAddToCart }) =
 
         {/* MOOD column */}
         <div>
-          <p className="text-[10px] uppercase tracking-[0.3em] text-zinc-500 mb-3">Mood</p>
-          <div className="flex flex-col gap-2">
+          <p className="text-[10px] uppercase tracking-[0.3em] text-zinc-500 mb-3 ml-1">Current Mood</p>
+          <div className="flex flex-col gap-3">
             {[
-              { key: 'energetic', label: 'ENERGETIC', hint: 'alert, lively, buzzing' },
-              { key: 'weak', label: 'WEAK', hint: 'tired, drained, refill' },
-              { key: 'comfort', label: 'COMFORT', hint: 'balanced, easy, content' },
+              { key: 'energetic', label: 'BUZZING', hint: 'sustain the vibe' },
+              { key: 'weak', label: 'DRAINED', hint: 'need a kick' },
+              { key: 'comfort', label: 'COZY', hint: 'warm hug' },
             ].map((opt) => {
               const selected = selectedMoodKey === opt.key;
               return (
@@ -178,17 +178,17 @@ const BrewDeskPopup: React.FC<BrewDeskPopupProps> = ({ onClose, onAddToCart }) =
                     setError(null);
                   }}
                   className={[
-                    'group w-full px-4 py-2.5 rounded-full text-[11px] uppercase tracking-[0.25em] border transition-all duration-200 flex flex-col items-center justify-center',
+                    'group w-full px-6 py-4 rounded-xl text-xs uppercase tracking-[0.25em] border transition-all duration-200 flex flex-col items-start justify-center text-left relative overflow-hidden',
                     selected
-                      ? 'bg-[#0a0a0a] text-[#F9F8F4] border-[#0a0a0a]'
-                      : 'bg-[#F9F8F4] text-zinc-600 border-zinc-300 hover:border-zinc-400',
+                      ? 'bg-[#0a0a0a] text-[#F9F8F4] border-[#0a0a0a] shadow-md'
+                      : 'bg-white text-zinc-600 border-zinc-200 hover:border-zinc-400 hover:bg-zinc-50',
                   ].join(' ')}
                 >
-                  <span>{opt.label}</span>
+                  <span className="relative z-10 font-semibold">{opt.label}</span>
                   <span
                     className={[
-                      'text-[9px] opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-visible:opacity-100',
-                      selected ? 'text-zinc-300' : 'text-zinc-400',
+                      'text-[10px] mt-1 font-sans normal-case tracking-normal transition-opacity duration-200',
+                      selected ? 'text-zinc-400 opacity-100' : 'text-zinc-400 opacity-60 group-hover:opacity-100',
                     ].join(' ')}
                   >
                     {opt.hint}

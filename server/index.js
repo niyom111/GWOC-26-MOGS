@@ -512,8 +512,35 @@ app.post('/api/recommendations/context', async (req, res) => {
 
             // Sort: Score DESC, then context-specific tie-breakers
             scoredCoffees.sort((a, b) => {
-                if (b.score !== a.score) return b.score - a.score;
-                // If Work/Weak, prioritize higher caffeine
+                let scoreA = a.score;
+                let scoreB = b.score;
+
+                // --- ACCURACY BOOSTERS (Specific Overrides) ---
+
+                // 1. "Deep Focus" (Work) + "Drained" (Weak) -> NEEDS RED BULL or MAX CAFFEINE
+                if (activity === 'Work' && mood === 'Weak') {
+                    if (a.item.name.toLowerCase().includes('red bull')) scoreA += 5;
+                    if (b.item.name.toLowerCase().includes('red bull')) scoreB += 5;
+                    // Boost pure black coffee too
+                    if (a.item.name.toLowerCase().includes('americano') || a.item.name.toLowerCase().includes('espresso')) scoreA += 3;
+                    if (b.item.name.toLowerCase().includes('americano') || b.item.name.toLowerCase().includes('espresso')) scoreB += 3;
+                }
+
+                // 2. "Deep Focus" (Work) -> Avoid messy drinks (Tonic/Ginger/Ice Cream)
+                if (activity === 'Work') {
+                    if (a.item.name.toLowerCase().includes('tonic') || a.item.name.toLowerCase().includes('ginger')) scoreA -= 2;
+                    if (b.item.name.toLowerCase().includes('tonic') || b.item.name.toLowerCase().includes('ginger')) scoreB -= 2;
+                }
+
+                // 3. "Cozy" (Comfort) -> Boost Milk/Chocolate
+                if (mood === 'Comfort') {
+                    if (a.item.name.toLowerCase().includes('mocha') || a.item.name.toLowerCase().includes('latte')) scoreA += 3;
+                    if (b.item.name.toLowerCase().includes('mocha') || b.item.name.toLowerCase().includes('latte')) scoreB += 3;
+                }
+
+                if (scoreB !== scoreA) return scoreB - scoreA;
+
+                // Secondary Sort: Caffeine for Weak/Work
                 if ((activity === 'Work' || mood === 'Weak') && b.caffeineMg !== a.caffeineMg) {
                     return b.caffeineMg - a.caffeineMg;
                 }
@@ -845,231 +872,130 @@ app.post('/api/payments/verify-payment', async (req, res) => {
 
 
 // -----------------------------------------------------
-// INTELLIGENT CHATBOT
+// INTELLIGENT CHATBOT (GROQ + DYNAMIC CONTEXT)
 // -----------------------------------------------------
-// Knowledge index is managed by knowledgeManager.js and updated dynamically
+import Groq from 'groq-sdk';
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 app.post('/api/chat', async (req, res) => {
     try {
         const { message, sessionId } = req.body;
-        const msg = message.toLowerCase();
 
-        // Initialize Session
-        if (sessionId && !sessions[sessionId]) {
-            sessions[sessionId] = { lastContext: null, lastCategory: null };
-        }
-        const session = sessionId ? sessions[sessionId] : { lastContext: null };
+        // 1. Fetch Dynamic Data for Context
+        const { data: menuItems } = await db.from('menu_items').select('*');
+        const { data: workshops } = await db.from('workshops').select('*');
+        const { data: artItems } = await db.from('art_items').select('*').eq('status', 'Available');
 
-        // --- 1. DOMAIN CLASSIFICATION ---
-        // Separate Art/Workshop/Menu domains to prevents "Fries for Art"
-        const artKeywords = ['art', 'gallery', 'painting', 'artist', 'piece'];
-        const workshopKeywords = ['workshop', 'class', 'learn', 'course'];
+        // 2. Build Context String
+        let context = "RABUSTE CAFE DETAILS:\n";
+        context += "• Location: Rabuste Coffee, Dimpal Row House, 15, Gymkhana Rd, Piplod, Surat, Gujarat 395007, India.\n";
+        context += "• About: A specialty coffee collective focused on the reclamation of Robusta coffee. Minimalist, focused on craft.\n";
 
-        const isArt = artKeywords.some(k => msg.includes(k));
-        const isWorkshop = workshopKeywords.some(k => msg.includes(k));
+        context += "\nCURRENT MENU:\n";
+        // Group menu by category
+        const categories = {};
+        (menuItems || []).forEach(item => {
+            const cat = item.category || 'Other';
+            if (!categories[cat]) categories[cat] = [];
 
-        // --- 2. RECOMMENDATION SIGNALS ---
-        const recTriggers = ['suggest', 'recommend', 'good', 'want', 'like', 'try', 'need', 'ordering', 'have'];
-        const isRecTrigger = recTriggers.some(t => msg.includes(t));
+            let details = `₹${item.price}`;
+            if (item.caffeine) details += ` | Caffeine: ${item.caffeine} (${item.caffeine_mg || '?'}mg)`;
+            if (item.calories) details += ` | ${item.calories} kcal`;
+            if (item.description) details += ` | Desc: ${item.description}`;
 
-        const isPriceSort = msg.includes('cheap') || msg.includes('expensive') || msg.includes('cost') || msg.includes('lowest') || msg.includes('highest') || msg.includes('price');
+            categories[cat].push(`• ${item.name}: ${details}`);
+        });
 
-        const isTired = msg.includes('tired') || msg.includes('sleepy') || msg.includes('wake') || msg.includes('energy') || msg.includes('caffeine') || msg.includes('buzz');
-
-
-        // --- 3. EXECUTION LOGIC ---
-
-        // === A. ART DOMAIN ===
-        if (isArt) {
-            const { data: rows, error } = await db
-                .from('art_items')
-                .select('*')
-                .eq('status', 'Available');
-
-            if (error) return res.json({ reply: "I can't check the gallery right now." });
-
-            if (!rows || rows.length === 0) return res.json({ reply: "Currently, all our art pieces are sold out. Check back soon!" });
-
-            if (isRecTrigger || isPriceSort) {
-                // Determine best art
-                let winner = rows[Math.floor(Math.random() * rows.length)];
-                if (msg.includes('cheap')) winner = rows.reduce((prev, curr) => prev.price < curr.price ? prev : curr);
-                if (msg.includes('expensive')) winner = rows.reduce((prev, curr) => prev.price > curr.price ? prev : curr);
-
-                const artistName = winner.artist_name || winner.artist || 'Unknown Artist';
-                return res.json({ reply: `For art, I recommend **"${winner.title}"** by ${artistName} (₹${winner.price}). It's a stunning piece.` });
-            }
-
-            // General List
-            const artList = rows.map(a => {
-                const artistName = a.artist_name || a.artist || 'Unknown Artist';
-                return `- "${a.title}" by ${artistName} (₹${a.price})`;
-            }).join('\n');
-            return res.json({ reply: `Here are the available art pieces in our gallery:\n\n${artList}` });
+        for (const [cat, items] of Object.entries(categories)) {
+            context += `\n${cat.toUpperCase()}:\n${items.join('\n')}\n`;
         }
 
-        // === B. WORKSHOP DOMAIN ===
-        if (isWorkshop) {
-            const { data: rows, error } = await db
-                .from('workshops')
-                .select('*');
+        context += "\nUPCOMING WORKSHOPS:\n";
+        (workshops || []).forEach(w => {
+            context += `• ${w.title} on ${w.datetime} (₹${w.price}) - ${w.seats - w.booked} seats left. Desc: ${w.desc || 'Join us to learn.'}\n`;
+        });
 
-            if (error) return res.json({ reply: "I can't check workshops right now." });
-            if (!rows || rows.length === 0) return res.json({ reply: "No workshops are scheduled at the moment." });
+        context += "\nART GALLERY (Available):\n";
+        (artItems || []).forEach(a => {
+            context += `• "${a.title}" by ${a.artist_name || a.artist || 'Unknown'} (₹${a.price}). Stock: ${a.stock || 1}.\n`;
+        });
 
-            const workshops = rows.map(w => {
-                const available = w.seats - w.booked;
-                return `- ${w.title} on ${w.datetime} (₹${w.price})\n  ${available > 0 ? `${available} seats left` : 'SOLD OUT'}`;
-            }).join('\n\n');
-            return res.json({ reply: `Upcoming Workshops:\n\n${workshops}` });
+        context += `
+        \nNAVIGATION ROUTES (Use EXACTLY these paths):
+        - Menu: /menu
+        - Workshops: /workshops
+        - Gallery: /art
+        - About: /about
+        - Find Us: /find-store
+        `;
+
+        // 3. System Prompt
+        const systemPrompt = `
+        You are "Rabuste Bot", the AI barista for Rabuste Cafe in Surat.
+        
+        KNOWLEDGE BASE (This is your ONLY source of truth):
+        ${context}
+
+        STRICT GUIDELINES:
+        1. **OFF-TOPIC CHECK**: If the user asks about anything NOT related to Rabuste Cafe, coffee, our menu, art, or workshops (e.g., politics, coding, general knowledge, movies), reply EXACTLY: "I can only assist with Rabuste Cafe related queries."
+        2. **ACCURACY**: Use the Caffeine content, Calories, and Descriptions provided in the Knowledge Base. Do not hallucinate.
+        3. **NAVIGATION**: If the user explicitly asks to "go to", "open", or "take me to" a page, output **ONLY** a JSON object (no markdown, no extra text).
+           Format: {"action": "navigate", "parameters": {"route": "/page"}}
+        4. **RECOMMENDATIONS**: Be helpful. If offering a drink, mention its caffeine level or flavor profile from the descriptions.
+        5. **FORMATTING**: Keep text responses clean. Use bullets (•) for lists. No bold (**).
+
+        Example Navigation Response:
+        {"action": "navigate", "parameters": {"route": "/menu"}}
+        `;
+
+        // 4. Call Groq
+        const completion = await groq.chat.completions.create({
+            messages: [
+                { role: "system", content: systemPrompt },
+                { role: "user", content: message }
+            ],
+            model: "llama-3.3-70b-versatile",
+            temperature: 0.3, // Lower temperature for more factual accuracy
+            max_tokens: 1024,
+        });
+
+        let responseText = completion.choices[0]?.message?.content || "I needs some beans to think...";
+
+        // 5. Clean & Parse
+        // Aggressively look for JSON if it exists in the response
+        const jsonMatch = responseText.match(/\{[\s\S]*"action":\s*"navigate"[\s\S]*\}/);
+
+        let apiResponse;
+        if (jsonMatch) {
+            try {
+                apiResponse = JSON.parse(jsonMatch[0]);
+            } catch (e) {
+                // Fallback if regex found something but it wasn't valid JSON
+                apiResponse = {
+                    action: 'respond',
+                    parameters: { message: responseText } // fallback to raw text
+                };
+            }
+        } else {
+            // Cleanup markdown if it's a text response
+            responseText = responseText
+                .replace(/\*\*/g, '')
+                .replace(/\*/g, '•')
+                .replace(/```json/g, '')
+                .replace(/```/g, '')
+                .trim();
+
+            apiResponse = {
+                action: 'respond',
+                parameters: { message: responseText }
+            };
         }
 
-        // === C. MENU RECOMMENDATION DOMAIN ===
-        const isFollowUp = msg.includes('then') || msg.includes('what about') || msg.includes('how about') || msg.includes('and');
+        res.json(apiResponse);
 
-        // DETECT CURRENT CONTEXT
-        const foodKeywords = ['food', 'eat', 'snack', 'bite', 'hungry', 'side', 'bagel', 'croissant', 'fries', 'pizza', 'sandwich', 'burger'];
-        const drinkKeywords = ['drink', 'coffee', 'tea', 'latte', 'brew', 'sip', 'thirsty', 'cold', 'hot', 'refreshing', 'shake'];
-
-        let currentContext = null;
-        if (foodKeywords.some(k => msg.includes(k))) currentContext = 'food';
-        else if (drinkKeywords.some(k => msg.includes(k))) currentContext = 'drink';
-
-        // Merge Context
-        let activeContext = currentContext;
-        if (isFollowUp && !activeContext && session.lastContext) {
-            activeContext = session.lastContext;
-        }
-
-        // Refine Drink Context
-        let subCategory = null;
-        if (activeContext === 'drink' || !activeContext) {
-            if (msg.includes('tea') || (session.lastCategory === 'tea' && isFollowUp)) subCategory = 'tea';
-            else if (msg.includes('coffee') || (session.lastCategory === 'coffee' && isFollowUp)) subCategory = 'coffee';
-            else if (msg.includes('shake') || (session.lastCategory === 'shake' && isFollowUp)) subCategory = 'shake';
-
-            if (subCategory) activeContext = 'drink';
-        }
-
-        // EXECUTE MENU QUERY
-        // Only enter if explicit triggers OR context OR Tired (which implies drink)
-        if (isRecTrigger || isPriceSort || isFollowUp || activeContext || isTired) {
-
-            let query = db.from('menu_items').select('*');
-            let limit = 3;
-
-            // ENERGY LOGIC (Updates Context IMPLICITLY)
-            if (isTired) {
-                query = query.or('caffeine.eq.Very High,caffeine.eq.Extreme');
-                activeContext = 'drink';
-                limit = 1; // Give the BEST energy boost
-            }
-
-            // FILTERING
-            if (activeContext === 'food') {
-                query = query.or('category.ilike.%Food%,tags.ilike.%food%,tags.ilike.%snack%,tags.ilike.%meal%');
-            } else if (activeContext === 'drink') {
-                query = query.not('category', 'ilike', '%Food%');
-                // Subcategory Filtering
-                if (subCategory === 'coffee') {
-                    query = query.or('category.ilike.%Robusta%,category.ilike.%Blend%,tags.ilike.%coffee%');
-                }
-                if (subCategory === 'tea') {
-                    query = query.or('category.ilike.%Tea%,tags.ilike.%tea%');
-                }
-                if (subCategory === 'shake') {
-                    query = query.or('category.ilike.%Shake%,tags.ilike.%milk%');
-                }
-            }
-
-            // PRICE SORTING
-            const isCheapest = msg.includes('cheap') || msg.includes('lowest') || msg.includes('least');
-            const isExpensive = msg.includes('expensive') || msg.includes('highest') || msg.includes('most');
-
-            if (isPriceSort) {
-                limit = 1;
-                if (isCheapest) {
-                    query = query.order('price', { ascending: true });
-                } else if (isExpensive) {
-                    query = query.order('price', { ascending: false });
-                }
-            }
-            // Note: For random, we'll fetch more and shuffle in JS
-
-            // TASTE / FLAVOR MATCHING
-            const flavorKeywords = ['strong', 'sweet', 'cold', 'hot', 'fruity', 'milky', 'creamy', 'chocolate', 'spicy', 'savory'];
-            const foundFlavors = flavorKeywords.filter(k => msg.includes(k));
-            if (foundFlavors.length > 0) {
-                const flavorConditions = foundFlavors.map(f => `tags.ilike.%${f}%`).join(',');
-                query = query.or(flavorConditions);
-            }
-
-            // Fetch more rows for random selection if needed
-            const fetchLimit = isPriceSort ? limit : Math.min(limit * 3, 50);
-            query = query.limit(fetchLimit);
-
-            const { data: rows, error } = await query;
-
-            if (error) return res.json({ reply: "I'm having a brain freeze. Try again?" });
-
-            // UPDATE SESSION MEMORY
-            if (sessionId) {
-                if (activeContext) sessions[sessionId].lastContext = activeContext;
-                if (subCategory) sessions[sessionId].lastCategory = subCategory;
-            }
-
-            // Shuffle if not price sorted (to simulate RANDOM())
-            let shuffledRows = rows || [];
-            if (!isPriceSort && shuffledRows.length > 0) {
-                shuffledRows = shuffledRows.sort(() => Math.random() - 0.5).slice(0, limit);
-            }
-
-            if (shuffledRows.length === 0) {
-                if (isPriceSort) return res.json({ reply: `I couldn't find any items matching those criteria.` });
-
-                // FALLTHROUGH to Knowledge if Menu search fails (e.g. "Suggest story?")
-                const fuseKnowledge = getFuseKnowledge();
-                if (fuseKnowledge) {
-                    const fuseRes = fuseKnowledge.search(msg);
-                    if (fuseRes.length > 0) return res.json({ reply: fuseRes[0].item.response });
-                }
-
-                return res.json({ reply: "I'm not sure. Try asking for 'coffee', 'food', or 'help'." });
-            }
-
-            // SMART RESPONSE GENERATION
-            const item = shuffledRows[0];
-
-            if (isTired) {
-                return res.json({ reply: `Need a boost? The **${item.name}** packs **${item.caffeine} Caffeine**. It will wake you up!` });
-            }
-
-            if (isPriceSort) {
-                const adj = isCheapest ? "cheapest" : "most premium";
-                const cat = activeContext ? activeContext : "item";
-                return res.json({ reply: `The **${adj} ${cat}** we have is the **${item.name}** at ₹${item.price}.` });
-            }
-
-            const itemTags = item.tags ? item.tags.split(',').slice(0, 3).join(', ') : 'a great choice';
-            return res.json({
-                reply: `I suggest the **${item.name}** (₹${item.price}).\n\nIt's ${itemTags}.`
-            });
-        }
-
-        // --- FALLBACK: KNOWLEDGE BASE ---
-        const fuseKnowledge = getFuseKnowledge();
-        if (fuseKnowledge) {
-            const results = fuseKnowledge.search(msg);
-            if (results.length > 0) return res.json({ reply: results[0].item.response });
-        }
-
-        // --- FALLBACK: GENERAL MENU/HELP ---
-        if (msg.includes('menu')) return res.json({ reply: "Ask me to 'suggest a drink' or 'show food options'!" });
-
-        res.json({ reply: "I didn't quite catch that. Im a smart barista, try asking me 'What is the cheapest coffee?' or 'Suggest a snack'!" });
     } catch (error) {
         console.error('Chat endpoint error:', error);
-        res.json({ reply: "I'm having trouble right now. Please try again!" });
+        res.status(500).json({ reply: "I'm having trouble connecting to the barista brain. Please try again." });
     }
 });
 

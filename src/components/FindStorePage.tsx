@@ -65,7 +65,7 @@ const FindStorePage: React.FC = () => {
           >
             <iframe
               title="Rabuste Surat Location"
-              src="https://maps.google.com/maps?q=Dimpal+Row+House,+15,+Gymkhana+Rd,+Piplod,+Surat,+Gujarat&t=&z=15&ie=UTF8&iwloc=&output=embed"
+              src="https://maps.google.com/maps?q=Rabuste+Coffee,+Surat&t=&z=15&ie=UTF8&iwloc=&output=embed"
               className="w-full h-full border-0"
               loading="lazy"
               referrerPolicy="no-referrer-when-downgrade"

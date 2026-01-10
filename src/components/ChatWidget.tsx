@@ -16,7 +16,7 @@ export default function ChatWidget() {
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [messages, setMessages] = useState<{ text: string; isUser: boolean }[]>([
-    { text: "Hi! I'm your Rabuste Barista. Ask me about our menu, calories, or for a recommendation!", isUser: false }
+    { text: "Hi! I'm Labubu AI. Ask me about our menu, calories, or for a recommendation!", isUser: false }
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -57,7 +57,7 @@ export default function ChatWidget() {
       const data: ApiResponse = await response.json();
 
       let botResponse = "I didn't catch that.";
-      
+
       if (data.action === 'navigate' && data.parameters?.route) {
         botResponse = `Taking you to the ${data.parameters.route.replace('/', '')} page...`;
         setTimeout(() => { window.location.href = data.parameters?.route || '/'; }, 1500);
@@ -82,26 +82,27 @@ export default function ChatWidget() {
 
   return (
     <div className="chat-widget-container" style={{ position: 'fixed', bottom: '20px', right: '20px', zIndex: 9999 }}>
-      
+
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="chat-widget-button flex items-center justify-center rounded-full shadow-lg transition-transform hover:scale-110"
-          style={{ backgroundColor: '#2C1810', width: '60px', height: '60px' }} 
+          className="chat-widget-button flex items-center justify-center gap-2 px-5 py-2.5 rounded-full shadow-lg transition-transform hover:scale-105"
+          style={{ backgroundColor: '#2C1810', height: '48px', width: 'auto' }}
         >
-          <MessageCircle className="text-[#F3E5AB]" size={30} />
+          <MessageCircle className="text-[#F3E5AB]" size={22} />
+          <span className="text-[#F3E5AB] font-bold text-base whitespace-nowrap">Labubu AI</span>
         </button>
       )}
 
       {isOpen && (
-        <div className={`chat-window bg-white rounded-xl shadow-2xl overflow-hidden flex flex-col transition-all duration-300 ${isMinimized ? 'h-[60px]' : 'h-[500px]'}`} 
-             style={{ width: '350px', border: '1px solid #2C1810' }}>
-          
+        <div className={`chat-window bg-white rounded-xl shadow-2xl overflow-hidden flex flex-col transition-all duration-300 ${isMinimized ? 'h-[60px]' : 'h-[500px]'}`}
+          style={{ width: '350px', border: '1px solid #2C1810' }}>
+
           <div className="chat-header p-4 flex justify-between items-center text-[#F3E5AB]" style={{ backgroundColor: '#2C1810' }}>
             <div className="flex items-center gap-2 cursor-pointer" onClick={() => setIsMinimized(!isMinimized)}>
               <Coffee size={20} />
               <div className="flex flex-col">
-                <span className="font-bold leading-tight">RABUSTE</span>
+                <span className="font-bold leading-tight">Labubu</span>
                 <span className="text-[10px] font-normal opacity-80">AI Assistant</span>
               </div>
             </div>
@@ -115,19 +116,19 @@ export default function ChatWidget() {
             <>
               <div className="chat-messages flex-1 overflow-y-auto p-4 flex flex-col gap-3 bg-[#FAF9F6]">
                 {messages.map((msg, index) => (
-                  <div key={index} 
-                       className={`message p-3 rounded-lg max-w-[85%] text-sm ${msg.isUser ? 'self-end' : 'self-start'}`}
-                       style={{
-                         whiteSpace: 'pre-wrap', // Essential for lists!
-                         backgroundColor: msg.isUser ? '#2C1810' : '#EFEBE9',
-                         color: msg.isUser ? '#F3E5AB' : '#2C1810',
-                         border: msg.isUser ? 'none' : '1px solid #D7CCC8',
-                         borderRadius: '8px'
-                       }}>
+                  <div key={index}
+                    className={`message p-3 rounded-lg max-w-[85%] text-sm ${msg.isUser ? 'self-end' : 'self-start'}`}
+                    style={{
+                      whiteSpace: 'pre-wrap', // Essential for lists!
+                      backgroundColor: msg.isUser ? '#2C1810' : '#EFEBE9',
+                      color: msg.isUser ? '#F3E5AB' : '#2C1810',
+                      border: msg.isUser ? 'none' : '1px solid #D7CCC8',
+                      borderRadius: '8px'
+                    }}>
                     {msg.text}
                   </div>
                 ))}
-                
+
                 {isLoading && (
                   <div className="bg-[#EFEBE9] p-3 rounded-lg flex items-center gap-2 text-[#2C1810] text-sm w-fit border border-[#D7CCC8]">
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -147,8 +148,8 @@ export default function ChatWidget() {
                   disabled={isLoading}
                   className="flex-1 p-2 border border-gray-300 rounded-md focus:outline-none focus:border-[#2C1810] text-sm"
                 />
-                <button 
-                  onClick={handleSend} 
+                <button
+                  onClick={handleSend}
                   disabled={isLoading || !input.trim()}
                   className="p-2 rounded-md disabled:opacity-50"
                   style={{ backgroundColor: '#2C1810', color: '#F3E5AB' }}

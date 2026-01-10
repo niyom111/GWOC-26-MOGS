@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import Groq from 'groq-sdk';
 
 dotenv.config();
 
@@ -11,12 +11,11 @@ const PORT = 5000;
 app.use(cors());
 app.use(express.json());
 
-if (!process.env.GEMINI_API_KEY) {
-  console.error("❌ ERROR: GEMINI_API_KEY is missing in .env file");
-  process.exit(1);
+if (!process.env.GROQ_API_KEY) {
+  console.error("❌ ERROR: GROQ_API_KEY is missing in .env file");
 }
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 const MENU_KQ = `
 CURRENT RABUSTE MENU:
@@ -52,11 +51,9 @@ NAVIGATION:
 
 app.post('/api/chat', async (req, res) => {
   const { message } = req.body;
-  
-  try {
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
-    const prompt = `
+  try {
+    const systemPrompt = `
     You are "Rabuste Bot".
     
     KNOWLEDGE BASE:
@@ -72,14 +69,30 @@ app.post('/api/chat', async (req, res) => {
     YOUR GOAL:
     1. Answer questions about menu/calories.
     2. If user says "Go to menu" etc, output JSON: {"action": "navigate", "parameters": {"route": "/menu"}}
-
-    User Message: "${message}"
     `;
 
-    const result = await model.generateContent(prompt);
-    let responseText = result.response.text();
+    const completion = await groq.chat.completions.create({
+      messages: [
+        {
+          role: "system",
+          content: systemPrompt
+        },
+        {
+          role: "user",
+          content: message
+        }
+      ],
+      model: "llama-3.3-70b-versatile",
+      temperature: 0.5,
+      max_tokens: 1024,
+      top_p: 1,
+      stream: false,
+      stop: null
+    });
 
-    // --- THE FIX: FORCEFULLY REMOVE ASTERSISKS & CLEANUP ---
+    let responseText = completion.choices[0]?.message?.content || "";
+
+    // --- CLEANUP (Just in case model ignores rules) ---
     responseText = responseText
       .replace(/\*\*/g, '')   // Remove **
       .replace(/\*/g, '•')    // Replace single * with bullet
@@ -89,7 +102,7 @@ app.post('/api/chat', async (req, res) => {
 
     let apiResponse;
     try {
-      if (responseText.startsWith('{') && responseText.includes('"action": "navigate"')) {
+      if (responseText.trim().startsWith('{') && responseText.includes('"action": "navigate"')) {
         apiResponse = JSON.parse(responseText);
       } else {
         apiResponse = {
@@ -107,9 +120,9 @@ app.post('/api/chat', async (req, res) => {
     res.json(apiResponse);
 
   } catch (error) {
-    console.error("Gemini Error:", error);
-    res.status(500).json({ 
-      error: "Connection error. Please try again." 
+    console.error("Groq API Error:", error);
+    res.status(500).json({
+      error: "Connection error. Please try again."
     });
   }
 });

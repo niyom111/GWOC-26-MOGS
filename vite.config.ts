@@ -3,11 +3,11 @@ import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 
 export default defineConfig(({ mode }) => {
-  // Look for .env in parent directory
-  const env = loadEnv(mode, '..', '');
+  // Look for .env in current directory
+  const env = loadEnv(mode, process.cwd(), '');
   return {
-    // Set envDir to parent directory for Vite to find .env automatically
-    envDir: '..',
+    // Set envDir to current directory for Vite to find .env automatically
+    envDir: process.cwd(),
     server: {
       port: 3000,
       host: '0.0.0.0',
