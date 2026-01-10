@@ -122,7 +122,7 @@ const App: React.FC = () => {
     if (window.location.pathname !== newPath) {
       window.history.pushState({ page }, '', newPath);
     }
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    // Scroll is now handled by ScrollToTop component on mount
     setCurrentPage(page);
   };
 
@@ -147,6 +147,14 @@ const App: React.FC = () => {
 
   const cartCount = cart.reduce((acc, item) => acc + item.quantity, 0);
 
+  // ScrollToTop component to reset scroll only when new page mounts
+  const ScrollToTop = () => {
+    React.useLayoutEffect(() => {
+      window.scrollTo(0, 0);
+    }, []);
+    return null;
+  };
+
   return (
     <DataProvider>
       <div className="min-h-screen font-sans bg-[#F9F8F4] text-[#1A1A1A]">
@@ -155,11 +163,12 @@ const App: React.FC = () => {
         <AnimatePresence mode="wait">
           <motion.div
             key={currentPage}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.6 }}
+            initial={{ opacity: 0, y: 20, filter: 'blur(10px)' }}
+            animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+            exit={{ opacity: 0, y: -20, filter: 'blur(10px)' }}
+            transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }} // Custom cubic-bezier for liquid smooth feel
           >
+            <ScrollToTop />
             {currentPage === Page.HOME && (
               <>
                 <Hero />

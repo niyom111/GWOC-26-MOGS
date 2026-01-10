@@ -23,7 +23,7 @@ const GalleryTeaser: React.FC<GalleryTeaserProps> = ({ onNavigate }) => {
         <motion.div
           initial="hidden"
           whileInView="visible"
-          viewport={{ once: true }}
+          viewport={{ once: false }}
           variants={{
             hidden: { opacity: 0 },
             visible: { opacity: 1, transition: { staggerChildren: 0.2 } }

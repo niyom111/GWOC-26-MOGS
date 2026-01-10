@@ -31,40 +31,40 @@ const reviews = [
 
 const Reviews: React.FC = () => {
   return (
-    <section className="relative text-white py-24 px-8 border-t border-white/10 overflow-hidden">
-      {/* Background video */}
+    <section className="relative text-white py-32 px-6 md:px-12 overflow-hidden bg-black">
+      {/* Background video - slightly darker overlay for readability */}
       <div className="absolute inset-0 z-0">
         <video
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover opacity-60"
           src="/media/rating-background.mp4"
           autoPlay
           loop
           muted
           playsInline
         />
-        <div className="absolute inset-0 bg-black/70" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-black/80" />
       </div>
 
-      <div className="relative z-10 max-w-6xl mx-auto">
+      <div className="relative z-10 max-w-7xl mx-auto">
         {/* Header */}
-        <div className="flex flex-col items-center justify-center gap-6 mb-16 text-center">
-          <div className="flex items-center gap-4">
-            {/* Google G logo approximation */}
-            <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-xl font-semibold">
+        <div className="flex flex-col items-center justify-center gap-10 mb-24 text-center">
+          <div className="flex items-center gap-6 bg-white/5 backdrop-blur-xl px-8 py-4 rounded-full border border-white/5">
+            {/* Google G logo */}
+            <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center text-2xl font-semibold shadow-lg">
               <span className="bg-clip-text text-transparent bg-[conic-gradient(from_180deg_at_50%_50%,#4285F4_0deg,#4285F4_90deg,#0F9D58_90deg,#0F9D58_180deg,#F4B400_180deg,#F4B400_270deg,#DB4437_270deg,#DB4437_360deg)]">
                 G
               </span>
             </div>
 
-            <div className="flex flex-col gap-1 items-start">
-              <span className="text-xs uppercase tracking-[0.2em] text-neutral-400 font-sans">
+            <div className="flex flex-col items-start gap-1">
+              <span className="text-[10px] uppercase tracking-[0.3em] text-neutral-400 font-sans">
                 Google Rating
               </span>
               <div className="flex items-baseline gap-4">
-                <span className="text-5xl md:text-6xl font-serif text-white">4.8</span>
-                <div className="flex items-center gap-1">
+                <span className="text-5xl font-serif text-white leading-none">4.8</span>
+                <div className="flex items-center gap-1.5">
                   {Array.from({ length: 5 }).map((_, i) => (
-                    <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />
+                    <Star key={i} className="w-5 h-5 fill-amber-400 text-amber-400" />
                   ))}
                 </div>
               </div>
@@ -73,34 +73,34 @@ const Reviews: React.FC = () => {
         </div>
 
         {/* Reviews grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12">
           {reviews.map((review, idx) => (
             <motion.article
               key={review.name}
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: idx * 0.08 }}
-              className="bg-black/40 border border-white/10 backdrop-blur-md rounded-2xl p-8 flex flex-col gap-4 transition-transform transition-colors duration-300 hover:-translate-y-1 hover:border-white/20"
+              viewport={{ once: false }}
+              transition={{ duration: 0.8, delay: idx * 0.1 }}
+              className="bg-zinc-900/40 backdrop-blur-sm rounded-3xl p-10 flex flex-col gap-6 hover:bg-zinc-900/60 transition-colors duration-500"
             >
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-5">
                 <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold text-black ${review.avatarClass}`}
+                  className={`w-14 h-14 rounded-full flex items-center justify-center text-lg font-bold text-black shadow-lg ${review.avatarClass}`}
                 >
                   {review.initial}
                 </div>
-                <div className="flex flex-col">
-                  <span className="text-sm font-semibold">{review.name}</span>
-                  <div className="flex items-center gap-1 mt-1">
+                <div className="flex flex-col gap-1">
+                  <span className="text-lg font-serif tracking-wide text-white">{review.name}</span>
+                  <div className="flex items-center gap-1 opacity-80">
                     {Array.from({ length: 5 }).map((_, i) => (
-                      <Star key={i} className="w-3 h-3 fill-amber-400 text-amber-400" />
+                      <Star key={i} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
                     ))}
                   </div>
                 </div>
               </div>
 
-              <p className="text-sm md:text-[13px] leading-relaxed text-neutral-200 font-sans">
-                {review.text}
+              <p className="text-lg leading-relaxed text-zinc-300 font-sans font-light">
+                "{review.text}"
               </p>
             </motion.article>
           ))}

@@ -73,7 +73,7 @@ const RobustaStory: React.FC<RobustaStoryProps> = ({ onBack }) => {
           <motion.div
             initial={{ opacity: 0, x: -40 }}
             whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
+            viewport={{ once: false }}
             transition={{ duration: 0.6 }}
           >
             <h3 className="text-2xl md:text-3xl font-serif mb-4 text-[#1A1A1A]">A Bean in the Shadows.</h3>
@@ -87,7 +87,7 @@ const RobustaStory: React.FC<RobustaStoryProps> = ({ onBack }) => {
           <motion.div
             initial={{ opacity: 0, x: 40 }}
             whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
+            viewport={{ once: false }}
             transition={{ duration: 0.6, delay: 0.15 }}
           >
             <h3 className="text-2xl md:text-3xl font-serif mb-4 text-[#1A1A1A]">The Shift Toward Character.</h3>
@@ -101,7 +101,7 @@ const RobustaStory: React.FC<RobustaStoryProps> = ({ onBack }) => {
           <motion.div
             initial={{ opacity: 0, x: -40 }}
             whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
+            viewport={{ once: false }}
             transition={{ duration: 0.6, delay: 0.3 }}
           >
             <h3 className="text-2xl md:text-3xl font-serif mb-4 text-[#1A1A1A]">Reclamation, Not Reinvention.</h3>
@@ -118,7 +118,7 @@ const RobustaStory: React.FC<RobustaStoryProps> = ({ onBack }) => {
           <motion.h3
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
+            viewport={{ once: false }}
             className="text-2xl md:text-3xl font-serif mb-4"
           >
             From Field to Furnace.
@@ -128,7 +128,7 @@ const RobustaStory: React.FC<RobustaStoryProps> = ({ onBack }) => {
             <motion.div
               initial={{ opacity: 0, y: 40 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
+              viewport={{ once: false }}
               transition={{ duration: 0.6 }}
               className="relative overflow-hidden rounded-lg border border-black/10 bg-black group"
             >
@@ -147,7 +147,7 @@ const RobustaStory: React.FC<RobustaStoryProps> = ({ onBack }) => {
             <motion.div
               initial={{ opacity: 0, y: 40 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.4 }}
+              viewport={{ once: false, amount: 0.4 }}
               transition={{ duration: 0.6, delay: 0.1 }}
               className="relative overflow-hidden rounded-lg border border-black/10 bg-black group"
             >
@@ -166,7 +166,7 @@ const RobustaStory: React.FC<RobustaStoryProps> = ({ onBack }) => {
             <motion.div
               initial={{ opacity: 0, y: 40 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.4 }}
+              viewport={{ once: false, amount: 0.4 }}
               transition={{ duration: 0.6, delay: 0.2 }}
               className="relative overflow-hidden rounded-lg border border-black/10 bg-black group"
             >

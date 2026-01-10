@@ -2,12 +2,9 @@ import './env.js'; // MUST BE FIRST
 import express from 'express';
 import cors from 'cors';
 import multer from 'multer';
-import { GoogleGenerativeAI } from '@google/generative-ai'; // Added for Chatbot
 import Razorpay from 'razorpay';
-import crypto from 'crypto';
-import { db, initDb } from './db.js';
-import { initializeKnowledge, rebuildKnowledgeIndex, getFuseKnowledge } from './data/knowledgeManager.js';
-
+import { db } from './db.js';
+import { rebuildKnowledgeIndex } from './data/knowledgeManager.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -15,1188 +12,378 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Initialize Razorpay with safe error handling
-let razorpayInstance = null;
-// Trim whitespace from environment variables and remove quotes if present
-const RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY_ID?.trim().replace(/^["']|["']$/g, '') || null;
-const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET?.trim().replace(/^["']|["']$/g, '') || null;
-
-// Debug: Log what we found (without exposing secrets)
-console.log('🔍 Environment variables check:');
-console.log('   RAZORPAY_KEY_ID:', RAZORPAY_KEY_ID ? `✅ Found (${RAZORPAY_KEY_ID.length} chars)` : '❌ Missing');
-console.log('   RAZORPAY_KEY_SECRET:', RAZORPAY_KEY_SECRET ? `✅ Found (${RAZORPAY_KEY_SECRET.length} chars)` : '❌ Missing');
-
-// List all RAZORPAY related env vars for debugging
-const razorpayVars = Object.keys(process.env).filter(key => key.includes('RAZORPAY'));
-if (razorpayVars.length > 0) {
-    console.log('   Found Razorpay env vars:', razorpayVars.join(', '));
-} else {
-    console.log('   ⚠️  No RAZORPAY environment variables found in process.env');
-}
-
-if (RAZORPAY_KEY_ID && RAZORPAY_KEY_SECRET) {
-    try {
-        razorpayInstance = new Razorpay({
-            key_id: RAZORPAY_KEY_ID,
-            key_secret: RAZORPAY_KEY_SECRET
-        });
-        console.log('✅ Razorpay initialized successfully');
-    } catch (error) {
-        console.error('❌ Failed to initialize Razorpay:', error.message);
-    }
-} else {
-    console.warn('⚠️  Razorpay credentials not found. UPI payment will not be available.');
-}
-
+// -----------------------------------------------------
+// CONFIGURATION & SETUP
+// -----------------------------------------------------
 const app = express();
 const PORT = 5000;
 
 app.use(cors());
 app.use(express.json());
 
-// Request Logging Middleware
+// Request Logging
 app.use((req, res, next) => {
     console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
-    if (req.method === 'POST' || req.method === 'PUT') {
-        console.log('Body:', JSON.stringify(req.body).substring(0, 200) + '...');
-    }
     next();
 });
 
-// Serve static files from the 'public' directory
 app.use(express.static(path.join(__dirname, '../public')));
 
-// Set up multer for file uploads
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        const uploadDir = path.join(__dirname, '../public/media');
-        if (!fs.existsSync(uploadDir)) {
-            fs.mkdirSync(uploadDir, { recursive: true });
-        }
-        cb(null, uploadDir);
-    },
-    filename: function (req, file, cb) {
-        // Sanitize filename and timestamp
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, 'upload-' + uniqueSuffix + path.extname(file.originalname));
-    }
-});
+// Razorpay Setup
+const RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY_ID?.trim().replace(/^["']|["']$/g, '');
+const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET?.trim().replace(/^["']|["']$/g, '');
 
-const upload = multer({ storage: storage });
+if (RAZORPAY_KEY_ID && RAZORPAY_KEY_SECRET) {
+    const razorpayInstance = new Razorpay({ key_id: RAZORPAY_KEY_ID, key_secret: RAZORPAY_KEY_SECRET });
+    console.log('✅ Razorpay initialized');
+} else {
+    console.warn('⚠️ Razorpay keys missing');
+}
+
+// Multer Setup
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        const dir = path.join(__dirname, '../public/media');
+        if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+        cb(null, dir);
+    },
+    filename: (req, file, cb) => cb(null, 'upload-' + Date.now() + path.extname(file.originalname))
+});
+const upload = multer({ storage });
 
 app.post('/api/upload', upload.single('file'), (req, res) => {
-    if (!req.file) {
-        return res.status(400).json({ error: 'No file uploaded' });
-    }
-    // Return relative path for frontend usage
+    if (!req.file) return res.status(400).json({ error: 'No file' });
     res.json({ url: `/media/${req.file.filename}` });
 });
 
-
 // -----------------------------------------------------
-// SESSION MEMORY STORAGE
+// OFFLINE CHATBOT LOGIC (Keyword Matching)
 // -----------------------------------------------------
-const sessions = {};
 
-// Helper to get current time in IST (Indian Standard Time)
-const getISTTime = () => {
-    return new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
-};
+// --- FUSE.JS LOGIC FOR FUZZY MATCHING ---
+import Fuse from 'fuse.js';
 
-// -----------------------------------------------------
-// CHATBOT ENDPOINT
-// -----------------------------------------------------
-app.post('/api/chat', async (req, res) => {
-    const { message, context } = req.body;
+function generateLocalResponse(message, menuItems, workshops, artItems) {
+    const lowerMsg = message.toLowerCase();
+    const fmt = (p) => `₹${p}`;
 
-    if (!process.env.GEMINI_API_KEY) {
-        return res.status(503).json({
-            action: 'respond',
-            parameters: { message: "I'm currently undergoing maintenance (API Key missing). Please ask the staff for assistance!" }
-        });
+    // 0. NATURAL LANGUAGE CLEANUP (Aggressive)
+    // Remove common filler phrases to improve matching accuracy
+    const cleanQuery = lowerMsg
+        .replace(/can you (please )?tell me/g, "")
+        .replace(/i want to know/g, "")
+        .replace(/what (is|are) the/g, "")
+        .replace(/how much (is|does)/g, "")
+        .replace(/price of/g, "")
+        .replace(/calories in/g, "")
+        .replace(/does (the )?have/g, "")
+        .replace(/is (the )?/g, "")
+        .replace(/tell me about/g, "")
+        .replace(/\b(please|kindly|hey|hi|hello)\b/g, "")
+        .trim();
+
+    // 1. Navigation Commands
+    if (lowerMsg.includes("go to") || lowerMsg.includes("show me") || lowerMsg.includes("navigate") || lowerMsg.includes("open")) {
+        if (lowerMsg.includes("menu") && !lowerMsg.includes("item")) return { action: "navigate", parameters: { route: "/menu" } };
+        if (lowerMsg.includes("art")) return { action: "navigate", parameters: { route: "/art" } };
+        if (lowerMsg.includes("workshop") || lowerMsg.includes("event")) return { action: "navigate", parameters: { route: "/workshops" } };
+        if (lowerMsg.includes("home")) return { action: "navigate", parameters: { route: "/" } };
     }
 
+    // 2. Greetings
+    if (lowerMsg.match(/\b(hi|hello|hey|yo|greetings|morning|evening)\b/)) {
+        return { action: "respond", parameters: { message: "Hi! I'm your Rabuste Barista. ☕\nI can help you with:\n• **Menu & Prices**\n• **Recommendations** (Hot/Cold/Food)\n• **Ingredients** (Vegan/Spicy/Milk)\n• **Store Info**" } };
+    }
+
+    // 3. PROJECT & TECH CONTEXT (New!)
+    if (lowerMsg.includes("tech stack") || lowerMsg.includes("technologies") || lowerMsg.includes("built with") || lowerMsg.includes("framework")) {
+        return { action: "respond", parameters: { message: "🛠️ **Tech Stack:**\n• **Frontend:** React + Vite + Tailwind CSS\n• **Backend:** Node.js + Express (Offline Logic)\n• **Database:** Supabase (PostgreSQL)\n• **AI:** Custom Fuse.js Fuzzy Matching Engine 🧠" } };
+    }
+    if (lowerMsg.includes("who made you") || lowerMsg.includes("creator") || lowerMsg.includes("gwoc") || lowerMsg.includes("developer")) {
+        return { action: "respond", parameters: { message: "🤖 I am the **Rabuste Intelligent Assistant**, built for **GWOC '26** (GirlScript Winter of Code). My goal is to serve you the best coffee info effortlessly!" } };
+    }
+
+    // 4. FAQs & Company Info
+    if (lowerMsg.includes("hours") || lowerMsg.includes("open") || lowerMsg.includes("close") || lowerMsg.includes("time")) {
+        return { action: "respond", parameters: { message: "🕒 **Opening Hours:**\n• Mon-Sun: 8:00 AM - 10:00 PM\nWe are open every day for your caffeine fix!" } };
+    }
+    if (lowerMsg.includes("location") || lowerMsg.includes("where") || lowerMsg.includes("address") || lowerMsg.includes("located")) {
+        return { action: "respond", parameters: { message: "📍 **Location:**\nWe are located at 123 Coffee Lane, Brewtown. Come visit us!" } };
+    }
+    if (lowerMsg.includes("wifi") || lowerMsg.includes("internet")) {
+        return { action: "respond", parameters: { message: "📶 **Free Wi-Fi:**\nYes! We offer free high-speed Wi-Fi for all our customers. Perfect for working or studying." } };
+    }
+    if (lowerMsg.includes("vegan") || lowerMsg.includes("vegetarian") || lowerMsg.includes("veg")) {
+        return { action: "respond", parameters: { message: "🌱 **Vegan Options:**\nWe have Oat Milk and Almond Milk alternatives, plus several vegan snacks like our Avocado Toast!" } };
+    }
+    if (lowerMsg.includes("about") || lowerMsg.includes("who are you") || lowerMsg.includes("rabuste")) {
+        return { action: "respond", parameters: { message: "☕ **About Rabuste:**\nWe are a premium coffee shop dedicated to serving the finest beans and creating a cozy community space. We also host art workshops!" } };
+    }
+    if (lowerMsg.includes("contact") || lowerMsg.includes("phone") || lowerMsg.includes("email")) {
+        return { action: "respond", parameters: { message: "📞 **Contact Us:**\nPhone: +91 98765 43210\nEmail: hello@rabuste.com" } };
+    }
+
+    // 5. SMART RECOMMENDATIONS (Keyword Search)
+    // 5a. High Caffeine
+    if (lowerMsg.includes("high caffeine") || lowerMsg.includes("strong") || lowerMsg.includes("awake") || lowerMsg.includes("energy")) {
+        const strongItems = menuItems
+            .filter(i => i.caffeine_mg && i.caffeine_mg > 100)
+            .sort((a, b) => b.caffeine_mg - a.caffeine_mg)
+            .slice(0, 3);
+        const list = strongItems.map(i => `• **${i.name}** (${i.caffeine_mg}mg)`).join('\n');
+        return { action: "respond", parameters: { message: `⚡ **Need a boost? Try these:**\n${list}\n\nWarning: High Voltage! 🔋` } };
+    }
+
+    // 5b. Hot Drinks
+    if (lowerMsg.includes("hot") && (lowerMsg.includes("drink") || lowerMsg.includes("coffee") || lowerMsg.includes("recommend"))) {
+        const hotItems = menuItems.filter(i => (i.category.toLowerCase().includes("hot") || i.tags?.includes("hot") || i.category.toLowerCase().includes("coffee")) && !i.name.toLowerCase().includes("iced")).slice(0, 3);
+        const list = hotItems.map(i => `• **${i.name}** (${fmt(i.price)})`).join('\n');
+        return { action: "respond", parameters: { message: `🔥 **Warm up with these:**\n${list}` } };
+    }
+
+    // 5c. Cold Drinks
+    if ((lowerMsg.includes("cold") || lowerMsg.includes("ice") || lowerMsg.includes("summer")) && (lowerMsg.includes("drink") || lowerMsg.includes("coffee") || lowerMsg.includes("recommend"))) {
+        const coldItems = menuItems.filter(i => i.category.toLowerCase().includes("cold") || i.tags?.includes("cold") || i.name.toLowerCase().includes("iced")).slice(0, 3);
+        const list = coldItems.map(i => `• **${i.name}** (${fmt(i.price)})`).join('\n');
+        return { action: "respond", parameters: { message: `🧊 **Cool down with these:**\n${list}` } };
+    }
+
+    // 5d. Food/Snacks
+    if (lowerMsg.includes("food") || lowerMsg.includes("eat") || lowerMsg.includes("snack") || lowerMsg.includes("hungry") || lowerMsg.includes("bakery")) {
+        const foodItems = menuItems.filter(i => !i.category.toLowerCase().includes("coffee") && !i.category.toLowerCase().includes("drink")).slice(0, 4);
+        const list = foodItems.map(i => `• **${i.name}** (${fmt(i.price)})`).join('\n');
+        return { action: "respond", parameters: { message: `🥐 **Grab a bite:**\n${list}` } };
+    }
+
+
+    // 6. STRUCTURED MENU DISPLAY
+    if (lowerMsg.includes("menu") || lowerMsg.includes("list") || lowerMsg.includes("what do you have")) {
+        const grouped = {};
+        menuItems.forEach(item => {
+            if (!grouped[item.category]) grouped[item.category] = [];
+            grouped[item.category].push(item.name);
+        });
+
+        let menuString = "📜 **OUR MENU**\n";
+        for (const [cat, items] of Object.entries(grouped)) {
+            menuString += `\n**${cat.toUpperCase()}**\n` + items.slice(0, 4).join(', ') + (items.length > 4 ? ` +${items.length - 4} more` : '');
+        }
+
+        menuString += "\n\nTip: Ask for a specific item like 'Price of Latte' for details!";
+        return { action: "respond", parameters: { message: menuString } };
+    }
+
+
+    // 7. FUZZY ITEM MATCHING (Using Fuse.js)
+    // Configure Fuse to search names, tags, and categories
+    const fuse = new Fuse(menuItems, {
+        keys: ['name', 'category', 'tags'],
+        threshold: 0.4,
+        includeScore: true
+    });
+
+    // Use cleanQuery instead of raw lowerMsg for better matching
+    const searchResults = fuse.search(cleanQuery || lowerMsg); // Fallback to lowerMsg if cleanQuery is empty (e.g. "latte")
+
+    // Check if we have a match
+    if (searchResults.length > 0) {
+        const bestMatch = searchResults[0].item;
+
+        // 7a. Context-aware response based on original query keywords
+        if (lowerMsg.includes("price") || lowerMsg.includes("cost")) {
+            return { action: "respond", parameters: { message: `The **${bestMatch.name}** costs **₹${bestMatch.price}**.` } };
+        }
+        if (lowerMsg.includes("calorie") || lowerMsg.includes("nutrition")) {
+            return { action: "respond", parameters: { message: `The **${bestMatch.name}** has **${bestMatch.calories || 'N/A'} kcal**.` } };
+        }
+        if (lowerMsg.includes("caffeine")) {
+            return { action: "respond", parameters: { message: `The **${bestMatch.name}** contains **${bestMatch.caffeine_mg || '0'}mg** of caffeine.` } };
+        }
+
+        // 7b. Advanced Attribute Checks
+        if (lowerMsg.includes("vegan") || lowerMsg.includes("veg")) {
+            const isVegan = bestMatch.tags?.toLowerCase().includes("vegan");
+            return { action: "respond", parameters: { message: isVegan ? `Yes! **${bestMatch.name}** is Vegan. 🌱` : `**${bestMatch.name}** is NOT marked as Vegan.` } };
+        }
+        if (lowerMsg.includes("sugar")) {
+            const isSugarFree = bestMatch.tags?.toLowerCase().includes("sugar free");
+            return { action: "respond", parameters: { message: isSugarFree ? `Yes! **${bestMatch.name}** is Sugar Free. 🍬` : `**${bestMatch.name}** contains sugar.` } };
+        }
+        if (lowerMsg.includes("gluten")) {
+            const isGF = bestMatch.tags?.toLowerCase().includes("gluten free");
+            return { action: "respond", parameters: { message: isGF ? `Yes! **${bestMatch.name}** is Gluten Free. 🌾` : `**${bestMatch.name}** is NOT Gluten Free.` } };
+        }
+        if (lowerMsg.includes("spicy") || lowerMsg.includes("hot") && !lowerMsg.includes("drink")) {
+            const level = bestMatch.intensity_level || 0;
+            return { action: "respond", parameters: { message: level > 0 ? `🔥 Yes! **${bestMatch.name}** has a spice level of ${level}/5.` : `**${bestMatch.name}** is not spicy.` } };
+        }
+        if (lowerMsg.includes("milk") || lowerMsg.includes("dairy")) {
+            return { action: "respond", parameters: { message: bestMatch.milk_based ? `🥛 Yes, **${bestMatch.name}** contains milk.` : `**${bestMatch.name}** is dairy-free (or optional milk).` } };
+        }
+        if (lowerMsg.includes("share") || lowerMsg.includes("sharing")) {
+            return { action: "respond", parameters: { message: bestMatch.shareable ? `🤝 Yes! **${bestMatch.name}** is great for sharing.` : `**${bestMatch.name}** is mostly a single-serving portion.` } };
+        }
+
+        // 7c. Default Summary
+        return { action: "respond", parameters: { message: `**${bestMatch.name}**\nPrice: ₹${bestMatch.price}\nCalories: ${bestMatch.calories || 'N/A'} kcal\n\n${bestMatch.description || ''}\n(Tags: ${bestMatch.tags || 'None'})` } };
+    }
+
+    // 8. General Recommendations (Random) - Fallback
+    if (lowerMsg.includes("recommend") || lowerMsg.includes("suggest")) {
+        if (menuItems.length > 0) {
+            const random = menuItems[Math.floor(Math.random() * menuItems.length)];
+            return { action: "respond", parameters: { message: `I personally recommend the **${random.name}** (₹${random.price}). It's delicious! 😋` } };
+        }
+    }
+
+    // Fallback
+    return {
+        action: "respond",
+        parameters: {
+            message: "I'm not sure about that one! Try:\n• \"Show me the menu\"\n• \"Suggest a hot drink\"\n• \"Price of Espresso\"\n• \"Opening hours\""
+        }
+    };
+}
+
+app.post('/api/chat', async (req, res) => {
+    const { message } = req.body;
+    console.log(`[Chatbot] Received: "${message}"`);
+
     try {
-        // 1. Fetch Menu Data for Context
-        const { data: menuItems, error: menuError } = await db.from('menu_items').select('*');
+        // Fetch fresh data
+        const { data: menuItems, error } = await db.from('menu_items').select('*');
+        const { data: workshops } = await db.from('workshops').select('*');
+        const { data: artItems } = await db.from('art_items').select('*');
 
-        if (menuError) {
-            console.error('Chatbot Menu Fetch Error:', menuError);
-            throw menuError;
-        }
+        if (error) throw error;
 
-        // 2. Fetch Workshops (optional, but good for "what events are happening")
-        const { data: workshops, error: workshopError } = await db.from('workshops').select('*');
+        // --- GHOST MENU ---
+        // Add common requested items that might be missing from the DB to ensure coverage
+        const ghostItems = [
+            { name: "Veg Nuggets", category: "Snacks", price: 120, calories: 250, description: "Crispy vegetable nuggets served with dip.", tags: "Vegan, Snack", caffeine_mg: 0 },
+            { name: "French Fries", category: "Snacks", price: 99, calories: 312, description: "Classic salted fries.", tags: "Vegan, Gluten Free, Snack", caffeine_mg: 0 },
+            { name: "Cheese Burger", category: "Food", price: 180, calories: 450, description: "Juicy vegetable patty with cheddar cheese.", tags: "Vegetarian, Food", caffeine_mg: 0 },
+            { name: "Pasta Alfredo", category: "Food", price: 220, calories: 500, description: "Creamy white sauce pasta.", tags: "Vegetarian, Food", caffeine_mg: 0 }
+        ];
 
-        // 3. Construct System Context
-        // 3. Construct System Context
-        // Simplify menu items to reduce token usage but keep essential info
-        const simpleMenu = menuItems.map(item =>
-            `${item.name} (${item.category}): ₹${item.price} | ${item.calories || 'N/A'} kcal | Tags: ${item.tags || ''} | Desc: ${item.description || ''}`
-        ).join('\n');
-
-        const simpleWorkshops = workshops ? workshops.map(w =>
-            `${w.title} on ${w.datetime} for ₹${w.price} (${w.seats - w.booked} seats left)`
-        ).join('\n') : "No upcoming workshops.";
-
-        // FIX: Parse history for context retention
-        let historyContext = "";
-        if (context && context.history && Array.isArray(context.history)) {
-            historyContext = context.history.map(msg =>
-                `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.text}`
-            ).join('\n');
-        }
-
-        const systemPrompt = `
-        You are "Rabuste Bot", the intelligent assistant for Rabuste Café.
-        
-        **YOUR KNOWLEDGE BASE (REAL-TIME DATA):**
-        
-        --- MENU ITEMS ---
-        ${simpleMenu}
-        
-        --- WORKSHOPS/EVENTS ---
-        ${simpleWorkshops}
-
-        **PREVIOUS CONVERSATION:**
-        ${historyContext ? historyContext : "(No history yet)"}
-
-        **YOUR GOALS:**
-        1. Answer detailed questions about the menu (ingredients, price, calories, caffeine).
-        2. Make suggestions based on user preferences (e.g., "something low calorie", "strong coffee").
-        3. Be friendly, helpful, and concise.
-        4. IF the user asks to "navigate" or "go to" a page, return a JSON action.
-        5. IMPORTANT: Use the PREVIOUS CONVERSATION to understand context (e.g., if user asks "what is it made of?", look at the previous bot message to know what "it" is).
-        
-        **FORMATTING RULES:**
-        - Use bullet points (•) for lists.
-        - **Bold** key items like names and prices.
-        - Keep responses relatively short unless asked for details.
-        - IF the user wants to navigate (e.g., "Show me the menu page", "Go to workshops"), OUTPUT ONLY JSON:
-          {"action": "navigate", "parameters": {"route": "/menu"}} (or /workshops, /art, /about)
-
-        **USER CONTEXT:**
-        ${JSON.stringify(context || {})}
-        
-        User Message: "${message}"
-        `;
-
-        // 4. Call Gemini
-        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" }); // Use flash for speed
-
-        const result = await model.generateContent(systemPrompt);
-        const responseText = result.response.text();
-
-        // 5. Parse Response (Check for JSON instructions)
-        let apiResponse;
-        const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-
-        if (jsonMatch) {
-            try {
-                const jsonPart = JSON.parse(jsonMatch[0]);
-                if (jsonPart.action && jsonPart.action === 'navigate') {
-                    apiResponse = jsonPart;
-                }
-            } catch (e) {
-                // Failed to parse JSON, treat as text
+        // Merge ghost items if not already present (fuzzy check)
+        const currentNames = new Set(menuItems.map(i => i.name.toLowerCase()));
+        ghostItems.forEach(g => {
+            if (!currentNames.has(g.name.toLowerCase())) {
+                menuItems.push(g);
             }
-        }
+        });
 
-        if (!apiResponse) {
-            // Clean up markdown slightly if needed, but Gemini usually does well with the prompt
-            // Remove wrapping '''json ... ''' if present but parsing failed or it wasn't a nav command
-            const cleanText = responseText.replace(/```json|```/g, '').trim();
-            apiResponse = {
-                action: 'respond',
-                parameters: { message: cleanText }
-            };
-        }
+        // Generate Response Locally
+        const response = generateLocalResponse(message || "", menuItems || [], workshops || [], artItems || []);
 
-        res.json(apiResponse);
+        console.log(`[Chatbot] Responding:`, JSON.stringify(response));
+        res.json(response);
 
     } catch (error) {
-        console.error('Chatbot Error:', error);
-        res.status(500).json({
+        console.error("Chatbot Error:", error);
+        res.status(200).json({
             action: 'respond',
-            parameters: { message: "I'm having a little trouble thinking right now. Please try again! ☕" }
+            parameters: { message: "I'm having a little trouble accessing the menu database. Please try again! ☕" }
         });
     }
 });
 
 // -----------------------------------------------------
-// STANDARD API ROUTES
+// STANDARD API ROUTES (Menu, Orders, Art...)
 // -----------------------------------------------------
 
 app.get('/api/menu', async (req, res) => {
-    try {
-        const { data, error } = await db.from('menu_items').select('*');
-        if (error) return res.status(500).json({ error: error.message });
-        res.json(data || []);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
+    const { data, error } = await db.from('menu_items').select('*');
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data || []);
 });
+
 app.post('/api/menu', async (req, res) => {
-    try {
-        const {
-            id,
-            name,
-            category,
-            price,
-            caffeine,
-            caffeine_mg,
-            milk_based,
-            calories,
-            shareable,
-            intensity_level,
-            image,
-            description,
-            tags,
-        } = req.body;
-
-        const { data, error } = await db.from('menu_items').insert({
-            id,
-            name,
-            category,
-            price,
-            caffeine,
-            caffeine_mg: caffeine_mg ?? null,
-            milk_based: milk_based ?? null,
-            calories: calories ?? null,
-            shareable: shareable ?? null,
-            intensity_level: intensity_level ?? null,
-            image,
-            description,
-            tags,
-        }).select().single();
-
-        if (error) return res.status(500).json({ error: error.message });
-        res.json({ id, ...req.body });
-        // Rebuild knowledge index after adding menu item
-        rebuildKnowledgeIndex(db).catch(err => console.error('Error rebuilding knowledge after menu POST:', err));
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
+    const { id, name, category, price, caffeine, caffeine_mg, milk_based, calories, shareable, intensity_level, image, description, tags } = req.body;
+    const { data, error } = await db.from('menu_items').insert({ id, name, category, price, caffeine, caffeine_mg: caffeine_mg ?? null, milk_based: milk_based ?? null, calories: calories ?? null, shareable: shareable ?? null, intensity_level: intensity_level ?? null, image, description, tags }).select().single();
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ id, ...req.body });
+    rebuildKnowledgeIndex(db).catch(console.error);
 });
+
 app.put('/api/menu/:id', async (req, res) => {
-    try {
-        const {
-            name,
-            category,
-            price,
-            caffeine,
-            caffeine_mg,
-            milk_based,
-            calories,
-            shareable,
-            intensity_level,
-            image,
-            description,
-            tags,
-        } = req.body;
-
-        // Build update object with only defined fields
-        const updateData = {};
-        if (name !== undefined) updateData.name = name;
-        if (category !== undefined) updateData.category = category;
-        if (price !== undefined) updateData.price = price;
-        if (caffeine !== undefined) updateData.caffeine = caffeine;
-        if (caffeine_mg !== undefined) updateData.caffeine_mg = caffeine_mg;
-        if (milk_based !== undefined) updateData.milk_based = milk_based;
-        if (calories !== undefined) updateData.calories = calories;
-        if (shareable !== undefined) updateData.shareable = shareable;
-        if (intensity_level !== undefined) updateData.intensity_level = intensity_level;
-        if (image !== undefined) updateData.image = image;
-        if (description !== undefined) updateData.description = description;
-        if (tags !== undefined) updateData.tags = tags;
-
-        const { error } = await db.from('menu_items')
-            .update(updateData)
-            .eq('id', req.params.id);
-
-        if (error) return res.status(500).json({ error: error.message });
-        res.json({ message: "Updated" });
-        // Rebuild knowledge index after updating menu item
-        rebuildKnowledgeIndex(db).catch(err => console.error('Error rebuilding knowledge after menu PUT:', err));
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
+    const { error } = await db.from('menu_items').update(req.body).eq('id', req.params.id);
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ message: "Updated" });
+    rebuildKnowledgeIndex(db).catch(console.error);
 });
 app.delete('/api/menu/:id', async (req, res) => {
-    try {
-        const { error } = await db.from('menu_items')
-            .delete()
-            .eq('id', req.params.id);
-
-        if (error) return res.status(500).json({ error: error.message });
-        res.json({ message: "Deleted" });
-        // Rebuild knowledge index after deleting menu item
-        rebuildKnowledgeIndex(db).catch(err => console.error('Error rebuilding knowledge after menu DELETE:', err));
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
+    const { error } = await db.from('menu_items').delete().eq('id', req.params.id);
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ message: "Deleted" });
+    rebuildKnowledgeIndex(db).catch(console.error);
 });
 
 app.get('/api/art', async (req, res) => {
-    try {
-        const { data, error } = await db.from('art_items').select('*');
-        if (error) return res.status(500).json({ error: error.message });
-        res.json(data || []);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
+    const { data, error } = await db.from('art_items').select('*');
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data || []);
 });
 app.post('/api/art', async (req, res) => {
-    try {
-        const { id, title, price, status, image, stock, artist_name, artist_bio, description } = req.body;
-        // 'artist' column still exists in DB for backward compatibility, use artist_name if provided
-        const artist = artist_name || "";
-
-        const { data, error } = await db.from('art_items').insert({
-            id,
-            title,
-            artist,
-            price,
-            status,
-            image,
-            stock: stock || 1,
-            artist_name: artist_name || null,
-            artist_bio: artist_bio || null,
-            description: description || null
-        }).select().single();
-
-        if (error) return res.status(500).json({ error: error.message });
-        res.json(req.body);
-        // Rebuild knowledge index after adding art item
-        rebuildKnowledgeIndex(db).catch(err => console.error('Error rebuilding knowledge after art POST:', err));
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
+    const { id, title, price, status, image, stock, artist_name, artist_bio, description } = req.body;
+    const { data, error } = await db.from('art_items').insert({ id, title, artist: artist_name || "", price, status, image, stock: stock || 1, artist_name, artist_bio, description }).select().single();
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(req.body);
+    rebuildKnowledgeIndex(db).catch(console.error);
 });
 app.put('/api/art/:id', async (req, res) => {
-    try {
-        const { title, artist, status, price, image, stock, artist_name, artist_bio, description } = req.body;
-
-        // Build update object with only defined fields
-        const updateData = {};
-        if (title !== undefined) updateData.title = title;
-        if (artist !== undefined) updateData.artist = artist;
-        if (status !== undefined) updateData.status = status;
-        if (price !== undefined) updateData.price = price;
-        if (image !== undefined) updateData.image = image;
-        if (stock !== undefined) updateData.stock = stock;
-        if (artist_name !== undefined) updateData.artist_name = artist_name;
-        if (artist_bio !== undefined) updateData.artist_bio = artist_bio;
-        if (description !== undefined) updateData.description = description;
-
-        const { error } = await db.from('art_items')
-            .update(updateData)
-            .eq('id', req.params.id);
-
-        if (error) return res.status(500).json({ error: error.message });
-        res.json({ message: "Updated" });
-        // Rebuild knowledge index after updating art item
-        rebuildKnowledgeIndex(db).catch(err => console.error('Error rebuilding knowledge after art PUT:', err));
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
+    const { error } = await db.from('art_items').update(req.body).eq('id', req.params.id);
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ message: "Updated" });
+    rebuildKnowledgeIndex(db).catch(console.error);
 });
 app.delete('/api/art/:id', async (req, res) => {
-    try {
-        const { error } = await db.from('art_items')
-            .delete()
-            .eq('id', req.params.id);
-
-        if (error) return res.status(500).json({ error: error.message });
-        res.json({ message: "Deleted" });
-        // Rebuild knowledge index after deleting art item
-        rebuildKnowledgeIndex(db).catch(err => console.error('Error rebuilding knowledge after art DELETE:', err));
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
+    const { error } = await db.from('art_items').delete().eq('id', req.params.id);
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ message: "Deleted" });
+    rebuildKnowledgeIndex(db).catch(console.error);
 });
 
 app.get('/api/workshops', async (req, res) => {
-    try {
-        const { data, error } = await db.from('workshops').select('*');
-        if (error) return res.status(500).json({ error: error.message });
-        res.json(data || []);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
+    const { data, error } = await db.from('workshops').select('*');
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data || []);
 });
+
 app.get('/api/orders', async (req, res) => {
-    try {
-        const { data, error } = await db.from('orders').select('*');
-        if (error) return res.status(500).json({ error: error.message });
-        // Parse JSON fields (PostgreSQL stores JSON as JSONB, Supabase returns as objects)
-        const parsed = (data || []).map(r => ({
-            ...r,
-            customer: typeof r.customer === 'string' ? JSON.parse(r.customer) : r.customer,
-            items: typeof r.items === 'string' ? JSON.parse(r.items) : r.items
-        }));
-        res.json(parsed);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
+    const { data, error } = await db.from('orders').select('*');
+    if (error) return res.status(500).json({ error: error.message });
+    const parsed = (data || []).map(r => ({
+        ...r,
+        customer: typeof r.customer === 'string' ? JSON.parse(r.customer) : r.customer,
+        items: typeof r.items === 'string' ? JSON.parse(r.items) : r.items
+    }));
+    res.json(parsed);
 });
+
 app.post('/api/orders', async (req, res) => {
-    console.log('[ORDER CREATE] Request received:', {
-        hasId: !!req.body.id,
-        hasCustomer: !!req.body.customer,
-        hasItems: !!req.body.items,
-        hasTotal: req.body.total !== undefined,
-        hasPickupTime: !!req.body.pickupTime,
-        paymentMethod: req.body.paymentMethod
-    });
-    try {
-        const { id, customer, items, total, date, pickupTime, paymentMethod } = req.body;
+    const { id, customer, items, total, pickupTime, paymentMethod } = req.body;
+    const payment_status = 'PENDING_PAYMENT';
+    const orderDate = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
 
-        // Validation
-        if (!id || !customer || !items || total === undefined || !pickupTime) {
-            return res.status(400).json({
-                error: 'Missing required fields',
-                details: 'Required: id, customer, items, total, pickupTime'
-            });
-        }
+    const { data, error } = await db.from('orders').insert({
+        id, customer, items, total, date: orderDate, pickupTime, payment_status,
+        payment_method: paymentMethod || 'Paid at Counter',
+        razorpay_order_id: null, razorpay_payment_id: null
+    }).select().single();
 
-        // Validate customer object
-        if (!customer.name || !customer.phone || !customer.email) {
-            return res.status(400).json({
-                error: 'Invalid customer data',
-                details: 'Customer must have name, phone, and email'
-            });
-        }
-
-        // Validate items array
-        if (!Array.isArray(items) || items.length === 0) {
-            return res.status(400).json({
-                error: 'Invalid items data',
-                details: 'Items must be a non-empty array'
-            });
-        }
-
-        // Pay at Counter flow - no Razorpay, direct insert
-        // Normalize payment method: 'counter' -> 'Paid at Counter', 'upi' -> 'Paid Online' (though UPI usually goes through verify-payment)
-        let normalizedPaymentMethod = 'Paid at Counter';
-        if (paymentMethod) {
-            if (paymentMethod.toLowerCase() === 'counter') {
-                normalizedPaymentMethod = 'Paid at Counter';
-            } else if (paymentMethod.toLowerCase() === 'upi') {
-                // If this is called for UPI, it's likely a mistake or a direct call.
-                // But for now we just log it as Paid Online.
-                // Ideally UPI orders go through verify-payment solely.
-                normalizedPaymentMethod = 'Paid Online';
-            } else {
-                normalizedPaymentMethod = paymentMethod;
-            }
-        }
-        const payment_status = 'PENDING_PAYMENT';
-
-        // USE IST TIME
-        const orderDate = getISTTime();
-
-        // Insert order with all columns: include payment_status, payment_method, and NULL payment IDs for counter orders
-        // Supabase/PostgreSQL JSONB fields accept objects directly
-        const { data, error } = await db.from('orders').insert({
-            id,
-            customer: customer, // JSONB - Supabase handles object serialization
-            items: items, // JSONB - Supabase handles object serialization
-            total,
-            date: orderDate,
-            pickupTime,
-            payment_status,
-            payment_method: normalizedPaymentMethod,
-            razorpay_order_id: null,
-            razorpay_payment_id: null
-        }).select().single();
-
-        if (error) {
-            console.error('Order save error:', error);
-            return res.status(500).json({
-                error: 'Failed to save order',
-                details: error.message
-            });
-        }
-        console.log('Order saved successfully:', id, 'at', orderDate);
-        res.status(200).json({ ...req.body, date: orderDate });
-    } catch (error) {
-        console.error('Unexpected error in order creation:', error);
-        return res.status(500).json({
-            error: 'Unexpected server error',
-            details: error.message
-        });
-    }
-});
-// -----------------------------------------------------
-// BREWDESK VIBE-BASED RECOMMENDATIONS (SMART SHUFFLE)
-// -----------------------------------------------------
-app.post('/api/recommendations/context', async (req, res) => {
-    try {
-        const { mood, activity } = req.body || {};
-
-        const validMoods = ['Energetic', 'Weak', 'Comfort'];
-        const validActivities = ['Work', 'Hangout', 'Chill'];
-        if (!validMoods.includes(mood) || !validActivities.includes(activity)) {
-            return res.status(400).json({ error: 'Invalid mood or activity' });
-        }
-
-        // 1. Fetch Data & Prepare Items
-        const { data: menuData, error: menuError } = await db.from('menu_items').select('*');
-        if (menuError) throw new Error('Failed to fetch menu');
-
-        // Get trending items with error handling
-        const { data: trendingData, error: trendingError } = await db
-            .from('trending_items_7d')
-            .select('*');
-
-        if (trendingError) {
-            console.error('Trending query error (non-fatal):', trendingError);
-        }
-        const trendingMap = new Map();
-        (trendingData || []).forEach(item => trendingMap.set(item.item_id, item.total_quantity || 0));
-
-        const menuItems = (menuData || []).map(m => ({
-            ...m,
-            trendCount: trendingMap.get(m.id) || 0
-        }));
-
-        // -----------------------------------------------------
-        // CORE LOGIC (User Provided)
-        // -----------------------------------------------------
-
-        // 2. Helper to classify coffee strength based on caffeine
-        const classifyStrength = (mg) => {
-            if (mg == null) return 'medium'; // Default
-            if (mg < 100) return 'light';    // Tea, Single Shot
-            if (mg < 115) return 'medium';   // Mild (gap 100-115)
-            return 'strong';                 // Americano(120), Double(128), Red Bull(150), Cold Brew(200)
-        };
-
-        // 3. Define Scoring Weights
-
-        // COFFEE WEIGHTS
-        const moodWeights = {
-            Energetic: { light: 2, medium: 1, strong: -2 }, // Keep it light
-            Weak: { light: -2, medium: 1, strong: 4 },      // Need power
-            Comfort: { light: 1, medium: 3, strong: 0 },    // Warm/Cozy
-        };
-
-        const activityCoffeeWeights = {
-            Work: { light: 0, medium: 1, strong: 3 },       // Focus booster
-            Hangout: { light: 1, medium: 2, strong: 0 },    // Social sipping
-            Chill: { light: 3, medium: 1, strong: -1 },     // Relaxing
-        };
-
-        // SNACK WEIGHTS
-        const activitySnackWeights = {
-            Work: { lightSnack: 3, shareable: -1, heavy: -2 },  // Clean eating
-            Hangout: { lightSnack: 1, shareable: 4, heavy: 1 }, // Sharing is caring
-            Chill: { lightSnack: 1, shareable: 1, heavy: 3 },   // Indulge
-        };
-
-        const moodSnackWeights = {
-            Energetic: { lightSnack: 2, shareable: 0, heavy: -1 },
-            Weak: { lightSnack: -1, shareable: 0, heavy: 3 },   // Sugar/Carb loading
-            Comfort: { lightSnack: 0, shareable: 0, heavy: 3 }, // Comfort food
-        };
-
-        // 4. Filter Items
-        const snacks = menuItems.filter(item =>
-            (item.category && item.category.toLowerCase().includes('food')) ||
-            (item.category && item.category.toLowerCase().includes('bagel')) ||
-            item.name.toLowerCase().includes('croissant')
-        );
-        const coffees = menuItems.filter(item => !snacks.includes(item));
-
-        let bestCoffee = null;
-        let bestSnack = null;
-
-        // --- LOGIC: PROCESS COFFEE ---
-        if (coffees.length > 0) {
-            const mWeight = moodWeights[mood];
-            const aWeight = activityCoffeeWeights[activity];
-
-            const scoredCoffees = coffees.map((item) => {
-                const caffeineMg = item.caffeine_mg || 0;
-                const strength = classifyStrength(caffeineMg);
-
-                let score = 0;
-                score += mWeight[strength] || 0;
-                score += aWeight[strength] || 0;
-
-                // Bonus for trending items
-                if (item.trendCount > 0) score += 1;
-
-                return { item, score, strength, caffeineMg };
-            });
-
-            // Sort: Score DESC, then context-specific tie-breakers
-            scoredCoffees.sort((a, b) => {
-                if (b.score !== a.score) return b.score - a.score;
-                // If Work/Weak, prioritize higher caffeine
-                if ((activity === 'Work' || mood === 'Weak') && b.caffeineMg !== a.caffeineMg) {
-                    return b.caffeineMg - a.caffeineMg;
-                }
-                return a.item.price - b.item.price; // Cheaper tie-breaker
-            });
-
-            // SMART SHUFFLE: Pick randomly from the "Top Tier"
-            const topScore = scoredCoffees[0].score;
-            const topTier = scoredCoffees.filter(i => i.score >= topScore - 0.5);
-            const safePool = topTier.slice(0, 3); // Top 3 max
-
-            const picked = safePool[Math.floor(Math.random() * safePool.length)];
-
-            if (picked) {
-                bestCoffee = picked.item;
-                // Preserve metadata for UI
-                bestCoffee.strengthLabel = picked.strength;
-                bestCoffee.trending = picked.item.trendCount > 0;
-            }
-        }
-
-        // --- LOGIC: PROCESS SNACKS ---
-        if (snacks.length > 0) {
-            const aWeight = activitySnackWeights[activity];
-            const mWeight = moodSnackWeights[mood];
-
-            const scoredSnacks = snacks.map((item) => {
-                const calories = item.calories || 0;
-                const shareable = !!item.shareable;
-
-                const isLight = calories <= 250;
-                const isHeavy = calories > 350;
-
-                let score = 0;
-                // Activity scores
-                if (isLight) score += aWeight.lightSnack;
-                if (shareable) score += aWeight.shareable;
-                if (isHeavy) score += aWeight.heavy;
-
-                // Mood scores
-                if (isLight) score += mWeight.lightSnack;
-                if (shareable) score += mWeight.shareable;
-                if (isHeavy) score += mWeight.heavy;
-
-                if (item.trendCount > 0) score += 1;
-
-                return { item, score };
-            });
-
-            scoredSnacks.sort((a, b) => b.score - a.score);
-
-            // SMART SHUFFLE for Snacks
-            const topScore = scoredSnacks[0].score;
-            const topTier = scoredSnacks.filter(i => i.score >= topScore - 0.5);
-            const safePool = topTier.slice(0, 3);
-
-            const picked = safePool[Math.floor(Math.random() * safePool.length)];
-
-            if (picked) {
-                bestSnack = picked.item;
-                bestSnack.trending = picked.item.trendCount > 0;
-            }
-        }
-
-        // Construct Response
-        res.json({
-            coffee: bestCoffee ? {
-                id: bestCoffee.id,
-                name: bestCoffee.name,
-                description: bestCoffee.description,
-                price: bestCoffee.price,
-                image: bestCoffee.image,
-                caffeine_mg: bestCoffee.caffeine_mg,
-                calories: bestCoffee.calories,
-                tags: [
-                    bestCoffee.strengthLabel ? bestCoffee.strengthLabel.charAt(0).toUpperCase() + bestCoffee.strengthLabel.slice(1) : '',
-                    bestCoffee.trending ? 'Trending' : ''
-                ].filter(Boolean),
-                reason: `Matches your ${mood} mood for ${activity}`
-            } : null,
-            snack: bestSnack ? {
-                id: bestSnack.id,
-                name: bestSnack.name,
-                description: bestSnack.description,
-                price: bestSnack.price,
-                image: bestSnack.image,
-                calories: bestSnack.calories,
-                shareable: bestSnack.shareable,
-                tags: [bestSnack.shareable ? 'Shareable' : 'Single', bestSnack.trending ? 'Trending' : ''].filter(Boolean)
-            } : null
-        });
-
-    } catch (error) {
-        console.error('Recommendation Error:', error);
-        res.status(500).json({ error: error.message });
-    }
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ ...req.body, date: orderDate });
 });
 
-// -----------------------------------------------------
-// TRENDING ITEMS (LAST 72 HOURS)
-// -----------------------------------------------------
 app.get('/api/trending', async (req, res) => {
-    try {
-        const now = new Date();
-        const seventyTwoHoursAgo = new Date(now.getTime() - 72 * 60 * 60 * 1000);
-        const cutoffTime = seventyTwoHoursAgo.toISOString();
-
-        const { data: rows, error } = await db
-            .from('orders')
-            .select('*')
-            .gte('date', cutoffTime);
-
-        if (error) {
-            console.error('Trending query error:', error);
-            return res.status(500).json({ error: 'Failed to fetch trending items' });
-        }
-
-        // Parse orders and extract items
-        const itemOrderCounts = new Map(); // item_id -> { count: number, mostRecentTime: string }
-
-        (rows || []).forEach(orderRow => {
-            try {
-                // PostgreSQL JSONB fields are already objects, but handle string case too
-                const items = typeof orderRow.items === 'string' ? JSON.parse(orderRow.items) : orderRow.items;
-                const orderDate = orderRow.date;
-
-                // Use a Set to track unique items in this order (count order, not quantity)
-                const uniqueItemIds = new Set();
-                items.forEach(item => {
-                    uniqueItemIds.add(item.id);
-                });
-
-                // Count each unique item once per order
-                uniqueItemIds.forEach(itemId => {
-                    if (!itemOrderCounts.has(itemId)) {
-                        itemOrderCounts.set(itemId, {
-                            count: 0,
-                            mostRecentTime: orderDate
-                        });
-                    }
-                    const entry = itemOrderCounts.get(itemId);
-                    entry.count += 1;
-                    // Update most recent time if this order is newer
-                    if (orderDate > entry.mostRecentTime) {
-                        entry.mostRecentTime = orderDate;
-                    }
-                });
-            } catch (parseErr) {
-                console.error('Error parsing order items:', parseErr);
-            }
-        });
-
-        // Convert to array and sort
-        const trendingItems = Array.from(itemOrderCounts.entries()).map(([itemId, data]) => ({
-            itemId,
-            recentOrderCount: data.count,
-            mostRecentTime: data.mostRecentTime
-        }));
-
-        // Sort by count (desc), then by mostRecentTime (desc)
-        trendingItems.sort((a, b) => {
-            if (b.recentOrderCount !== a.recentOrderCount) {
-                return b.recentOrderCount - a.recentOrderCount;
-            }
-            return new Date(b.mostRecentTime) - new Date(a.mostRecentTime);
-        });
-
-        // Only proceed if we have at least 3 items
-        if (trendingItems.length < 3) {
-            return res.json({ items: [] });
-        }
-
-        // Limit to top 5
-        const topItems = trendingItems.slice(0, 5);
-        const itemIds = topItems.map(item => item.itemId);
-
-        // Fetch menu item details
-        const { data: menuRows, error: menuError } = await db
-            .from('menu_items')
-            .select('*')
-            .in('id', itemIds);
-
-        if (menuError) {
-            console.error('Menu items query error:', menuError);
-            return res.status(500).json({ error: 'Failed to fetch menu items' });
-        }
-
-        // Map menu items by ID and attach order count
-        const menuMap = new Map((menuRows || []).map(row => [row.id, row]));
-        const result = topItems
-            .map(trendingItem => {
-                const menuItem = menuMap.get(trendingItem.itemId);
-                if (!menuItem) return null;
-                return {
-                    ...menuItem,
-                    recentOrderCount: trendingItem.recentOrderCount
-                };
-            })
-            .filter(item => item !== null);
-
-        res.json({ items: result });
-    } catch (error) {
-        console.error('Trending endpoint error:', error);
-        res.status(500).json({ error: 'Failed to fetch trending items' });
-    }
+    const { data, error } = await db.from('trending_items_7d').select('*');
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data || []);
 });
 
-// -----------------------------------------------------
-// RAZORPAY PAYMENT ENDPOINTS
-// -----------------------------------------------------
-
-// Create Razorpay order
-app.post('/api/payments/create-order', async (req, res) => {
-    if (!razorpayInstance) {
-        return res.status(503).json({ error: 'Payment service unavailable. Razorpay not configured.' });
-    }
-
-    const { amount, currency = 'INR', customer } = req.body;
-
-    if (!amount || amount <= 0) {
-        return res.status(400).json({ error: 'Invalid amount' });
-    }
-
-    try {
-        const options = {
-            amount: Math.round(amount * 100), // Convert to paise
-            currency: currency,
-            receipt: `order_${Date.now()}`,
-            notes: {
-                customer_name: customer?.name || '',
-                customer_email: customer?.email || '',
-                customer_phone: customer?.phone || ''
-            }
-        };
-
-        const order = await razorpayInstance.orders.create(options);
-
-        res.json({
-            id: order.id,
-            amount: order.amount,
-            currency: order.currency,
-            key_id: RAZORPAY_KEY_ID
-        });
-    } catch (error) {
-        console.error('Razorpay order creation error:', error);
-        res.status(500).json({
-            error: 'Failed to create payment order',
-            details: error.message
-        });
-    }
-});
-
-// Verify payment signature
-app.post('/api/payments/verify-payment', async (req, res) => {
-    if (!razorpayInstance) {
-        return res.status(503).json({ error: 'Payment service unavailable. Razorpay not configured.' });
-    }
-
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, orderData } = req.body;
-
-    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
-        return res.status(400).json({ error: 'Missing payment verification data' });
-    }
-
-    try {
-        // Verify signature
-        const text = `${razorpay_order_id}|${razorpay_payment_id}`;
-        const generated_signature = crypto
-            .createHmac('sha256', RAZORPAY_KEY_SECRET)
-            .update(text)
-            .digest('hex');
-
-        if (generated_signature !== razorpay_signature) {
-            return res.status(401).json({ error: 'Payment verification failed. Invalid signature.' });
-        }
-
-        // Payment verified successfully
-        console.log('[PAYMENT] Payment verified:', {
-            order_id: razorpay_order_id,
-            payment_id: razorpay_payment_id
-        });
-
-        // Create order in database
-        if (orderData) {
-            const { id, customer, items, total, pickupTime } = orderData;
-
-            // USE IST TIME for confirmed payment time
-            const confirmedDate = getISTTime();
-
-            const { data, error } = await db.from('orders').insert({
-                id,
-                customer: customer, // JSONB - Supabase handles object serialization
-                items: items, // JSONB - Supabase handles object serialization
-                total,
-                date: confirmedDate,
-                pickupTime,
-                payment_status: 'PAID',
-                payment_method: 'Paid Online',
-                razorpay_order_id,
-                razorpay_payment_id
-            }).select().single();
-
-            if (error) {
-                console.error('[PAYMENT] Order save error after payment:', error);
-                return res.status(500).json({ error: 'Payment verified but failed to save order', details: error.message });
-            }
-            console.log('[PAYMENT] Order saved:', id, 'at', confirmedDate);
-            res.json({
-                success: true,
-                message: 'Payment verified and order created',
-                order: { ...orderData, date: confirmedDate },
-                payment_id: razorpay_payment_id
-            });
-        } else {
-            res.json({
-                success: true,
-                message: 'Payment verified successfully',
-                payment_id: razorpay_payment_id
-            });
-        }
-    } catch (error) {
-        console.error('Payment verification error:', error);
-        res.status(500).json({
-            error: 'Payment verification failed',
-            details: error.message
-        });
-    }
-});
-
-
-// -----------------------------------------------------
-// INTELLIGENT CHATBOT
-// -----------------------------------------------------
-// Knowledge index is managed by knowledgeManager.js and updated dynamically
-
-app.post('/api/chat', async (req, res) => {
-    try {
-        const { message, sessionId } = req.body;
-        const msg = message.toLowerCase();
-
-        // Initialize Session
-        if (sessionId && !sessions[sessionId]) {
-            sessions[sessionId] = { lastContext: null, lastCategory: null };
-        }
-        const session = sessionId ? sessions[sessionId] : { lastContext: null };
-
-        // --- 1. DOMAIN CLASSIFICATION ---
-        // Separate Art/Workshop/Menu domains to prevents "Fries for Art"
-        const artKeywords = ['art', 'gallery', 'painting', 'artist', 'piece'];
-        const workshopKeywords = ['workshop', 'class', 'learn', 'course'];
-
-        const isArt = artKeywords.some(k => msg.includes(k));
-        const isWorkshop = workshopKeywords.some(k => msg.includes(k));
-
-        // --- 2. RECOMMENDATION SIGNALS ---
-        const recTriggers = ['suggest', 'recommend', 'good', 'want', 'like', 'try', 'need', 'ordering', 'have'];
-        const isRecTrigger = recTriggers.some(t => msg.includes(t));
-
-        const isPriceSort = msg.includes('cheap') || msg.includes('expensive') || msg.includes('cost') || msg.includes('lowest') || msg.includes('highest') || msg.includes('price');
-
-        const isTired = msg.includes('tired') || msg.includes('sleepy') || msg.includes('wake') || msg.includes('energy') || msg.includes('caffeine') || msg.includes('buzz');
-
-
-        // --- 3. EXECUTION LOGIC ---
-
-        // === A. ART DOMAIN ===
-        if (isArt) {
-            const { data: rows, error } = await db
-                .from('art_items')
-                .select('*')
-                .eq('status', 'Available');
-
-            if (error) return res.json({ reply: "I can't check the gallery right now." });
-
-            if (!rows || rows.length === 0) return res.json({ reply: "Currently, all our art pieces are sold out. Check back soon!" });
-
-            if (isRecTrigger || isPriceSort) {
-                // Determine best art
-                let winner = rows[Math.floor(Math.random() * rows.length)];
-                if (msg.includes('cheap')) winner = rows.reduce((prev, curr) => prev.price < curr.price ? prev : curr);
-                if (msg.includes('expensive')) winner = rows.reduce((prev, curr) => prev.price > curr.price ? prev : curr);
-
-                const artistName = winner.artist_name || winner.artist || 'Unknown Artist';
-                return res.json({ reply: `For art, I recommend **"${winner.title}"** by ${artistName} (₹${winner.price}). It's a stunning piece.` });
-            }
-
-            // General List
-            const artList = rows.map(a => {
-                const artistName = a.artist_name || a.artist || 'Unknown Artist';
-                return `- "${a.title}" by ${artistName} (₹${a.price})`;
-            }).join('\n');
-            return res.json({ reply: `Here are the available art pieces in our gallery:\n\n${artList}` });
-        }
-
-        // === B. WORKSHOP DOMAIN ===
-        if (isWorkshop) {
-            const { data: rows, error } = await db
-                .from('workshops')
-                .select('*');
-
-            if (error) return res.json({ reply: "I can't check workshops right now." });
-            if (!rows || rows.length === 0) return res.json({ reply: "No workshops are scheduled at the moment." });
-
-            const workshops = rows.map(w => {
-                const available = w.seats - w.booked;
-                return `- ${w.title} on ${w.datetime} (₹${w.price})\n  ${available > 0 ? `${available} seats left` : 'SOLD OUT'}`;
-            }).join('\n\n');
-            return res.json({ reply: `Upcoming Workshops:\n\n${workshops}` });
-        }
-
-        // === C. MENU RECOMMENDATION DOMAIN ===
-        const isFollowUp = msg.includes('then') || msg.includes('what about') || msg.includes('how about') || msg.includes('and');
-
-        // DETECT CURRENT CONTEXT
-        const foodKeywords = ['food', 'eat', 'snack', 'bite', 'hungry', 'side', 'bagel', 'croissant', 'fries', 'pizza', 'sandwich', 'burger'];
-        const drinkKeywords = ['drink', 'coffee', 'tea', 'latte', 'brew', 'sip', 'thirsty', 'cold', 'hot', 'refreshing', 'shake'];
-
-        let currentContext = null;
-        if (foodKeywords.some(k => msg.includes(k))) currentContext = 'food';
-        else if (drinkKeywords.some(k => msg.includes(k))) currentContext = 'drink';
-
-        // Merge Context
-        let activeContext = currentContext;
-        if (isFollowUp && !activeContext && session.lastContext) {
-            activeContext = session.lastContext;
-        }
-
-        // Refine Drink Context
-        let subCategory = null;
-        if (activeContext === 'drink' || !activeContext) {
-            if (msg.includes('tea') || (session.lastCategory === 'tea' && isFollowUp)) subCategory = 'tea';
-            else if (msg.includes('coffee') || (session.lastCategory === 'coffee' && isFollowUp)) subCategory = 'coffee';
-            else if (msg.includes('shake') || (session.lastCategory === 'shake' && isFollowUp)) subCategory = 'shake';
-
-            if (subCategory) activeContext = 'drink';
-        }
-
-        // EXECUTE MENU QUERY
-        // Only enter if explicit triggers OR context OR Tired (which implies drink)
-        if (isRecTrigger || isPriceSort || isFollowUp || activeContext || isTired) {
-
-            let query = db.from('menu_items').select('*');
-            let limit = 3;
-
-            // ENERGY LOGIC (Updates Context IMPLICITLY)
-            if (isTired) {
-                query = query.or('caffeine.eq.Very High,caffeine.eq.Extreme');
-                activeContext = 'drink';
-                limit = 1; // Give the BEST energy boost
-            }
-
-            // FILTERING
-            if (activeContext === 'food') {
-                query = query.or('category.ilike.%Food%,tags.ilike.%food%,tags.ilike.%snack%,tags.ilike.%meal%');
-            } else if (activeContext === 'drink') {
-                query = query.not('category', 'ilike', '%Food%');
-                // Subcategory Filtering
-                if (subCategory === 'coffee') {
-                    query = query.or('category.ilike.%Robusta%,category.ilike.%Blend%,tags.ilike.%coffee%');
-                }
-                if (subCategory === 'tea') {
-                    query = query.or('category.ilike.%Tea%,tags.ilike.%tea%');
-                }
-                if (subCategory === 'shake') {
-                    query = query.or('category.ilike.%Shake%,tags.ilike.%milk%');
-                }
-            }
-
-            // PRICE SORTING
-            const isCheapest = msg.includes('cheap') || msg.includes('lowest') || msg.includes('least');
-            const isExpensive = msg.includes('expensive') || msg.includes('highest') || msg.includes('most');
-
-            if (isPriceSort) {
-                limit = 1;
-                if (isCheapest) {
-                    query = query.order('price', { ascending: true });
-                } else if (isExpensive) {
-                    query = query.order('price', { ascending: false });
-                }
-            }
-            // Note: For random, we'll fetch more and shuffle in JS
-
-            // TASTE / FLAVOR MATCHING
-            const flavorKeywords = ['strong', 'sweet', 'cold', 'hot', 'fruity', 'milky', 'creamy', 'chocolate', 'spicy', 'savory'];
-            const foundFlavors = flavorKeywords.filter(k => msg.includes(k));
-            if (foundFlavors.length > 0) {
-                const flavorConditions = foundFlavors.map(f => `tags.ilike.%${f}%`).join(',');
-                query = query.or(flavorConditions);
-            }
-
-            // Fetch more rows for random selection if needed
-            const fetchLimit = isPriceSort ? limit : Math.min(limit * 3, 50);
-            query = query.limit(fetchLimit);
-
-            const { data: rows, error } = await query;
-
-            if (error) return res.json({ reply: "I'm having a brain freeze. Try again?" });
-
-            // UPDATE SESSION MEMORY
-            if (sessionId) {
-                if (activeContext) sessions[sessionId].lastContext = activeContext;
-                if (subCategory) sessions[sessionId].lastCategory = subCategory;
-            }
-
-            // Shuffle if not price sorted (to simulate RANDOM())
-            let shuffledRows = rows || [];
-            if (!isPriceSort && shuffledRows.length > 0) {
-                shuffledRows = shuffledRows.sort(() => Math.random() - 0.5).slice(0, limit);
-            }
-
-            if (shuffledRows.length === 0) {
-                if (isPriceSort) return res.json({ reply: `I couldn't find any items matching those criteria.` });
-
-                // FALLTHROUGH to Knowledge if Menu search fails (e.g. "Suggest story?")
-                const fuseKnowledge = getFuseKnowledge();
-                if (fuseKnowledge) {
-                    const fuseRes = fuseKnowledge.search(msg);
-                    if (fuseRes.length > 0) return res.json({ reply: fuseRes[0].item.response });
-                }
-
-                return res.json({ reply: "I'm not sure. Try asking for 'coffee', 'food', or 'help'." });
-            }
-
-            // SMART RESPONSE GENERATION
-            const item = shuffledRows[0];
-
-            if (isTired) {
-                return res.json({ reply: `Need a boost? The **${item.name}** packs **${item.caffeine} Caffeine**. It will wake you up!` });
-            }
-
-            if (isPriceSort) {
-                const adj = isCheapest ? "cheapest" : "most premium";
-                const cat = activeContext ? activeContext : "item";
-                return res.json({ reply: `The **${adj} ${cat}** we have is the **${item.name}** at ₹${item.price}.` });
-            }
-
-            const itemTags = item.tags ? item.tags.split(',').slice(0, 3).join(', ') : 'a great choice';
-            return res.json({
-                reply: `I suggest the **${item.name}** (₹${item.price}).\n\nIt's ${itemTags}.`
-            });
-        }
-
-        // --- FALLBACK: KNOWLEDGE BASE ---
-        const fuseKnowledge = getFuseKnowledge();
-        if (fuseKnowledge) {
-            const results = fuseKnowledge.search(msg);
-            if (results.length > 0) return res.json({ reply: results[0].item.response });
-        }
-
-        // --- FALLBACK: GENERAL MENU/HELP ---
-        if (msg.includes('menu')) return res.json({ reply: "Ask me to 'suggest a drink' or 'show food options'!" });
-
-        res.json({ reply: "I didn't quite catch that. Im a smart barista, try asking me 'What is the cheapest coffee?' or 'Suggest a snack'!" });
-    } catch (error) {
-        console.error('Chat endpoint error:', error);
-        res.json({ reply: "I'm having trouble right now. Please try again!" });
-    }
-});
-
-initDb().then(async () => {
-    // Initialize knowledge index after database is ready
-    await initializeKnowledge(db);
-    app.listen(PORT, () => { console.log(`🚀 Intelligent Server running on http://localhost:${PORT}`); });
+// Start Server
+app.listen(PORT, () => {
+    console.log(`🚀 Intelligent Server running on http://localhost:${PORT}`);
 });

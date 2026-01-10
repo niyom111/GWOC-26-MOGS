@@ -19,19 +19,16 @@ const ProcessCard: React.FC<{
 
     return (
         <motion.div
-            className="relative h-[70vh] w-[90vw] md:w-[40vw] flex-shrink-0 overflow-hidden bg-[#0A0A0A] border-r border-white/10 group perspective-1000"
+            className="relative h-[70vh] w-[90vw] md:w-[40vw] flex-shrink-0 overflow-hidden bg-[#F9F8F4] border-r border-black/10 group perspective-1000"
         >
             {/* Parallax Image Content */}
-            <motion.div
-                style={{ x: imageX, scale: 1.2 }}
-                className="absolute inset-0 w-[120%] h-full"
-            >
+            <div className="absolute inset-0 w-full h-full">
                 <img
                     src={step.img}
                     alt={step.title}
-                    className="w-full h-full object-cover opacity-80 transition-all duration-700 ease-out"
+                    className="w-full h-full object-cover transition-all duration-700 ease-out"
                 />
-            </motion.div>
+            </div>
 
             <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-90" />
 
@@ -73,8 +70,9 @@ const ProcessScroll: React.FC = () => {
         target: targetRef,
     });
 
-    const x = useTransform(scrollYProgress, [0, 1], ["0%", "-85%"]);
-    const springX = useSpring(x, { stiffness: 50, damping: 15 });
+    const x = useTransform(scrollYProgress, [0, 1], ["0%", "-55%"]); // Reduced travel relative to width to prevent overscroll
+    // Moredamping = less bounce, Slower stiffness = smoother follow
+    const springX = useSpring(x, { stiffness: 40, damping: 30, mass: 1.2 });
 
     const steps = [
         {
@@ -104,7 +102,8 @@ const ProcessScroll: React.FC = () => {
     ];
 
     return (
-        <section ref={targetRef} className="relative h-[300vh] bg-[#F9F8F4]">
+        // Increased height to 250vh to give more "time" for the scroll to happen smoothly
+        <section ref={targetRef} className="relative h-[250vh] bg-[#F9F8F4]">
             <div className="sticky top-0 flex h-screen items-center overflow-hidden bg-[#F9F8F4] text-[#1A1A1A]">
 
                 {/* Intro Block */}
