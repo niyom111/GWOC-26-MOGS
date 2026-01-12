@@ -112,7 +112,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
 
   // Dynamically derive available categories from current menu items
   const categoryOptions = useMemo(
-    () => Array.from(new Set(menuItems.map(item => item.category))).sort(),
+    () => Array.from(new Set(menuItems.map(item => item.category).filter(Boolean))).sort() as string[],
     [menuItems]
   );
 
@@ -851,7 +851,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
                   >
                     {categoryOptions.map(category => (
                       <option key={category} value={category}>
-                        {category.toUpperCase()}
+                        {category?.toUpperCase() || category}
                       </option>
                     ))}
                     <option value="__NEW__">Create New Category</option>

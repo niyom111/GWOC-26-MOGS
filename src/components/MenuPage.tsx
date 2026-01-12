@@ -312,13 +312,15 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
   };
 
   const filteredCategories = useMemo(() => {
-    const query = search.trim().toLowerCase();
+    const query = (search || '').trim().toLowerCase();
 
     // Build categories from live menu items (deduped by trimmed, uppercased category)
     const categoryMap = new Map<string, MenuCategory>();
 
     menuItems.forEach(item => {
-      if (!item.category) return; // Skip items without category
+      // Skip items without required fields
+      if (!item.category || !item.name || item.price == null || !item.id) return;
+      
       const canonicalCategory = item.category.trim().toUpperCase();
       const id = canonicalCategory
         .toLowerCase()
@@ -534,7 +536,7 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
                 <div>
                   {trendingItems.map(item => {
                     // Find the category group for this item
-                    if (!item.category) return null; // Skip items without category
+                    if (!item.category || !item.name || !item.id || item.price == null) return null; // Skip items without required fields
                     const canonicalCategory = item.category.trim().toUpperCase();
                     const group = canonicalCategory.split('(')[0].trim();
 

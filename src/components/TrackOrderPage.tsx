@@ -39,6 +39,7 @@ const TrackOrderPage: React.FC<TrackOrderPageProps> = ({ onNavigate }) => {
   const [searched, setSearched] = useState(false);
 
   const getStatusIcon = (status: string) => {
+    if (!status) return <Package className="w-4 h-4" />;
     switch (status.toLowerCase()) {
       case 'placed':
         return <Package className="w-4 h-4" />;
@@ -54,6 +55,7 @@ const TrackOrderPage: React.FC<TrackOrderPageProps> = ({ onNavigate }) => {
   };
 
   const getStatusColor = (status: string) => {
+    if (!status) return 'bg-zinc-200 text-zinc-700';
     switch (status.toLowerCase()) {
       case 'placed':
         return 'bg-zinc-200 text-zinc-700';
@@ -204,13 +206,15 @@ const TrackOrderPage: React.FC<TrackOrderPageProps> = ({ onNavigate }) => {
                     <div className="border-t border-black/5 pt-4">
                       <p className="text-xs uppercase tracking-[0.3em] text-zinc-500 font-sans mb-2">Items</p>
                       <div className="space-y-2">
-                        {order.items.map((item, idx) => (
-                          <div key={idx} className="flex justify-between text-sm font-sans">
+                        {order.items
+                          .filter(item => item.id && item.name && item.price != null && item.quantity != null)
+                          .map((item, idx) => (
+                          <div key={item.id || idx} className="flex justify-between text-sm font-sans">
                             <span>
-                              {item.name} × {item.quantity}
+                              {item.name || 'Unknown Item'} × {item.quantity ?? 0}
                             </span>
                             <span className="text-zinc-600">
-                              ₹{(item.price * item.quantity).toFixed(0)}
+                              ₹{((item.price ?? 0) * (item.quantity ?? 0)).toFixed(0)}
                             </span>
                           </div>
                         ))}

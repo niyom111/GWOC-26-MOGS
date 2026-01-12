@@ -58,7 +58,11 @@ const CartPage: React.FC<CartPageProps> = ({
     }
   }, []);
 
-  const subtotal = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
+  const subtotal = cart.reduce((acc, item) => {
+    const price = item.price ?? 0;
+    const quantity = item.quantity ?? 0;
+    return acc + price * quantity;
+  }, 0);
   const total = subtotal;
 
   const [checkoutOpen, setCheckoutOpen] = useState(false);
@@ -79,10 +83,14 @@ const CartPage: React.FC<CartPageProps> = ({
     }
 
     return items
+      .filter(item => item.id && item.name && item.price != null && item.quantity != null)
       .map(item => {
         const notesPart = item.notes ? ` - ${item.notes.toUpperCase()}` : '';
-        const itemLine = `${item.name}${notesPart} × ${item.quantity}`;
-        const itemPrice = `₹${(item.price * item.quantity).toFixed(0)}`;
+        const itemName = item.name || 'Unknown Item';
+        const itemQuantity = item.quantity ?? 0;
+        const itemPriceValue = (item.price ?? 0) * itemQuantity;
+        const itemLine = `${itemName}${notesPart} × ${itemQuantity}`;
+        const itemPrice = `₹${itemPriceValue.toFixed(0)}`;
 
         return `
 <tr>
@@ -420,7 +428,9 @@ const CartPage: React.FC<CartPageProps> = ({
               </div>
 
               <div className="divide-y divide-black/10">
-                {cart.map((item) => (
+                {cart.map((item) => {
+                  if (!item.id || !item.name || item.price == null || item.quantity == null) return null;
+                  return (
                   <div key={item.id} className="py-4 flex items-center justify-between gap-4">
                     <div className="flex-1">
                       <p className="font-serif text-[15px]">{item.name}</p>
@@ -451,7 +461,7 @@ const CartPage: React.FC<CartPageProps> = ({
 
                       <div className="text-right">
                         <p className="text-sm font-semibold font-sans">
-                          ₹{(item.price * item.quantity).toFixed(0)}
+                          ₹{((item.price ?? 0) * (item.quantity ?? 0)).toFixed(0)}
                         </p>
                         <button
                           onClick={() => onRemove(item.id)}
@@ -463,7 +473,8 @@ const CartPage: React.FC<CartPageProps> = ({
                       </div>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 
