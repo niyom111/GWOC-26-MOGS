@@ -331,7 +331,7 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/(^-|-$)/g, '');
-      const group = canonicalCategory.split('(')[0].trim();
+      const group = (canonicalCategory.split('(')[0] ?? '').trim();
 
       if (!categoryMap.has(canonicalCategory)) {
         categoryMap.set(canonicalCategory, {
@@ -546,7 +546,7 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
                     const categoryStr = (item.category ?? '').trim();
                     if (!categoryStr) return null; // Skip if category is empty after trimming
                     const canonicalCategory = categoryStr.toUpperCase();
-                    const group = canonicalCategory.split('(')[0].trim();
+                    const group = (canonicalCategory.split('(')[0] ?? '').trim();
 
                     const cartItem: CoffeeItem = {
                       id: item.id,

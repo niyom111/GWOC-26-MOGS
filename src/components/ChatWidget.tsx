@@ -37,7 +37,7 @@ export default function ChatWidget() {
   };
 
   const handleSend = async () => {
-    if (!input.trim()) return;
+    if (!(input ?? '').trim()) return;
 
     const userMessage = input;
     setMessages(prev => [...prev, { text: userMessage, isUser: true }]);
@@ -151,7 +151,7 @@ export default function ChatWidget() {
                 />
                 <button
                   onClick={handleSend}
-                  disabled={isLoading || !input.trim()}
+                  disabled={isLoading || !(input ?? '').trim()}
                   className="p-2 rounded-md disabled:opacity-50"
                   style={{ backgroundColor: '#2C1810', color: '#F3E5AB' }}
                 >
