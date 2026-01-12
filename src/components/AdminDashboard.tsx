@@ -19,6 +19,7 @@ import {
   MessageSquare,
   X,
   ChevronDown,
+  Layers,
 } from 'lucide-react';
 import {
   useDataContext,
@@ -26,7 +27,11 @@ import {
   ArtAdminItem,
   WorkshopAdminItem,
   Order,
+  Category,
+  SubCategory,
+  Tag,
 } from '../DataContext';
+import CategoryManager from './CategoryManager';
 import { API_BASE_URL } from '../config';
 
 
@@ -53,8 +58,9 @@ interface FranchiseFaqItem {
 }
 
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'coffee' | 'orders' | 'art' | 'workshops' | 'franchise_enquiries' | 'franchise_faqs' | 'franchise_settings'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'coffee' | 'orders' | 'art' | 'workshops' | 'manage_categories' | 'franchise_enquiries' | 'franchise_faqs' | 'franchise_settings'>('overview');
   const [isFranchiseOpen, setIsFranchiseOpen] = useState(false);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>('');
 
   const tabs = [
     { id: 'overview' as const, label: 'Overview', icon: LayoutDashboard },
@@ -62,6 +68,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
     { id: 'orders' as const, label: 'Orders', icon: ClipboardList },
     { id: 'art' as const, label: 'Art Gallery', icon: Palette },
     { id: 'workshops' as const, label: 'Workshops', icon: Calendar },
+    { id: 'manage_categories' as const, label: 'Manage Categories', icon: Layers },
     { id: 'franchise_enquiries' as const, label: 'Franchise Enquiries', icon: MessageSquare },
     { id: 'franchise_faqs' as const, label: 'Franchise FAQs', icon: HelpCircle },
     { id: 'franchise_settings' as const, label: 'Franchise Settings', icon: Settings },
@@ -110,11 +117,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
   // Let's just add `updateArtItem` here. I will re-submit the `saveArtItem` chunk to be correct.
 
 
-  // Dynamically derive available categories from current menu items
+  // Dynamically derive available categories from current menu items (for legacy display)
+  // After migration, category is renamed to category_legacy
   const categoryOptions = useMemo(
-    () => Array.from(new Set(menuItems.map(item => item.category).filter(Boolean))).sort() as string[],
+    () => Array.from(new Set(menuItems.map(item => item.category || item.category_name || ''))).filter(Boolean).sort(),
     [menuItems]
   );
+
 
   // Dummy initial data – structured for easy API replacement later
   // Removed hardcoded coffeeItems - using useDataContext() instead
@@ -249,6 +258,45 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
   const [editingArt, setEditingArt] = useState<ArtAdminItem | null>(null);
   const [artDraft, setArtDraft] = useState<Partial<ArtAdminItem>>({});
 
+  // Dynamic Categories, Sub-Categories, and Tags state
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
+  const [allTags, setAllTags] = useState<Tag[]>([]);
+  const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
+  const [tagSearchQuery, setTagSearchQuery] = useState('');
+  const [newSubCategoryName, setNewSubCategoryName] = useState('');
+  const [showTagDropdown, setShowTagDropdown] = useState(false);
+
+  // Fetch categories and tags on mount
+  useEffect(() => {
+    Promise.all([
+      fetch(`${API_BASE_URL}/api/categories`).then(r => r.ok ? r.json() : []),
+      fetch(`${API_BASE_URL}/api/tags`).then(r => r.ok ? r.json() : [])
+    ])
+      .then(([cats, tags]) => {
+        setCategories(cats || []);
+        setAllTags(tags || []);
+      })
+      .catch(err => console.error('Error fetching categories/tags:', err));
+  }, []);
+
+  // Fetch sub-categories when category changes
+  const fetchSubCategories = async (categoryId: string) => {
+    if (!categoryId) {
+      setSubCategories([]);
+      return;
+    }
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/sub-categories?category_id=${categoryId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setSubCategories(data || []);
+      }
+    } catch (err) {
+      console.error('Error fetching sub-categories:', err);
+    }
+  };
+
   const openArtModalForNew = () => {
     setEditingArt(null);
     setArtDraft({
@@ -357,40 +405,89 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
   const openCoffeeModalForNew = () => {
     setEditingCoffee(null);
     setNewCategoryName('');
-    const defaultCategory = categoryOptions[0] || 'Robusta Specialty (Cold - Non Milk)';
+    setNewSubCategoryName('');
+    setSelectedTags([]);
+    setTagSearchQuery('');
+    setSubCategories([]);
     setItemKind('beverage');
     setCoffeeDraft({
       name: '',
       description: '',
-      category: defaultCategory,
+      category_id: categories[0]?.id || null,
+      sub_category_id: null,
       price: 0,
       caffeine: 'High',
       image: '/media/pic1.jpeg',
       caffeine_mg: null,
-      milk_based: 0,
       calories: null,
       shareable: 0,
       intensity_level: null,
-      tags: '',
     });
+    // Fetch sub-categories for first category
+    if (categories[0]?.id) {
+      fetchSubCategories(categories[0].id);
+    }
     setCoffeeModalOpen(true);
   };
 
-  const openCoffeeModalForEdit = (item: CoffeeAdminItem) => {
+  const openCoffeeModalForEdit = async (item: CoffeeAdminItem) => {
     setEditingCoffee(item);
     setNewCategoryName('');
-    const isFoodCategory = ((item.category ?? '').trim().toUpperCase().includes('FOOD')) || false;
+    setNewSubCategoryName('');
+    setTagSearchQuery('');
+
+    // Determine if food based on category name
+    const categoryName = item.category_name || item.category || '';
+    const isFoodCategory = (categoryName ?? '').trim().toUpperCase().includes('FOOD');
     setItemKind(isFoodCategory ? 'food' : 'beverage');
     setCoffeeDraft(item);
+
+    // Load sub-categories for this item's category
+    if (item.category_id) {
+      fetchSubCategories(item.category_id);
+    } else {
+      setSubCategories([]);
+    }
+
+    // Load tags for this item
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/menu/${item.id}/tags`);
+      if (res.ok) {
+        const tags = await res.json();
+        setSelectedTags(tags || []);
+      } else {
+        setSelectedTags([]);
+      }
+    } catch (err) {
+      console.error('Error fetching item tags:', err);
+      setSelectedTags([]);
+    }
+
     setCoffeeModalOpen(true);
   };
 
   const closeCoffeeModal = () => {
     setCoffeeModalOpen(false);
+    setSelectedTags([]);
+    setTagSearchQuery('');
+    setShowTagDropdown(false);
   };
 
   const handleCoffeeDraftChange = (field: keyof CoffeeAdminItem, value: any) => {
     setCoffeeDraft(prev => ({ ...prev, [field]: value }));
+
+    // If category changes, update sub-categories logic
+    if (field === 'category_id') {
+      // Always reset sub-category selection when category changes
+      setCoffeeDraft(prev => ({ ...prev, sub_category_id: null }));
+
+      if (value && value !== '__NEW__') {
+        fetchSubCategories(value);
+      } else {
+        // If "New" or empty, clear sub-categories options
+        setSubCategories([]);
+      }
+    }
   };
 
   const showToast = (message: string, type: 'success' | 'error') => {
@@ -411,84 +508,112 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
     };
   }, []);
 
-  const saveCoffeeItem = () => {
-    if (!coffeeDraft.name || !coffeeDraft.category || coffeeDraft.price == null) return;
+  const saveCoffeeItem = async () => {
+    if (!coffeeDraft.name || coffeeDraft.price == null) return;
 
     const draftName = (coffeeDraft.name ?? '').trim();
+    if (!draftName) return;
 
-    // Resolve final category (including __NEW__) and normalize to uppercase
-    const isNewCategory = coffeeDraft.category === '__NEW__';
-    const trimmedNewCategory = (newCategoryName ?? '').trim();
-    const rawCategory = isNewCategory
-      ? trimmedNewCategory
-      : (coffeeDraft.category as string);
-    const finalCategory = rawCategory ? rawCategory.toUpperCase() : '';
+    let categoryId = coffeeDraft.category_id;
+    let subCategoryId = coffeeDraft.sub_category_id;
 
-    if (!finalCategory) return;
-
-    const currentId = editingCoffee ? editingCoffee.id : null;
-    const nameExistsInCategory = menuItems.some(item =>
-      item.id !== currentId &&
-      (item.name ?? '').trim().toLowerCase() === draftName.toLowerCase() &&
-      (item.category ?? '').trim().toLowerCase() === finalCategory.toLowerCase()
-    );
-
-    if (nameExistsInCategory) {
-      showToast('An item with this name already exists in this category.', 'error');
-      return;
+    // Handle creating new category
+    if (coffeeDraft.category_id === '__NEW__') {
+      const trimmedNewCategory = (newCategoryName ?? '').trim();
+      if (!trimmedNewCategory) {
+        showToast('Please enter a name for the new category', 'error');
+        return;
+      }
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/categories`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: trimmedNewCategory })
+        });
+        if (res.ok || res.status === 201) {
+          const newCat = await res.json();
+          categoryId = newCat.id;
+          setCategories(prev => [...prev, newCat]);
+          showToast(`Category "${newCat.name}" created`, 'success');
+        } else {
+          showToast('Failed to create category', 'error');
+          return;
+        }
+      } catch (err) {
+        showToast('Error creating category', 'error');
+        return;
+      }
     }
 
-    console.log("Saving coffee item", coffeeDraft);
+    // Handle creating new sub-category
+    if (coffeeDraft.sub_category_id === '__NEW__') {
+      const trimmedNewSubCategory = (newSubCategoryName ?? '').trim();
+      if (!trimmedNewSubCategory) {
+        showToast('Please enter a name for the new sub-category', 'error');
+        return;
+      }
+      // Ensure we have a valid category ID (not __NEW__)
+      if (!categoryId || categoryId === '__NEW__') {
+        showToast('Invalid category for sub-category', 'error');
+        return;
+      }
 
-    // Normalise boolean-like fields to 0/1 integers for the database schema
-    const normalizedDraft: Partial<CoffeeAdminItem> = {
-      ...coffeeDraft,
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/sub-categories`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ category_id: categoryId, name: trimmedNewSubCategory })
+        });
+        if (res.ok || res.status === 201) {
+          const newSubCat = await res.json();
+          subCategoryId = newSubCat.id;
+          setSubCategories(prev => [...prev, newSubCat]);
+          showToast(`Sub-category "${newSubCat.name}" created`, 'success');
+        } else {
+          showToast('Failed to create sub-category', 'error');
+          return;
+        }
+      } catch (err) {
+        showToast('Error creating sub-category', 'error');
+        return;
+      }
+    }
+
+    console.log("Saving menu item", { coffeeDraft, categoryId, subCategoryId, selectedTags });
+
+    const itemData: any = {
       name: draftName,
-      category: finalCategory,
+      category_id: categoryId,
+      sub_category_id: subCategoryId || null,
       price: Number(coffeeDraft.price),
-      milk_based:
-        itemKind === 'beverage'
-          ? (coffeeDraft.milk_based ? 1 : 0)
-          : null,
-      calories:
-        itemKind === 'food'
-          ? (coffeeDraft.calories != null ? Number(coffeeDraft.calories) : null)
-          : null,
-      shareable:
-        itemKind === 'food'
-          ? (coffeeDraft.shareable ? 1 : 0)
-          : null,
-      caffeine_mg:
-        itemKind === 'beverage'
-          ? (coffeeDraft.caffeine_mg != null ? Number(coffeeDraft.caffeine_mg) : null)
-          : null,
+      caffeine: coffeeDraft.caffeine || 'High',
+      caffeine_mg: itemKind === 'beverage' ? (coffeeDraft.caffeine_mg ?? null) : null,
+      calories: itemKind === 'food' ? (coffeeDraft.calories ?? null) : null,
+      shareable: itemKind === 'food' ? (coffeeDraft.shareable ? 1 : 0) : null,
+      intensity_level: coffeeDraft.intensity_level ?? null,
+      image: coffeeDraft.image || '/media/pic1.jpeg',
+      description: coffeeDraft.description || '',
+      tag_ids: selectedTags.map(t => t.id),
     };
 
-    if (editingCoffee) {
-      updateMenuItem(editingCoffee.id, normalizedDraft);
-      showToast('Item updated successfully', 'success');
-    } else {
-      const newItem: CoffeeAdminItem = {
-        id: `c${Date.now()}`,
-        name: draftName,
-        category: finalCategory,
-        price: Number(coffeeDraft.price),
-        caffeine: coffeeDraft.caffeine || 'High',
-        caffeine_mg: normalizedDraft.caffeine_mg ?? null,
-        milk_based: normalizedDraft.milk_based ?? null,
-        calories: normalizedDraft.calories ?? null,
-        shareable: normalizedDraft.shareable ?? null,
-        intensity_level: coffeeDraft.intensity_level ?? null,
-        image: coffeeDraft.image || '/media/pic1.jpeg',
-        description: coffeeDraft.description || '',
-        tags: coffeeDraft.tags || '',
-      };
-      console.log("Adding new coffee item", newItem);
-      addMenuItem(newItem);
-      showToast('Item added successfully', 'success');
-    }
+    try {
+      if (editingCoffee) {
+        await updateMenuItem(editingCoffee.id, itemData);
+        showToast('Item updated successfully', 'success');
+      } else {
+        const newId = `c${Date.now()}`;
+        await addMenuItem({ id: newId, ...itemData });
+        showToast('Item added successfully', 'success');
+      }
 
-    setCoffeeModalOpen(false);
+      // Close modal and reset state
+      setCoffeeModalOpen(false);
+      setSelectedTags([]);
+      // No reload needed as DataContext updates the list automatically
+    } catch (err: any) {
+      console.error('Error saving item:', err);
+      showToast(err.message || 'Failed to save item', 'error');
+    }
   };
 
   const deleteCoffeeItem = (id: string) => {
@@ -728,6 +853,19 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
 
         {activeTab === 'workshops' && <WorkshopTable items={workshops} />}
 
+        {activeTab === 'manage_categories' && (
+          <div className="max-w-3xl">
+            <div className="mb-6">
+              <h2 className="text-2xl font-serif italic text-black">Manage Categories</h2>
+              <p className="text-[13px] text-zinc-500 mt-1">Create, rename, and delete categories and sub-categories</p>
+            </div>
+            <CategoryManager
+              selectedCategoryId={selectedCategoryId}
+              onCategorySelect={setSelectedCategoryId}
+            />
+          </div>
+        )}
+
         {activeTab === 'franchise_enquiries' && (
           <FranchiseTable
             items={enquiries}
@@ -779,336 +917,481 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
         )}
       </main>
 
-      {/* Coffee modal */}
+      {/* Coffee modal - Notion/Linear styled */}
       {coffeeModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="w-full max-w-xl bg-[#F9F8F4] border border-black/10 rounded-xl shadow-xl p-8"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="w-[600px] bg-white rounded-[20px] shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)] overflow-hidden max-h-[90vh] flex flex-col"
           >
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-serif italic">{editingCoffee ? 'Edit Item' : 'Add New Item'}</h2>
+            {/* Header */}
+            <div className="px-8 py-6 border-b border-[#EBEBEB] flex items-center justify-between">
+              <h2 className="text-[18px] font-semibold text-[#111]">{editingCoffee ? 'Edit Item' : 'Add New Item'}</h2>
               <button
                 onClick={closeCoffeeModal}
-                className="text-xs uppercase tracking-[0.25em] text-zinc-500 hover:text-black"
+                className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-[#F5F5F5] transition-colors"
               >
-                Close
+                <X className="w-4 h-4 text-[#999]" />
               </button>
             </div>
 
-            <div className="space-y-4 font-sans text-sm">
-              {/* Item Kind - UI-only classification */}
+
+            {/* Form Content - 32px padding */}
+            <div className="p-8 space-y-4 overflow-y-auto flex-1">
+              {/* Item Type - Segmented Control */}
               <div>
-                <label className="block text-[11px] uppercase tracking-[0.25em] mb-1">Item Kind</label>
-                <div className="flex gap-4 text-[12px]">
-                  <label className="inline-flex items-center gap-2">
-                    <input
-                      type="radio"
-                      checked={itemKind === 'beverage'}
-                      onChange={() => setItemKind('beverage')}
-                    />
-                    <span>Beverage</span>
-                  </label>
-                  <label className="inline-flex items-center gap-2">
-                    <input
-                      type="radio"
-                      checked={itemKind === 'food'}
-                      onChange={() => setItemKind('food')}
-                    />
-                    <span>Food</span>
-                  </label>
+                <label className="block text-[12px] font-semibold text-[#333] uppercase tracking-[0.05em] mb-3">Item Type</label>
+                <div className="flex p-1 bg-[#F5F5F5] rounded-[12px]">
+                  <button
+                    type="button"
+                    onClick={() => setItemKind('beverage')}
+                    className={`flex-1 h-[40px] text-[14px] font-medium rounded-[10px] transition-all ${itemKind === 'beverage'
+                      ? 'bg-white text-[#111] shadow-sm'
+                      : 'text-[#666] hover:text-[#333]'
+                      }`}
+                  >
+                    Beverage
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setItemKind('food')}
+                    className={`flex-1 h-[40px] text-[14px] font-medium rounded-[10px] transition-all ${itemKind === 'food'
+                      ? 'bg-white text-[#111] shadow-sm'
+                      : 'text-[#666] hover:text-[#333]'
+                      }`}
+                  >
+                    Food
+                  </button>
                 </div>
               </div>
 
+              {/* Divider */}
+              <div className="border-t border-[#F0F0F0]" />
+
+              {/* Name */}
               <div>
-                <label className="block text-[11px] uppercase tracking-[0.25em] mb-1">Name</label>
+                <label className="block text-[12px] font-semibold text-[#333] uppercase tracking-[0.05em] mb-2">Name</label>
                 <input
+                  type="text"
                   value={coffeeDraft.name || ''}
                   onChange={e => handleCoffeeDraftChange('name', e.target.value)}
-                  className="w-full bg-transparent border-b border-black/20 py-2 text-sm outline-none focus:border-black"
-                  placeholder="Robusta Mocha"
+                  placeholder="e.g. Robusta Espresso"
+                  className="w-full h-[46px] px-4 text-[14px] text-[#111] placeholder-[#AAA] border border-[#DDD] rounded-[12px] outline-none focus:border-[#111] transition-colors"
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* 2-Column Grid: Price & Caffeine/Calories */}
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[11px] uppercase tracking-[0.25em] mb-1">Price (₹)</label>
+                  <label className="block text-[12px] font-semibold text-[#333] uppercase tracking-[0.05em] mb-2">Price (₹)</label>
                   <input
                     type="number"
                     value={coffeeDraft.price ?? ''}
                     onChange={e => handleCoffeeDraftChange('price', Number(e.target.value))}
-                    className="w-full bg-transparent border-b border-black/20 py-2 text-sm outline-none focus:border-black"
+                    placeholder="0"
+                    className="w-full h-[46px] px-4 text-[14px] text-[#111] placeholder-[#AAA] border border-[#DDD] rounded-[12px] outline-none focus:border-[#111] transition-colors"
                   />
                 </div>
 
+                {itemKind === 'beverage' ? (
+                  <div>
+                    <label className="block text-[12px] font-semibold text-[#333] uppercase tracking-[0.05em] mb-2">Caffeine (mg)</label>
+                    <input
+                      type="number"
+                      value={coffeeDraft.caffeine_mg ?? ''}
+                      onChange={e => handleCoffeeDraftChange('caffeine_mg', e.target.value ? Number(e.target.value) : null)}
+                      placeholder="e.g. 150"
+                      className="w-full h-[46px] px-4 text-[14px] text-[#111] placeholder-[#AAA] border border-[#DDD] rounded-[12px] outline-none focus:border-[#111] transition-colors"
+                    />
+                  </div>
+                ) : (
+                  <div className="flex gap-3">
+                    <div className="flex-1">
+                      <label className="block text-[12px] font-semibold text-[#333] uppercase tracking-[0.05em] mb-2">Calories</label>
+                      <input
+                        type="number"
+                        value={coffeeDraft.calories ?? ''}
+                        onChange={e => handleCoffeeDraftChange('calories', e.target.value ? Number(e.target.value) : null)}
+                        placeholder="e.g. 250"
+                        className="w-full h-[46px] px-4 text-[14px] text-[#111] placeholder-[#AAA] border border-[#DDD] rounded-[12px] outline-none focus:border-[#111] transition-colors"
+                      />
+                    </div>
+                    <div className="flex items-end pb-3">
+                      <label className="inline-flex items-center gap-2 cursor-pointer whitespace-nowrap">
+                        <input
+                          type="checkbox"
+                          checked={!!coffeeDraft.shareable}
+                          onChange={e => handleCoffeeDraftChange('shareable', e.target.checked ? 1 : 0)}
+                          className="w-[18px] h-[18px] rounded border-[#DDD] cursor-pointer accent-black"
+                        />
+                        <span className="text-[13px] text-[#555]">Shareable</span>
+                      </label>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+
+              {/* Divider */}
+              <div className="border-t border-[#F0F0F0]" />
+
+              {/* 2-Column Grid: Category & Sub-Category */}
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[11px] uppercase tracking-[0.25em] mb-1">Category</label>
+                  <label className="block text-[12px] font-semibold text-[#333] uppercase tracking-[0.05em] mb-2">Category</label>
                   <select
-                    value={coffeeDraft.category || categoryOptions[0] || ''}
-                    onChange={e => handleCoffeeDraftChange('category', e.target.value as any)}
-                    className="w-full bg-transparent border-b border-black/20 py-2 text-sm outline-none focus:border-black"
+                    value={coffeeDraft.category_id || ''}
+                    onChange={e => handleCoffeeDraftChange('category_id', e.target.value)}
+                    className="w-full h-[46px] px-4 text-[14px] text-[#111] border border-[#DDD] rounded-[12px] outline-none focus:border-[#111] bg-white cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2012%2012%22%3E%3Cpath%20fill%3D%22%23666%22%20d%3D%22M2%204l4%204%204-4%22%2F%3E%3C%2Fsvg%3E')] bg-[length:12px] bg-[right_16px_center] bg-no-repeat transition-colors"
                   >
-                    {categoryOptions.map(category => (
-                      <option key={category} value={category}>
-                        {category?.toUpperCase() || category}
-                      </option>
+                    <option value="">Select category</option>
+                    {categories.map(cat => (
+                      <option key={cat.id} value={cat.id}>{cat.name}</option>
                     ))}
-                    <option value="__NEW__">Create New Category</option>
+                    <option value="__NEW__">+ Create new</option>
                   </select>
-                  {coffeeDraft.category === '__NEW__' && (
+                  {coffeeDraft.category_id === '__NEW__' && (
                     <input
                       type="text"
                       value={newCategoryName}
                       onChange={e => setNewCategoryName(e.target.value)}
                       placeholder="New category name"
-                      className="mt-2 w-full bg-transparent border-b border-black/20 py-2 text-sm outline-none focus:border-black"
+                      className="mt-2 w-full h-[46px] px-4 text-[14px] text-[#111] placeholder-[#AAA] border border-[#DDD] rounded-[12px] outline-none focus:border-[#111] transition-colors"
+                    />
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-[12px] font-semibold text-[#333] uppercase tracking-[0.05em] mb-2">Sub-category</label>
+                  <select
+                    value={coffeeDraft.sub_category_id || ''}
+                    onChange={e => handleCoffeeDraftChange('sub_category_id', e.target.value)}
+                    disabled={!coffeeDraft.category_id}
+                    className="w-full h-[46px] px-4 text-[14px] text-[#111] border border-[#DDD] rounded-[12px] outline-none focus:border-[#111] bg-white cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2012%2012%22%3E%3Cpath%20fill%3D%22%23666%22%20d%3D%22M2%204l4%204%204-4%22%2F%3E%3C%2Fsvg%3E')] bg-[length:12px] bg-[right_16px_center] bg-no-repeat disabled:bg-[#F5F5F5] disabled:text-[#999] disabled:cursor-not-allowed transition-colors"
+                  >
+                    <option value="">Select sub-category</option>
+                    {subCategories.map(sub => (
+                      <option key={sub.id} value={sub.id}>{sub.name}</option>
+                    ))}
+                    <option value="__NEW__">+ Create new</option>
+                  </select>
+                  {coffeeDraft.sub_category_id === '__NEW__' && (
+                    <input
+                      type="text"
+                      value={newSubCategoryName}
+                      onChange={e => setNewSubCategoryName(e.target.value)}
+                      placeholder="New sub-category name"
+                      className="mt-2 w-full h-[46px] px-4 text-[14px] text-[#111] placeholder-[#AAA] border border-[#DDD] rounded-[12px] outline-none focus:border-[#111] transition-colors"
                     />
                   )}
                 </div>
               </div>
 
-              {/* Beverage-specific fields */}
-              {itemKind === 'beverage' && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-[11px] uppercase tracking-[0.25em] mb-1">Caffeine (mg)</label>
-                    <input
-                      type="number"
-                      value={coffeeDraft.caffeine_mg ?? ''}
-                      onChange={e => handleCoffeeDraftChange('caffeine_mg', e.target.value ? Number(e.target.value) : null)}
-                      className="w-full bg-transparent border-b border-black/20 py-2 text-sm outline-none focus:border-black"
-                    />
-                  </div>
-                  <div className="flex items-center gap-2 pt-4 md:pt-6">
-                    <input
-                      type="checkbox"
-                      checked={!!coffeeDraft.milk_based}
-                      onChange={e => handleCoffeeDraftChange('milk_based', e.target.checked ? 1 : 0)}
-                    />
-                    <span className="text-[11px] uppercase tracking-[0.25em]">Contains Milk</span>
-                  </div>
-                </div>
-              )}
 
-              {/* Food-specific fields */}
-              {itemKind === 'food' && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-[11px] uppercase tracking-[0.25em] mb-1">Calories (per serving)</label>
-                    <input
-                      type="number"
-                      value={coffeeDraft.calories ?? ''}
-                      onChange={e => handleCoffeeDraftChange('calories', e.target.value ? Number(e.target.value) : null)}
-                      className="w-full bg-transparent border-b border-black/20 py-2 text-sm outline-none focus:border-black"
-                    />
-                  </div>
-                  <div className="flex items-center gap-2 pt-4 md:pt-6">
-                    <input
-                      type="checkbox"
-                      checked={!!coffeeDraft.shareable}
-                      onChange={e => handleCoffeeDraftChange('shareable', e.target.checked ? 1 : 0)}
-                    />
-                    <span className="text-[11px] uppercase tracking-[0.25em]">Good for Sharing</span>
-                  </div>
-                </div>
-              )}
+              {/* Divider */}
+              <div className="border-t border-[#F0F0F0]" />
 
-              {/* Shared fields */}
+              {/* Image URL */}
               <div>
-                <label className="block text-[11px] uppercase tracking-[0.25em] mb-1">Image</label>
+                <label className="block text-[12px] font-semibold text-[#333] uppercase tracking-[0.05em] mb-2">Image URL</label>
                 <input
+                  type="text"
                   value={coffeeDraft.image || ''}
                   onChange={e => handleCoffeeDraftChange('image', e.target.value)}
-                  className="w-full bg-transparent border-b border-black/20 py-2 text-sm outline-none focus:border-black"
                   placeholder="/media/pic1.jpeg"
+                  className="w-full h-[46px] px-4 text-[14px] text-[#111] placeholder-[#AAA] border border-[#DDD] rounded-[12px] outline-none focus:border-[#111] transition-colors"
                 />
               </div>
 
+              {/* Description */}
               <div>
-                <label className="block text-[11px] uppercase tracking-[0.25em] mb-1">Description</label>
+                <label className="block text-[12px] font-semibold text-[#333] uppercase tracking-[0.05em] mb-2">Description</label>
                 <textarea
                   value={coffeeDraft.description || ''}
                   onChange={e => handleCoffeeDraftChange('description', e.target.value)}
-                  className="w-full bg-transparent border-b border-black/20 py-2 text-sm outline-none focus:border-black min-h-[60px]"
-                  placeholder="Short description for staff and baristas"
+                  placeholder="Brief description for staff and customers..."
+                  rows={3}
+                  className="w-full px-4 py-3 text-[14px] text-[#111] placeholder-[#AAA] border border-[#DDD] rounded-[12px] outline-none focus:border-[#111] resize-none transition-colors"
                 />
               </div>
 
-              <div>
-                <label className="block text-[11px] uppercase tracking-[0.25em] mb-1">Tags</label>
+              {/* Tags */}
+              <div className="relative">
+                <label className="block text-[12px] font-semibold text-[#333] uppercase tracking-[0.05em] mb-2">Tags</label>
+
+
+                {/* Selected Tags */}
+                {selectedTags.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {selectedTags.map(tag => (
+                      <span
+                        key={tag.id}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#F5F5F5] rounded-[8px] text-[13px] text-[#333]"
+                      >
+                        {tag.name}
+                        <button
+                          type="button"
+                          onClick={() => setSelectedTags(prev => prev.filter(t => t.id !== tag.id))}
+                          className="text-[#999] hover:text-[#111]"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {/* Tag Search */}
                 <input
-                  value={coffeeDraft.tags || ''}
-                  onChange={e => handleCoffeeDraftChange('tags', e.target.value)}
-                  className="w-full bg-transparent border-b border-black/20 py-2 text-sm outline-none focus:border-black"
-                  placeholder="cold, strong, black, robusta"
+                  type="text"
+                  value={tagSearchQuery}
+                  onChange={e => {
+                    setTagSearchQuery(e.target.value);
+                    setShowTagDropdown(true);
+                  }}
+                  onFocus={() => setShowTagDropdown(true)}
+                  placeholder="Search or create tags..."
+                  className="w-full h-[46px] px-4 text-[14px] text-[#111] placeholder-[#AAA] border border-[#DDD] rounded-[12px] outline-none focus:border-[#111] transition-colors"
                 />
-              </div>
 
-              <div className="flex justify-end gap-4 pt-4 text-[11px] uppercase tracking-[0.25em]">
-                <button
-                  onClick={closeCoffeeModal}
-                  className="px-4 py-2 text-zinc-500 hover:text-black"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={saveCoffeeItem}
-                  className="px-6 py-2 bg-[#0a0a0a] text-[#F9F8F4] hover:bg-black"
-                >
-                  Save Item
-                </button>
+                {/* Tag Dropdown */}
+                {showTagDropdown && (
+                  <div className="absolute z-20 w-full mt-2 bg-white border border-black/10 rounded-[8px] shadow-lg max-h-[200px] overflow-y-auto">
+                    {allTags
+                      .filter(tag =>
+                        tag.name.toLowerCase().includes(tagSearchQuery.toLowerCase()) &&
+                        !selectedTags.some(st => st.id === tag.id)
+                      )
+                      .slice(0, 8)
+                      .map(tag => (
+                        <button
+                          key={tag.id}
+                          type="button"
+                          onClick={() => {
+                            setSelectedTags(prev => [...prev, tag]);
+                            setTagSearchQuery('');
+                            setShowTagDropdown(false);
+                          }}
+                          className="w-full text-left px-4 py-2.5 text-[13px] hover:bg-[#FAFAFA] transition-colors"
+                        >
+                          {tag.name}
+                        </button>
+                      ))}
+
+                    {(tagSearchQuery ?? '').trim() && !allTags.some(t =>
+                      t.name.toLowerCase() === (tagSearchQuery ?? '').trim().toLowerCase()
+                    ) && (
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            try {
+                              const trimmedTag = (tagSearchQuery ?? '').trim();
+                              const res = await fetch(`${API_BASE_URL}/api/tags`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ name: trimmedTag })
+                              });
+                              if (res.ok) {
+                                const newTag = await res.json();
+                                setAllTags(prev => [...prev, newTag]);
+                                setSelectedTags(prev => [...prev, newTag]);
+                                setTagSearchQuery('');
+                                setShowTagDropdown(false);
+                              }
+                            } catch (err) {
+                              console.error('Error creating tag:', err);
+                            }
+                          }}
+                          className="w-full text-left px-4 py-2.5 text-[13px] text-blue-600 hover:bg-blue-50 transition-colors border-t border-black/5"
+                        >
+                          + Create "{(tagSearchQuery ?? '').trim()}"
+                        </button>
+                      )}
+
+                    <button
+                      type="button"
+                      onClick={() => setShowTagDropdown(false)}
+                      className="w-full text-left px-4 py-2 text-[12px] text-zinc-400 hover:bg-[#FAFAFA] border-t border-black/5"
+                    >
+                      Close
+                    </button>
+                  </div>
+                )}
               </div>
+            </div>
+
+            {/* Sticky Footer */}
+            <div className="px-8 py-5 bg-[#FAFAFA] border-t border-[#EBEBEB] flex justify-end gap-3">
+              <button
+                onClick={closeCoffeeModal}
+                className="h-[42px] px-5 text-[14px] font-medium text-[#555] hover:text-[#111] hover:bg-[#F0F0F0] rounded-[10px] transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={saveCoffeeItem}
+                className="h-[42px] px-6 text-[14px] font-medium text-white bg-[#111] hover:bg-black rounded-[10px] transition-colors"
+              >
+                {editingCoffee ? 'Save Changes' : 'Add Item'}
+              </button>
             </div>
           </motion.div>
-        </div>
+        </div >
       )}
-      {artModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="w-full max-w-xl bg-[#F9F8F4] border border-black/10 rounded-xl shadow-2xl p-8"
-          >
-            <div className="flex items-center justify-between mb-8">
-              <h2 className="text-3xl font-serif italic text-black">{editingArt ? 'Edit Art Piece' : 'Upload Art'}</h2>
-              <button onClick={closeArtModal} className="text-xs uppercase tracking-[0.25em] text-zinc-400 hover:text-black transition-colors">Close</button>
-            </div>
 
-            <div className="space-y-6 font-sans text-sm">
-              <div>
-                <label className="block text-[10px] uppercase tracking-[0.25em] text-zinc-500 mb-2">Title</label>
-                <input
-                  value={artDraft.title || ''}
-                  onChange={e => handleArtDraftChange('title', e.target.value)}
-                  className="w-full bg-transparent border-b border-black/10 py-3 text-lg outline-none focus:border-black transition-colors placeholder-zinc-300"
-                  placeholder="e.g. Midnight Bloom"
-                />
+      {
+        artModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="w-full max-w-xl bg-[#F9F8F4] border border-black/10 rounded-xl shadow-2xl p-8"
+            >
+              <div className="flex items-center justify-between mb-8">
+                <h2 className="text-3xl font-serif italic text-black">{editingArt ? 'Edit Art Piece' : 'Upload Art'}</h2>
+                <button onClick={closeArtModal} className="text-xs uppercase tracking-[0.25em] text-zinc-400 hover:text-black transition-colors">Close</button>
               </div>
 
-              {/* Artist Removed */}
-
-              <div className="grid grid-cols-2 gap-8">
+              <div className="space-y-6 font-sans text-sm">
                 <div>
-                  <label className="block text-[10px] uppercase tracking-[0.25em] text-zinc-500 mb-2">Price (₹)</label>
+                  <label className="block text-[10px] uppercase tracking-[0.25em] text-zinc-500 mb-2">Title</label>
                   <input
-                    type="number"
-                    value={artDraft.price ?? ''}
-                    onChange={e => handleArtDraftChange('price', Number(e.target.value))}
-                    className="w-full bg-transparent border-b border-black/10 py-2 outline-none focus:border-black font-semibold"
+                    value={artDraft.title || ''}
+                    onChange={e => handleArtDraftChange('title', e.target.value)}
+                    className="w-full bg-transparent border-b border-black/10 py-3 text-lg outline-none focus:border-black transition-colors placeholder-zinc-300"
+                    placeholder="e.g. Midnight Bloom"
                   />
                 </div>
-                <div>
-                  <label className="block text-[10px] uppercase tracking-[0.25em] text-zinc-500 mb-2">Stock</label>
-                  <input
-                    type="number"
-                    value={artDraft.stock ?? ''}
-                    onChange={e => handleArtDraftChange('stock', Number(e.target.value))}
-                    className="w-full bg-transparent border-b border-black/10 py-2 outline-none focus:border-black"
-                  />
-                </div>
-              </div>
 
-              <div>
-                <label className="block text-[10px] uppercase tracking-[0.25em] text-zinc-500 mb-3">Artwork Image</label>
+                {/* Artist Removed */}
 
-                <div className="flex items-start gap-4">
-                  {/* Preview */}
-                  <div className="w-24 h-24 bg-zinc-100 rounded-lg overflow-hidden border border-black/5 flex-shrink-0">
-                    <img
-                      src={selectedFile ? URL.createObjectURL(selectedFile) : artDraft.image || '/media/pic1.jpeg'}
-                      alt="Preview"
-                      className="w-full h-full object-cover"
+                <div className="grid grid-cols-2 gap-8">
+                  <div>
+                    <label className="block text-[10px] uppercase tracking-[0.25em] text-zinc-500 mb-2">Price (₹)</label>
+                    <input
+                      type="number"
+                      value={artDraft.price ?? ''}
+                      onChange={e => handleArtDraftChange('price', Number(e.target.value))}
+                      className="w-full bg-transparent border-b border-black/10 py-2 outline-none focus:border-black font-semibold"
                     />
                   </div>
-
-                  <div className="flex-1">
+                  <div>
+                    <label className="block text-[10px] uppercase tracking-[0.25em] text-zinc-500 mb-2">Stock</label>
                     <input
-                      type="file"
-                      accept="image/*"
-                      onChange={e => {
-                        if (e.target.files && e.target.files[0]) {
-                          setSelectedFile(e.target.files[0]);
-                        }
-                      }}
-                      className="block w-full text-xs text-zinc-500
+                      type="number"
+                      value={artDraft.stock ?? ''}
+                      onChange={e => handleArtDraftChange('stock', Number(e.target.value))}
+                      className="w-full bg-transparent border-b border-black/10 py-2 outline-none focus:border-black"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] uppercase tracking-[0.25em] text-zinc-500 mb-3">Artwork Image</label>
+
+                  <div className="flex items-start gap-4">
+                    {/* Preview */}
+                    <div className="w-24 h-24 bg-zinc-100 rounded-lg overflow-hidden border border-black/5 flex-shrink-0">
+                      <img
+                        src={selectedFile ? URL.createObjectURL(selectedFile) : artDraft.image || '/media/pic1.jpeg'}
+                        alt="Preview"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+
+                    <div className="flex-1">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={e => {
+                          if (e.target.files && e.target.files[0]) {
+                            setSelectedFile(e.target.files[0]);
+                          }
+                        }}
+                        className="block w-full text-xs text-zinc-500
                             file:mr-4 file:py-2 file:px-4
                             file:rounded-full file:border-0
                             file:text-[10px] file:uppercase file:tracking-[0.1em]
                             file:bg-black file:text-white
                             hover:file:bg-zinc-800
                             cursor-pointer"
-                    />
-                    <p className="mt-2 text-[10px] text-zinc-400">Upload a high quality JPEG or PNG. Max 5MB.</p>
+                      />
+                      <p className="mt-2 text-[10px] text-zinc-400">Upload a high quality JPEG or PNG. Max 5MB.</p>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="flex justify-end gap-4 pt-8 text-[11px] uppercase tracking-[0.25em]">
-                <button onClick={closeArtModal} className="px-6 py-3 text-zinc-400 hover:text-black transition-colors">Cancel</button>
-                <button onClick={saveArtItem} className="px-8 py-3 bg-black text-white hover:bg-zinc-800 transition-all shadow-lg hover:shadow-xl">
-                  {editingArt ? 'Save Changes' : 'Upload Piece'}
-                </button>
+                <div className="flex justify-end gap-4 pt-8 text-[11px] uppercase tracking-[0.25em]">
+                  <button onClick={closeArtModal} className="px-6 py-3 text-zinc-400 hover:text-black transition-colors">Cancel</button>
+                  <button onClick={saveArtItem} className="px-8 py-3 bg-black text-white hover:bg-zinc-800 transition-all shadow-lg hover:shadow-xl">
+                    {editingArt ? 'Save Changes' : 'Upload Piece'}
+                  </button>
+                </div>
               </div>
-            </div>
-          </motion.div>
-        </div>
-      )}
+            </motion.div>
+          </div>
+        )
+      }
 
       {/* Delete confirmation modal */}
-      {deleteModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-          <motion.div
-            initial={{ opacity: 0, y: 20, scale: 0.97 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            className="w-full max-w-sm bg-white rounded-xl shadow-xl p-6"
-          >
-            <h2 className="text-2xl font-serif mb-2">Delete Item?</h2>
-            <p className="text-sm text-zinc-500 font-sans mb-4">
-              This action cannot be undone.
-            </p>
-            {itemToDelete && (
-              <p className="text-sm font-serif mb-6">"{(itemToDelete as any).title || (itemToDelete as any).name}"</p>
-            )}
-            <div className="flex justify-end gap-3 text-[11px] uppercase tracking-[0.25em]">
-              <button
-                onClick={cancelDeleteCoffeeItem}
-                className="px-4 py-2 text-zinc-500 hover:text-black"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={confirmDelete}
-                className="px-5 py-2 bg-[#0a0a0a] text-[#F9F8F4] rounded-full transform transition-transform hover:scale-105"
-              >
-                Delete
-              </button>
-            </div>
-          </motion.div>
-        </div>
-      )}
+      {
+        deleteModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, y: 20, scale: 0.97 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              className="w-full max-w-sm bg-white rounded-xl shadow-xl p-6"
+            >
+              <h2 className="text-2xl font-serif mb-2">Delete Item?</h2>
+              <p className="text-sm text-zinc-500 font-sans mb-4">
+                This action cannot be undone.
+              </p>
+              {itemToDelete && (
+                <p className="text-sm font-serif mb-6">"{(itemToDelete as any).title || (itemToDelete as any).name}"</p>
+              )}
+              <div className="flex justify-end gap-3 text-[11px] uppercase tracking-[0.25em]">
+                <button
+                  onClick={cancelDeleteCoffeeItem}
+                  className="px-4 py-2 text-zinc-500 hover:text-black"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmDelete}
+                  className="px-5 py-2 bg-[#0a0a0a] text-[#F9F8F4] rounded-full transform transition-transform hover:scale-105"
+                >
+                  Delete
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )
+      }
 
       {/* Toast notifications */}
-      {toast.show && (
-        <motion.div
-          initial={{ opacity: 0, y: -20, x: '-50%' }}
-          animate={{ opacity: 1, y: 0, x: '-50%' }}
-          exit={{ opacity: 0, y: -20, x: '-50%' }}
-          className={`fixed top-8 left-1/2 z-[100] flex items-center gap-4 px-8 py-4 bg-[#F9F8F4] border border-black/10 rounded-2xl shadow-2xl backdrop-blur-md ${toast.type === 'success' ? 'border-l-4 border-l-emerald-500' : 'border-l-4 border-l-red-500'
-            }`}
-        >
-          <div className={`p-2 rounded-full ${toast.type === 'success' ? 'bg-emerald-100/50 text-emerald-600' : 'bg-red-100/50 text-red-600'}`}>
-            {toast.type === 'success' ? <CheckCircle2 className="w-5 h-5" /> : <AlertTriangle className="w-5 h-5" />}
-          </div>
-          <div className="flex flex-col">
-            <span className="text-[10px] uppercase tracking-[0.2em] text-zinc-400 font-bold">
-              {toast.type === 'success' ? 'Success' : 'Error'}
-            </span>
-            <span className="text-sm font-serif text-black">{toast.message}</span>
-          </div>
-        </motion.div>
-      )}
-    </div>
+      {
+        toast.show && (
+          <motion.div
+            initial={{ opacity: 0, y: -20, x: '-50%' }}
+            animate={{ opacity: 1, y: 0, x: '-50%' }}
+            exit={{ opacity: 0, y: -20, x: '-50%' }}
+            className={`fixed top-8 left-1/2 z-[100] flex items-center gap-4 px-8 py-4 bg-[#F9F8F4] border border-black/10 rounded-2xl shadow-2xl backdrop-blur-md ${toast.type === 'success' ? 'border-l-4 border-l-emerald-500' : 'border-l-4 border-l-red-500'
+              }`}
+          >
+            <div className={`p-2 rounded-full ${toast.type === 'success' ? 'bg-emerald-100/50 text-emerald-600' : 'bg-red-100/50 text-red-600'}`}>
+              {toast.type === 'success' ? <CheckCircle2 className="w-5 h-5" /> : <AlertTriangle className="w-5 h-5" />}
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[10px] uppercase tracking-[0.2em] text-zinc-400 font-bold">
+                {toast.type === 'success' ? 'Success' : 'Error'}
+              </span>
+              <span className="text-sm font-serif text-black">{toast.message}</span>
+            </div>
+          </motion.div>
+        )
+      }
+    </div >
   );
 };
 

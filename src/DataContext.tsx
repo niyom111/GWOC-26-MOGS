@@ -6,8 +6,15 @@ import { API_BASE_URL } from './config';
 export interface CoffeeAdminItem {
   id: string;
   name: string;
-  // Category label, can be predefined or custom
-  category: string;
+  // Legacy category field (for backward compatibility)
+  category?: string;
+  // New FK-based category fields
+  category_id?: string | null;
+  sub_category_id?: string | null;
+  // Display names from joins
+  category_name?: string;
+  sub_category_name?: string;
+
   price: number;
 
   // Legacy label (e.g. "High", "Extreme"); kept for compatibility with chatbot logic
@@ -15,7 +22,6 @@ export interface CoffeeAdminItem {
 
   // New schema-aligned fields (all optional on the client side)
   caffeine_mg?: number | null;
-  milk_based?: number | null; // 0/1 integer flag
 
   calories?: number | null;
   shareable?: number | null; // 0/1 integer flag
@@ -23,8 +29,35 @@ export interface CoffeeAdminItem {
   intensity_level?: string | null;
   image: string;
   description: string;
-  tags?: string;
+  // Tags as array of tag objects (from join table)
+  tags?: { id: string; name: string }[];
+  // Legacy string tags field for backward compatibility
+  tags_legacy?: string;
 }
+
+// New interfaces for dynamic categories
+export interface Category {
+  id: string;
+  name: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface SubCategory {
+  id: string;
+  category_id: string;
+  name: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface Tag {
+  id: string;
+  name: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
 
 export interface ArtAdminItem {
   id: string;
@@ -293,6 +326,16 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     fetchData();
   }, []);
 
+  // Helper to refresh menu
+  const refreshMenu = async () => {
+    try {
+      const res = await fetch('http://localhost:5000/api/menu');
+      if (res.ok) setMenuItems(await res.json());
+    } catch (err) {
+      console.error("Failed to refresh menu:", err);
+    }
+  };
+
   // --- MENU ACTIONS ---
   const addMenuItem = async (item: CoffeeAdminItem) => {
     try {
@@ -302,10 +345,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         body: JSON.stringify(item)
       });
       if (res.ok) {
-        const newItem = await res.json();
-        setMenuItems(prev => [...prev, newItem]);
+        await refreshMenu();
       } else {
-        throw new Error('Failed to add menu item');
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || 'Failed to add menu item');
       }
     } catch (err) {
       console.error(err);
@@ -320,8 +363,11 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updates)
       });
-      if (!res.ok) throw new Error('Failed to update menu item');
-      setMenuItems(prev => prev.map(item => (item.id === id ? { ...item, ...updates } : item)));
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || 'Failed to update menu item');
+      }
+      await refreshMenu();
     } catch (err) {
       console.error(err);
       throw err;

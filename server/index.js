@@ -128,52 +128,138 @@ const getISTTime = () => {
 
 app.get('/api/menu', async (req, res) => {
     try {
-        const { data, error } = await db.from('menu_items').select('*');
+        const { data, error } = await db.from('menu_items')
+            .select(`
+                *,
+                categories (name),
+                sub_categories (name),
+                menu_item_tags (
+                    tags (id, name)
+                )
+            `);
         if (error) return res.status(500).json({ error: error.message });
-        res.json(data || []);
+
+        // Map data to flattened structure expected by frontend
+        const mappedData = (data || []).map(item => {
+            // Resolve Category Name: joined -> legacy -> existing field
+            const categoryName = item.categories?.name || item.category_legacy || item.category || '';
+
+            // Resolve Sub-Category Name
+            const subCategoryName = item.sub_categories?.name || '';
+
+            // Resolve Tags
+            let resolvedTags = [];
+            if (item.menu_item_tags && Array.isArray(item.menu_item_tags)) {
+                resolvedTags = item.menu_item_tags
+                    .map(mt => mt.tags)
+                    .filter(t => t);
+            }
+            // Fallback to legacy CSV tags if needed
+            if (resolvedTags.length === 0 && item.tags && typeof item.tags === 'string') {
+                resolvedTags = item.tags.split(',').map((t, i) => ({ id: `legacy-${i}`, name: t.trim() }));
+            }
+
+            return {
+                ...item,
+                category: categoryName,
+                sub_category: subCategoryName,
+                tags: resolvedTags
+            };
+        });
+
+        res.json(mappedData);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 });
+
 app.post('/api/menu', async (req, res) => {
     try {
+        console.log('POST /api/menu body:', req.body);
         const {
             id,
             name,
-            category,
+            category,          // Legacy field (will be stored in category_legacy)
+            category_id,       // New FK field
+            sub_category_id,   // New FK field
             price,
             caffeine,
             caffeine_mg,
-            milk_based,
             calories,
             shareable,
             intensity_level,
             image,
             description,
-            tags,
+            tag_ids,           // Array of tag UUIDs for the join table
         } = req.body;
 
-        const { data, error } = await db.from('menu_items').insert({
+        const insertData = {
             id,
             name,
-            category,
             price,
             caffeine,
             caffeine_mg: caffeine_mg ?? null,
-            milk_based: milk_based ?? null,
             calories: calories ?? null,
             shareable: shareable ?? null,
             intensity_level: intensity_level ?? null,
             image,
             description,
-            tags,
-        }).select().single();
+        };
 
-        if (error) return res.status(500).json({ error: error.message });
+        // Support both old and new schema
+        if (category_id) {
+            insertData.category_id = category_id;
+        }
+        if (sub_category_id) {
+            insertData.sub_category_id = sub_category_id;
+        }
+        // Legacy support: if category string is provided but not category_id
+        if (category && !category_id) {
+            insertData.category_legacy = category;
+        }
+
+        // Fix for NOT NULL constraint on category_legacy
+        // If we have category_id but no category_legacy, fetch the name to satisfy the constraint
+        if (!insertData.category_legacy && category_id) {
+            const { data: catData } = await db.from('categories')
+                .select('name')
+                .eq('id', category_id)
+                .single();
+            if (catData) {
+                insertData.category_legacy = catData.name;
+            } else {
+                insertData.category_legacy = 'Uncategorized';
+            }
+        } else if (!insertData.category_legacy) {
+            // Fallback if no category info provided
+            insertData.category_legacy = 'Uncategorized';
+        }
+
+        const { data, error } = await db.from('menu_items')
+            .insert(insertData)
+            .select()
+            .single();
+
+        if (error) {
+            console.error('Supabase Insert Error:', error);
+            return res.status(500).json({ error: error.message });
+        }
+
+        // Handle tags via join table
+        if (tag_ids && Array.isArray(tag_ids) && tag_ids.length > 0) {
+            const tagInserts = tag_ids.map(tag_id => ({
+                menu_item_id: id,
+                tag_id
+            }));
+            const { error: tagError } = await db.from('menu_item_tags').insert(tagInserts);
+            if (tagError) console.error('Tag Insert Error:', tagError);
+        }
+
         res.json({ id, ...req.body });
         // Rebuild knowledge index after adding menu item
         rebuildKnowledgeIndex(db).catch(err => console.error('Error rebuilding knowledge after menu POST:', err));
     } catch (error) {
+        console.error('Error in POST /api/menu:', error);
         res.status(500).json({ error: error.message });
     }
 });
@@ -181,39 +267,60 @@ app.put('/api/menu/:id', async (req, res) => {
     try {
         const {
             name,
-            category,
+            category,          // Legacy field
+            category_id,       // New FK field
+            sub_category_id,   // New FK field
             price,
             caffeine,
             caffeine_mg,
-            milk_based,
             calories,
             shareable,
             intensity_level,
             image,
             description,
-            tags,
+            tag_ids,           // Array of tag UUIDs
         } = req.body;
 
         // Build update object with only defined fields
         const updateData = {};
         if (name !== undefined) updateData.name = name;
-        if (category !== undefined) updateData.category = category;
         if (price !== undefined) updateData.price = price;
         if (caffeine !== undefined) updateData.caffeine = caffeine;
         if (caffeine_mg !== undefined) updateData.caffeine_mg = caffeine_mg;
-        if (milk_based !== undefined) updateData.milk_based = milk_based;
         if (calories !== undefined) updateData.calories = calories;
         if (shareable !== undefined) updateData.shareable = shareable;
         if (intensity_level !== undefined) updateData.intensity_level = intensity_level;
         if (image !== undefined) updateData.image = image;
         if (description !== undefined) updateData.description = description;
-        if (tags !== undefined) updateData.tags = tags;
+
+        // Handle new FK fields
+        if (category_id !== undefined) updateData.category_id = category_id;
+        if (sub_category_id !== undefined) updateData.sub_category_id = sub_category_id;
+        // Legacy support
+        if (category !== undefined && category_id === undefined) {
+            updateData.category_legacy = category;
+        }
 
         const { error } = await db.from('menu_items')
             .update(updateData)
             .eq('id', req.params.id);
 
         if (error) return res.status(500).json({ error: error.message });
+
+        // Handle tag updates via join table if provided
+        if (tag_ids !== undefined && Array.isArray(tag_ids)) {
+            // Delete existing tags
+            await db.from('menu_item_tags').delete().eq('menu_item_id', req.params.id);
+            // Insert new tags
+            if (tag_ids.length > 0) {
+                const tagInserts = tag_ids.map(tag_id => ({
+                    menu_item_id: req.params.id,
+                    tag_id
+                }));
+                await db.from('menu_item_tags').insert(tagInserts);
+            }
+        }
+
         res.json({ message: "Updated" });
         // Rebuild knowledge index after updating menu item
         rebuildKnowledgeIndex(db).catch(err => console.error('Error rebuilding knowledge after menu PUT:', err));
@@ -223,6 +330,9 @@ app.put('/api/menu/:id', async (req, res) => {
 });
 app.delete('/api/menu/:id', async (req, res) => {
     try {
+        // Also delete from menu_item_tags join table first
+        await db.from('menu_item_tags').delete().eq('menu_item_id', req.params.id);
+
         const { error } = await db.from('menu_items')
             .delete()
             .eq('id', req.params.id);
@@ -231,6 +341,341 @@ app.delete('/api/menu/:id', async (req, res) => {
         res.json({ message: "Deleted" });
         // Rebuild knowledge index after deleting menu item
         rebuildKnowledgeIndex(db).catch(err => console.error('Error rebuilding knowledge after menu DELETE:', err));
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// -----------------------------------------------------
+// CATEGORIES API
+// -----------------------------------------------------
+
+app.get('/api/categories', async (req, res) => {
+    try {
+        const { data, error } = await db.from('categories').select('*').order('name');
+        if (error) return res.status(500).json({ error: error.message });
+        res.json(data || []);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.post('/api/categories', async (req, res) => {
+    try {
+        const { name } = req.body;
+        if (!name || !name.trim()) {
+            return res.status(400).json({ error: 'Category name is required' });
+        }
+
+        const { data, error } = await db.from('categories')
+            .insert({ name: name.trim().toUpperCase() })
+            .select()
+            .single();
+
+        if (error) {
+            if (error.code === '23505') { // Unique violation
+                return res.status(409).json({ error: 'Category already exists' });
+            }
+            return res.status(500).json({ error: error.message });
+        }
+        res.status(201).json(data);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Rename category
+app.put('/api/categories/:id', async (req, res) => {
+    try {
+        const { name } = req.body;
+        if (!name || !name.trim()) {
+            return res.status(400).json({ error: 'Category name is required' });
+        }
+
+        const normalizedName = name.trim().toUpperCase();
+
+        // Check for duplicate name (excluding current category)
+        const { data: existing } = await db.from('categories')
+            .select('id')
+            .eq('name', normalizedName)
+            .neq('id', req.params.id)
+            .single();
+
+        if (existing) {
+            return res.status(409).json({ error: 'Category already exists' });
+        }
+
+        const { data, error } = await db.from('categories')
+            .update({ name: normalizedName })
+            .eq('id', req.params.id)
+            .select()
+            .single();
+
+        if (error) return res.status(500).json({ error: error.message });
+        res.json(data);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Delete category with dependency check
+app.delete('/api/categories/:id', async (req, res) => {
+    try {
+        const categoryId = req.params.id;
+
+        // Check for sub-categories
+        const { data: subCats } = await db.from('sub_categories')
+            .select('id')
+            .eq('category_id', categoryId)
+            .limit(1);
+
+        if (subCats && subCats.length > 0) {
+            return res.status(409).json({
+                error: 'Cannot delete category: has sub-categories',
+                type: 'HAS_SUBCATEGORIES'
+            });
+        }
+
+        // Check for menu items using this category
+        const { data: menuItems } = await db.from('menu_items')
+            .select('id')
+            .eq('category_id', categoryId)
+            .limit(1);
+
+        if (menuItems && menuItems.length > 0) {
+            return res.status(409).json({
+                error: 'Cannot delete category: has menu items',
+                type: 'HAS_ITEMS'
+            });
+        }
+
+        const { error } = await db.from('categories').delete().eq('id', categoryId);
+        if (error) return res.status(500).json({ error: error.message });
+        res.json({ message: 'Deleted' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+
+// -----------------------------------------------------
+// SUB-CATEGORIES API
+// -----------------------------------------------------
+
+app.get('/api/sub-categories', async (req, res) => {
+    try {
+        const { category_id } = req.query;
+        let query = db.from('sub_categories').select('*').order('name');
+
+        if (category_id) {
+            query = query.eq('category_id', category_id);
+        }
+
+        const { data, error } = await query;
+        if (error) return res.status(500).json({ error: error.message });
+        res.json(data || []);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.post('/api/sub-categories', async (req, res) => {
+    try {
+        const { category_id, name } = req.body;
+        if (!category_id || !name || !name.trim()) {
+            return res.status(400).json({ error: 'category_id and name are required' });
+        }
+
+        const { data, error } = await db.from('sub_categories')
+            .insert({ category_id, name: name.trim() })
+            .select()
+            .single();
+
+        if (error) {
+            if (error.code === '23505') { // Unique violation
+                return res.status(409).json({ error: 'Sub-category already exists for this category' });
+            }
+            return res.status(500).json({ error: error.message });
+        }
+        res.status(201).json(data);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Rename sub-category
+app.put('/api/sub-categories/:id', async (req, res) => {
+    try {
+        const { name } = req.body;
+        if (!name || !name.trim()) {
+            return res.status(400).json({ error: 'Sub-category name is required' });
+        }
+
+        // Get current sub-category to know its category_id
+        const { data: current } = await db.from('sub_categories')
+            .select('category_id')
+            .eq('id', req.params.id)
+            .single();
+
+        if (!current) {
+            return res.status(404).json({ error: 'Sub-category not found' });
+        }
+
+        const normalizedName = name.trim();
+
+        // Check for duplicate name within the same category
+        const { data: existing } = await db.from('sub_categories')
+            .select('id')
+            .eq('category_id', current.category_id)
+            .eq('name', normalizedName)
+            .neq('id', req.params.id)
+            .single();
+
+        if (existing) {
+            return res.status(409).json({ error: 'Sub-category already exists in this category' });
+        }
+
+        const { data, error } = await db.from('sub_categories')
+            .update({ name: normalizedName })
+            .eq('id', req.params.id)
+            .select()
+            .single();
+
+        if (error) return res.status(500).json({ error: error.message });
+        res.json(data);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Delete sub-category with dependency check
+app.delete('/api/sub-categories/:id', async (req, res) => {
+    try {
+        const subCategoryId = req.params.id;
+
+        // Check for menu items using this sub-category
+        const { data: menuItems } = await db.from('menu_items')
+            .select('id')
+            .eq('sub_category_id', subCategoryId)
+            .limit(1);
+
+        if (menuItems && menuItems.length > 0) {
+            return res.status(409).json({
+                error: 'Cannot delete sub-category: has menu items',
+                type: 'HAS_ITEMS'
+            });
+        }
+
+        const { error } = await db.from('sub_categories').delete().eq('id', subCategoryId);
+        if (error) return res.status(500).json({ error: error.message });
+        res.json({ message: 'Deleted' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+
+// -----------------------------------------------------
+// TAGS API
+// -----------------------------------------------------
+
+app.get('/api/tags', async (req, res) => {
+    try {
+        const { data, error } = await db.from('tags').select('*').order('name');
+        if (error) return res.status(500).json({ error: error.message });
+        res.json(data || []);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.post('/api/tags', async (req, res) => {
+    try {
+        const { name } = req.body;
+        if (!name || !name.trim()) {
+            return res.status(400).json({ error: 'Tag name is required' });
+        }
+
+        const normalizedName = name.trim().toLowerCase();
+
+        const { data, error } = await db.from('tags')
+            .insert({ name: normalizedName })
+            .select()
+            .single();
+
+        if (error) {
+            if (error.code === '23505') { // Unique violation
+                // Return existing tag instead of error
+                const { data: existing } = await db.from('tags')
+                    .select('*')
+                    .eq('name', normalizedName)
+                    .single();
+                return res.json(existing);
+            }
+            return res.status(500).json({ error: error.message });
+        }
+        res.status(201).json(data);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.delete('/api/tags/:id', async (req, res) => {
+    try {
+        const { error } = await db.from('tags').delete().eq('id', req.params.id);
+        if (error) return res.status(500).json({ error: error.message });
+        res.json({ message: 'Deleted' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// -----------------------------------------------------
+// MENU ITEM TAGS (Many-to-Many)
+// -----------------------------------------------------
+
+// Get tags for a specific menu item
+app.get('/api/menu/:id/tags', async (req, res) => {
+    try {
+        const { data, error } = await db.from('menu_item_tags')
+            .select('tag_id, tags(id, name)')
+            .eq('menu_item_id', req.params.id);
+
+        if (error) return res.status(500).json({ error: error.message });
+
+        // Flatten the response to just tag objects
+        const tags = (data || []).map(row => row.tags).filter(Boolean);
+        res.json(tags);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Sync tags for a menu item (replace all)
+app.put('/api/menu/:id/tags', async (req, res) => {
+    try {
+        const { tag_ids } = req.body; // Array of tag UUIDs
+        const menuItemId = req.params.id;
+
+        if (!Array.isArray(tag_ids)) {
+            return res.status(400).json({ error: 'tag_ids must be an array' });
+        }
+
+        // Delete existing tags
+        await db.from('menu_item_tags').delete().eq('menu_item_id', menuItemId);
+
+        // Insert new tags
+        if (tag_ids.length > 0) {
+            const inserts = tag_ids.map(tag_id => ({
+                menu_item_id: menuItemId,
+                tag_id
+            }));
+
+            const { error } = await db.from('menu_item_tags').insert(inserts);
+            if (error) return res.status(500).json({ error: error.message });
+        }
+
+        res.json({ message: 'Tags updated' });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
