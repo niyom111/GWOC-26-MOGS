@@ -72,7 +72,8 @@ const TrackOrderPage: React.FC<TrackOrderPageProps> = ({ onNavigate }) => {
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim()) {
+    const emailTrimmed = (email ?? '').trim();
+    if (!emailTrimmed) {
       setError('Please enter an email address');
       return;
     }
@@ -82,7 +83,7 @@ const TrackOrderPage: React.FC<TrackOrderPageProps> = ({ onNavigate }) => {
     setSearched(true);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/orders/by-email?email=${encodeURIComponent(email.trim())}`);
+      const response = await fetch(`${API_BASE_URL}/api/orders/by-email?email=${encodeURIComponent(emailTrimmed)}`);
       
       if (!response.ok) {
         throw new Error('Failed to fetch orders');

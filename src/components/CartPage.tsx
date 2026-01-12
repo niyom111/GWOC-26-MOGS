@@ -105,9 +105,9 @@ const CartPage: React.FC<CartPageProps> = ({
     e.preventDefault();
     if (cart.length === 0) return;
 
-    const name = customer.name.trim();
-    const phoneDigits = customer.phone.replace(/\D/g, '');
-    const email = customer.email.trim().toLowerCase();
+    const name = (customer.name ?? '').trim();
+    const phoneDigits = (customer.phone ?? '').replace(/\D/g, '');
+    const email = (customer.email ?? '').trim().toLowerCase();
 
     // Validation
     if (!name) {

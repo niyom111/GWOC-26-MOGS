@@ -270,7 +270,8 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
     if (!activeCategoryId && menuItems.length) {
       const firstItem = menuItems[0];
       if (!firstItem?.category) return;
-      const firstCategory = firstItem.category.trim().toUpperCase();
+      const firstCategory = (firstItem.category ?? '').trim().toUpperCase();
+      if (!firstCategory) return; // Skip if empty after trimming
       const id = firstCategory
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, '-')
@@ -321,7 +322,11 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
       // Skip items without required fields
       if (!item.category || !item.name || item.price == null || !item.id) return;
       
-      const canonicalCategory = item.category.trim().toUpperCase();
+      // Use safe defaults to ensure trim() is always called on a string
+      const categoryStr = (item.category ?? '').trim();
+      if (!categoryStr) return; // Skip if category is empty after trimming
+      
+      const canonicalCategory = categoryStr.toUpperCase();
       const id = canonicalCategory
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, '-')
@@ -337,7 +342,8 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
         });
       }
 
-      if (!query || item.name.toLowerCase().includes(query)) {
+      const nameStr = (item.name ?? '').toLowerCase();
+      if (!query || nameStr.includes(query)) {
         categoryMap.get(canonicalCategory)!.items.push({
           id: item.id,
           name: item.name,
@@ -537,7 +543,9 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
                   {trendingItems.map(item => {
                     // Find the category group for this item
                     if (!item.category || !item.name || !item.id || item.price == null) return null; // Skip items without required fields
-                    const canonicalCategory = item.category.trim().toUpperCase();
+                    const categoryStr = (item.category ?? '').trim();
+                    if (!categoryStr) return null; // Skip if category is empty after trimming
+                    const canonicalCategory = categoryStr.toUpperCase();
                     const group = canonicalCategory.split('(')[0].trim();
 
                     const cartItem: CoffeeItem = {

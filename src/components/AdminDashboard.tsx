@@ -414,11 +414,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
   const saveCoffeeItem = () => {
     if (!coffeeDraft.name || !coffeeDraft.category || coffeeDraft.price == null) return;
 
-    const draftName = (coffeeDraft.name as string).trim();
+    const draftName = (coffeeDraft.name ?? '').trim();
 
     // Resolve final category (including __NEW__) and normalize to uppercase
     const isNewCategory = coffeeDraft.category === '__NEW__';
-    const trimmedNewCategory = newCategoryName.trim();
+    const trimmedNewCategory = (newCategoryName ?? '').trim();
     const rawCategory = isNewCategory
       ? trimmedNewCategory
       : (coffeeDraft.category as string);
