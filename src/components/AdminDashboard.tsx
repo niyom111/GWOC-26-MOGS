@@ -379,7 +379,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
   const openCoffeeModalForEdit = (item: CoffeeAdminItem) => {
     setEditingCoffee(item);
     setNewCategoryName('');
-    const isFoodCategory = item.category.trim().toUpperCase().includes('FOOD');
+    const isFoodCategory = item.category?.trim().toUpperCase().includes('FOOD') || false;
     setItemKind(isFoodCategory ? 'food' : 'beverage');
     setCoffeeDraft(item);
     setCoffeeModalOpen(true);
@@ -429,8 +429,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
     const currentId = editingCoffee ? editingCoffee.id : null;
     const nameExistsInCategory = menuItems.some(item =>
       item.id !== currentId &&
-      item.name.trim().toLowerCase() === draftName.toLowerCase() &&
-      item.category.trim().toLowerCase() === finalCategory.toLowerCase()
+      item.name?.trim().toLowerCase() === draftName.toLowerCase() &&
+      item.category?.trim().toLowerCase() === finalCategory.toLowerCase()
     );
 
     if (nameExistsInCategory) {
@@ -550,8 +550,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
   const activeTabLabel = tabs.find(t => t.id === activeTab)?.label;
 
   // Classification helpers for beverages vs food based on category naming
-  const foodItems = menuItems.filter(item => item.category.trim().toUpperCase().includes('FOOD'));
-  const beverageItems = menuItems.filter(item => !item.category.trim().toUpperCase().includes('FOOD'));
+  const foodItems = menuItems.filter(item => item.category?.trim().toUpperCase().includes('FOOD'));
+  const beverageItems = menuItems.filter(item => !item.category?.trim().toUpperCase().includes('FOOD'));
   const beverageCount = beverageItems.length;
   const foodCount = foodItems.length;
   const enquiryCount = enquiries.length;

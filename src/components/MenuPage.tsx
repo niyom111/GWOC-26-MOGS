@@ -268,7 +268,9 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
   // Set initial active category once we have data
   useEffect(() => {
     if (!activeCategoryId && menuItems.length) {
-      const firstCategory = menuItems[0].category.trim().toUpperCase();
+      const firstItem = menuItems[0];
+      if (!firstItem?.category) return;
+      const firstCategory = firstItem.category.trim().toUpperCase();
       const id = firstCategory
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, '-')
@@ -316,6 +318,7 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
     const categoryMap = new Map<string, MenuCategory>();
 
     menuItems.forEach(item => {
+      if (!item.category) return; // Skip items without category
       const canonicalCategory = item.category.trim().toUpperCase();
       const id = canonicalCategory
         .toLowerCase()
@@ -531,6 +534,7 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
                 <div>
                   {trendingItems.map(item => {
                     // Find the category group for this item
+                    if (!item.category) return null; // Skip items without category
                     const canonicalCategory = item.category.trim().toUpperCase();
                     const group = canonicalCategory.split('(')[0].trim();
 
