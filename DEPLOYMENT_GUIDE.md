@@ -4,7 +4,7 @@ This guide will help you deploy your website to production using free hosting se
 
 ## Prerequisites
 
-- ✅ GitHub repository: https://github.com/ArnavB11/GWOC-26-MOGS.git
+- ✅ GitHub repository: https://github.com/niyom111/GWOC-26-MOGS.git
 - ✅ All code changes completed (API URLs updated)
 - ✅ Supabase database already configured
 
@@ -21,7 +21,7 @@ This guide will help you deploy your website to production using free hosting se
 1. Click **"New Project"**
 2. Select **"Deploy from GitHub repo"**
 3. Authorize Railway to access your GitHub if prompted
-4. Select your repository: `ArnavB11/GWOC-26-MOGS`
+4. Select your repository: `niyom111/GWOC-26-MOGS`
 
 ### 1.3 Configure Service
 1. Railway will automatically detect your project
@@ -73,7 +73,7 @@ After getting your backend URL from Railway:
 ### 3.1 Create Vercel Account
 1. Go to https://vercel.com
 2. Sign up with your GitHub account
-3. Import your repository: `ArnavB11/GWOC-26-MOGS`
+3. Import your repository: `niyom111/GWOC-26-MOGS`
 
 ### 3.2 Configure Project
 1. **Framework Preset**: Vite
@@ -174,7 +174,7 @@ If Railway doesn't work, you can use Render instead:
 1. Go to https://render.com
 2. Sign up with GitHub
 3. New → Web Service
-4. Connect your repo: `ArnavB11/GWOC-26-MOGS`
+4. Connect your repo: `niyom111/GWOC-26-MOGS`
 5. Set Root Directory: `GWOC-26-MOGS/server`
 6. Set Start Command: `node index.js`
 7. Add environment variables (same as Railway)
