@@ -83,7 +83,7 @@ const StatBlock: React.FC<{
             </div>
 
             {/* Main Value */}
-            <div className="mb-12 relative">
+            <div className="mb-12 relative flex justify-center">
                 <div className="text-[5rem] lg:text-[7.5rem] font-normal font-serif text-[#1A1A1A] tracking-tighter leading-[0.9] group-hover:translate-x-2 transition-transform duration-500">
                     <AnimatedValue value={value} isInView={isInView} />
                 </div>
