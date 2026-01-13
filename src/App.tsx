@@ -35,6 +35,15 @@ import StatsSection from './components/StatsSection';
 // Fix for framer-motion type mismatch in the current environment
 const motion = motionBase as any;
 
+// ScrollToTop component to reset scroll only when new page mounts
+// Moved outside App to prevent re-mounting on state changes (like cart updates)
+const ScrollToTop = () => {
+  React.useLayoutEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+  return null;
+};
+
 const App: React.FC = () => {
   const pathToPage = (path: string): Page => {
     switch (path) {
@@ -163,12 +172,7 @@ const App: React.FC = () => {
   const cartCount = cart.reduce((acc, item) => acc + item.quantity, 0);
 
   // ScrollToTop component to reset scroll only when new page mounts
-  const ScrollToTop = () => {
-    React.useLayoutEffect(() => {
-      window.scrollTo(0, 0);
-    }, []);
-    return null;
-  };
+  // Moved outside App to prevent re-mounting on state changes (like cart updates)
 
   return (
     <DataProvider>
@@ -263,8 +267,8 @@ const App: React.FC = () => {
 
         {/* --- ADDED CHAT WIDGET HERE --- */}
         <ChatWidget />
-      </div>
-    </DataProvider>
+      </div >
+    </DataProvider >
   );
 };
 

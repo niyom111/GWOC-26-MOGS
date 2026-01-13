@@ -48,7 +48,7 @@ const StickySection: React.FC<StickySectionProps> = ({ onNavigate }) => {
               The Philosophy
             </motion.span>
 
-            <h2 className="text-6xl md:text-[8rem] font-serif mb-12 leading-[0.9] tracking-tighter text-[#1A1A1A] font-bold italic">
+            <h2 className="text-5xl md:text-[8rem] font-serif mb-12 leading-[0.9] tracking-tighter text-[#1A1A1A] font-bold italic">
               <motion.div variants={{ hidden: { y: 50, opacity: 0 }, visible: { y: 0, opacity: 1, transition: { duration: 1 } } }}>A Choice,</motion.div>
               <motion.div variants={{ hidden: { y: 50, opacity: 0 }, visible: { y: 0, opacity: 1, transition: { duration: 1 } } }}>Not an</motion.div>
               <motion.div variants={{ hidden: { y: 50, opacity: 0 }, visible: { y: 0, opacity: 1, transition: { duration: 1 } } }}>Alternative.</motion.div>
@@ -104,7 +104,7 @@ const StickySection: React.FC<StickySectionProps> = ({ onNavigate }) => {
         {/* Right Scrolling Parallax Images */}
         <div className="lg:w-[54%] lg:pl-24 xl:pl-32 pt-24 lg:pt-32 flex flex-col gap-16 items-end justify-center">
           <motion.div
-            className="relative w-full lg:w-full h-[600px] bg-zinc-100 overflow-hidden shadow-2xl rounded-2xl"
+            className="relative w-full lg:w-full h-[400px] lg:h-[600px] bg-zinc-100 overflow-hidden shadow-2xl rounded-2xl"
           >
             <img
               src="/media/pic1.jpeg"

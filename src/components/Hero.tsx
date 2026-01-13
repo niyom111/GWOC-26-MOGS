@@ -55,14 +55,31 @@ const Hero: React.FC = () => {
           </motion.span>
         </motion.div>
 
-        <motion.p
-          initial={{ opacity: 0, clipPath: 'inset(0 100% 0 0)' }}
-          animate={{ opacity: 1, clipPath: 'inset(0 0% 0 0)' }}
-          transition={{ delay: 1.5, duration: 2, ease: [0.22, 1, 0.36, 1] }}
-          className="mt-16 text-6xl md:text-8xl font-script text-[#F9F8F4] tracking-wide text-center pt-4"
+        <motion.div
+          initial="hidden"
+          animate="visible"
+          variants={{
+            hidden: { opacity: 0 },
+            visible: {
+              opacity: 1,
+              transition: { staggerChildren: 0.05, delayChildren: 1.5 }
+            }
+          }}
+          className="mt-16 text-center pt-4"
         >
-          Robusta at Rabuste
-        </motion.p>
+          {Array.from("Robusta at Rabuste").map((char, index) => (
+            <motion.span
+              key={index}
+              variants={{
+                hidden: { opacity: 0, y: 20, filter: 'blur(10px)' },
+                visible: { opacity: 1, y: 0, filter: 'blur(0px)', transition: { duration: 0.8, ease: "easeOut" } }
+              }}
+              className="inline-block text-4xl md:text-7xl font-serif font-bold italic text-white tracking-tighter"
+            >
+              {char === " " ? "\u00A0" : char}
+            </motion.span>
+          ))}
+        </motion.div>
 
 
       </div>

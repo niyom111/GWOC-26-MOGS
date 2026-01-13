@@ -19,7 +19,7 @@ const items = [
     notes: "Dark Chocolate & Smoke",
     caffeine: "Extreme",
     intensity: 9,
-    price: 22,
+    price: 470,
     image: "https://images.unsplash.com/photo-1559056199-641a0ac8b55e?auto=format&fit=crop&q=80&w=1974",
     description: "Our flagship dark roast. A dense, smoky profile that swallows light and wakes the dead."
   },
@@ -30,7 +30,7 @@ const items = [
     notes: "Berry & Walnut",
     caffeine: "High",
     intensity: 7,
-    price: 20,
+    price: 400,
     image: "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&q=80&w=1974",
     description: "Balanced for the artist's palate. Layered notes of fruit and nut that unfold with every sip."
   },
@@ -41,8 +41,8 @@ const items = [
     notes: "Molasses & Earth",
     caffeine: "Very High",
     intensity: 10,
-    price: 24,
-    image: "https://images.unsplash.com/photo-1497933321188-941f9ad36b12?auto=format&fit=crop&q=80&w=2069",
+    price: 500,
+    image: "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&q=80&w=1974",
     description: "Pure, unadulterated Robusta concentrate. Thick, syrup-like body with a caffeine payload that hits like a hammer."
   },
 ];
@@ -55,19 +55,19 @@ const MenuPreview: React.FC<MenuPreviewProps> = ({ onAddToCart, onGoToMenu }) =>
         {items.map((item, idx) => (
           <motion.div
             key={idx}
-            initial={{ height: "0%" }}
-            whileInView={{ height: "100%" }}
-            viewport={{ once: true }}
+            initial={{ y: -100, opacity: 0 }}
+            whileInView={{ y: 0, opacity: 1 }}
+            viewport={{ once: true, amount: 0.3 }}
             transition={{
-              duration: 1.2,
-              delay: idx * 0.15,
+              duration: 1.8,
+              delay: idx * 0.3,
               ease: [0.22, 1, 0.36, 1]
             }}
             className="group relative w-full h-full overflow-hidden bg-[#0a0a0a] border-r border-white/10 last:border-r-0"
           >
             {/* Vivid Background Image */}
             <div className="absolute inset-0 w-full h-full">
-              <div className="absolute inset-0 bg-black/10 group-hover:bg-black/40 transition-colors duration-700 z-10" />
+              <div className="absolute inset-0 bg-black/40 group-hover:bg-black/70 transition-colors duration-700 z-10" />
               <img
                 src={item.image}
                 className="w-full h-full object-cover transition-transform duration-[1.5s] ease-out group-hover:scale-110"
@@ -94,22 +94,22 @@ const MenuPreview: React.FC<MenuPreviewProps> = ({ onAddToCart, onGoToMenu }) =>
               {/* Interaction Stack */}
               <div className="relative min-h-[140px]">
 
-                {/* Default State: Tagline (Absolute positioning for crossfade) */}
-                <div className="absolute top-0 left-0 w-full transition-all duration-500 delay-100 transform group-hover:opacity-0 group-hover:translate-y-4 opacity-100 translate-y-0 pointer-events-none">
+                {/* Default State: Tagline (Hidden on mobile, Visible on desktop) */}
+                <div className="absolute top-0 left-0 w-full transition-all duration-500 delay-100 transform opacity-0 translate-y-4 md:opacity-100 md:translate-y-0 md:group-hover:opacity-0 md:group-hover:translate-y-4 pointer-events-none">
                   <p className="text-sm font-sans text-zinc-300 tracking-wide">
                     {item.tagline}
                   </p>
                   <div className="mt-8 w-12 h-[1px] bg-white/30" />
                 </div>
 
-                {/* Hover State: Description & Button (Absolute positioning for crossfade) */}
-                <div className="absolute top-0 left-0 w-full transition-all duration-500 transform opacity-0 translate-y-8 group-hover:opacity-100 group-hover:translate-y-0">
-                  <p className="text-sm text-zinc-300 leading-relaxed mb-8 font-sans border-l-2 border-[#A35D36] pl-4 max-w-sm">
+                {/* Hover State: Description & Button (Visible on mobile, crossfade on desktop hover) */}
+                <div className="absolute top-0 left-0 w-full transition-all duration-500 transform opacity-100 translate-y-0 md:opacity-0 md:translate-y-8 md:group-hover:opacity-100 md:group-hover:translate-y-0">
+                  <p className="text-xl text-zinc-300 leading-relaxed mb-8 font-sans border-l-2 border-[#A35D36] pl-4 max-w-sm">
                     {item.description}
                   </p>
 
                   <div className="flex items-center gap-8">
-                    <span className="text-3xl font-serif italic text-white">${item.price}</span>
+                    <span className="text-3xl font-serif italic text-white">₹{item.price}</span>
                     <button
                       onClick={(e) => {
                         e.stopPropagation();

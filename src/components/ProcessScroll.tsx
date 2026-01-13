@@ -19,7 +19,7 @@ const ProcessCard: React.FC<{
 
     return (
         <motion.div
-            className="relative h-[70vh] w-[90vw] md:w-[40vw] flex-shrink-0 overflow-hidden bg-[#F9F8F4] border-r border-black/10 group perspective-1000"
+            className="relative h-[60vh] w-[85vw] md:h-[70vh] md:w-[40vw] flex-shrink-0 overflow-hidden bg-[#F9F8F4] border-r border-black/10 group perspective-1000"
         >
             {/* Parallax Image Content */}
             <div className="absolute inset-0 w-full h-full">
@@ -66,13 +66,38 @@ const ProcessCard: React.FC<{
 
 const ProcessScroll: React.FC = () => {
     const targetRef = useRef<HTMLDivElement>(null);
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
+    const [scrollRange, setScrollRange] = React.useState(0);
+    const [viewportWidth, setViewportWidth] = React.useState(0);
+
+    // Measure the width of the horizontal content to determine exact scroll distance
+    React.useLayoutEffect(() => {
+        const updateScrollRange = () => {
+            if (scrollContainerRef.current) {
+                const scrollWidth = scrollContainerRef.current.scrollWidth;
+                const clientWidth = window.innerWidth;
+                setScrollRange(scrollWidth - clientWidth);
+                setViewportWidth(clientWidth);
+            }
+        };
+
+        updateScrollRange();
+
+        // Add listener for resize to handle orientation changes or window resizing
+        window.addEventListener('resize', updateScrollRange);
+        return () => window.removeEventListener('resize', updateScrollRange);
+    }, []);
+
     const { scrollYProgress } = useScroll({
         target: targetRef,
     });
 
-    const x = useTransform(scrollYProgress, [0, 1], ["0%", "-55%"]); // Reduced travel relative to width to prevent overscroll
-    // Moredamping = less bounce, Slower stiffness = smoother follow
-    const springX = useSpring(x, { stiffness: 40, damping: 30, mass: 1.2 });
+    // Map vertical scroll (0 to 1) to horizontal translation (0 to -scrollRange in px)
+    // We scroll exactly the "excess" width so the last item aligns with the right edge
+    const x = useTransform(scrollYProgress, [0, 1], [0, -scrollRange]);
+
+    // Smoother spring physics for the scroll
+    const springX = useSpring(x, { stiffness: 60, damping: 30, mass: 1 });
 
     const steps = [
         {
@@ -102,12 +127,12 @@ const ProcessScroll: React.FC = () => {
     ];
 
     return (
-        // Increased height to 250vh to give more "time" for the scroll to happen smoothly
-        <section ref={targetRef} className="relative h-[250vh] bg-[#F9F8F4]">
+        // Height controls the "speed" of the scroll. 300vh allows enough scroll distance to feel natural.
+        <section ref={targetRef} className="relative h-[300vh] bg-[#F9F8F4]">
             <div className="sticky top-0 flex h-screen items-center overflow-hidden bg-[#F9F8F4] text-[#1A1A1A]">
 
-                {/* Intro Block */}
-                <motion.div style={{ x: springX }} className="flex">
+                {/* Horizontal Moving Container using ref for measurement */}
+                <motion.div ref={scrollContainerRef} style={{ x: springX }} className="flex">
                     <div className="flex-shrink-0 w-[100vw] md:w-[50vw] h-screen flex flex-col justify-center px-10 md:px-24 border-r border-black/10">
                         <motion.span
                             initial={{ opacity: 0 }}
@@ -126,7 +151,7 @@ const ProcessScroll: React.FC = () => {
                                 <div className="w-1 h-1 bg-black rounded-full animate-ping" />
                             </div>
                             <p className="text-xs uppercase tracking-[0.3em] font-sans text-zinc-500">
-                                Scroll to Inititate
+                                Scroll to Initiate
                             </p>
                         </div>
                     </div>
@@ -137,6 +162,7 @@ const ProcessScroll: React.FC = () => {
                             step={step}
                             index={index}
                             x={springX}
+                            // Pass raw scrollYProgress for parallax internal to card if needed
                             containerScroll={scrollYProgress}
                         />
                     ))}
