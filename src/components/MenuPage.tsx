@@ -639,7 +639,7 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
           {/* Top bar: search + sort (non-sticky) */}
           <div className="mb-6">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-              <div className="relative w-full md:max-w-md">
+              <div className="relative w-[85%] md:w-full md:max-w-md">
                 <Search className="w-4 h-4 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   value={search}
@@ -649,7 +649,7 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
                 />
               </div>
 
-              <div className="flex flex-col items-end gap-6 text-sm font-sans md:items-center md:flex-row md:gap-12">
+              <div className="flex flex-row items-center justify-between w-full md:w-auto gap-4 text-sm font-sans md:items-center md:flex-row md:gap-12">
                 <div className="flex items-center gap-2">
                   <Filter className="w-4 h-4 text-zinc-500" />
                   <select
@@ -665,7 +665,7 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
                 <button
                   type="button"
                   onClick={() => setShowBrewDesk(true)}
-                  className="px-4 py-2 rounded-full border border-black/15 text-[10px] uppercase tracking-[0.25em] text-zinc-600 bg-white/40 hover:bg-black/5 hover:text-[#0a0a0a] transition-colors"
+                  className="px-4 py-2 rounded-full border border-black/15 text-[10px] uppercase tracking-[0.25em] text-zinc-600 bg-white/40 hover:bg-black/5 hover:text-[#0a0a0a] transition-colors whitespace-nowrap"
                 >
                   Help me choose
                 </button>

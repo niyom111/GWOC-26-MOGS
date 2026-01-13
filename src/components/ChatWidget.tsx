@@ -1,7 +1,20 @@
 import { useState, useRef, useEffect } from 'react';
-import { MessageCircle, X, Send, Loader2, Coffee, Minimize2, Maximize2 } from 'lucide-react';
+import { MessageCircle, X, Send, Loader2, Coffee } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import './ChatWidget.css';
 import { API_BASE_URL } from '../config';
+
+// Simple hook for mobile detection
+const useIsMobile = () => {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+  return isMobile;
+};
 
 interface ApiResponse {
   action?: 'navigate' | 'respond';
@@ -81,87 +94,126 @@ export default function ChatWidget() {
     }
   };
 
+  const isMobile = useIsMobile();
+
   return (
-    <div className="chat-widget-container" style={{ position: 'fixed', bottom: '20px', right: '20px', zIndex: 9999 }}>
+    <div className="chat-widget-container" style={{
+      position: 'fixed',
+      bottom: isMobile ? '16px' : '20px',
+      right: isMobile ? '16px' : '20px',
+      zIndex: 9999,
+      width: isMobile ? 'calc(100vw - 32px)' : '350px',
+      maxWidth: '350px',
+      height: isMobile ? 'calc(100vh - 120px)' : '500px',
+      maxHeight: '500px',
+      pointerEvents: 'none'
+    }}>
+      {/* Container is fixed size to prevent layout shifts, but pointer-events-none so it doesn't block clicks when closed/small.
+          We re-enable pointer-events on the actual children.
+      */}
 
-      {!isOpen && (
-        <button
-          onClick={() => setIsOpen(true)}
-          className="chat-widget-button flex items-center justify-center gap-2 px-5 py-2.5 rounded-full shadow-lg transition-transform hover:scale-105"
-          style={{ backgroundColor: '#2C1810', height: '48px', width: 'auto' }}
-        >
-          <MessageCircle className="text-[#F3E5AB]" size={22} />
-          <span className="text-[#F3E5AB] font-bold text-base whitespace-nowrap">Labubu AI</span>
-        </button>
-      )}
+      {/* Simultaneous animation for fluid feel */}
+      <AnimatePresence>
+        {!isOpen && (
+          <motion.div
+            key="button"
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0, opacity: 0 }}
+            transition={{ type: "spring", stiffness: 400, damping: 25 }}
+            className="absolute bottom-0 right-0 pointer-events-auto origin-bottom-right"
+          >
+            <button
+              onClick={() => setIsOpen(true)}
+              className={`flex items-center justify-center gap-2 rounded-full shadow-lg transition-transform hover:scale-105 ${isMobile ? 'px-4 py-3' : 'px-6 py-3'}`}
+              style={{ backgroundColor: '#6F4E37', height: isMobile ? '48px' : '56px', width: 'auto' }}
+            >
+              <MessageCircle className="text-[#F9F8F4]" size={isMobile ? 20 : 26} />
+              <span className={`text-[#F9F8F4] font-bold whitespace-nowrap ${isMobile ? 'text-sm' : 'text-lg'}`}>Labubu AI</span>
+            </button>
+          </motion.div>
+        )}
 
-      {isOpen && (
-        <div className={`chat-window bg-white rounded-xl shadow-2xl overflow-hidden flex flex-col transition-all duration-300 ${isMinimized ? 'h-[60px]' : 'h-[500px]'}`}
-          style={{ width: '350px', border: '1px solid #2C1810' }}>
-
-          <div className="chat-header p-4 flex justify-between items-center text-[#F3E5AB]" style={{ backgroundColor: '#2C1810' }}>
-            <div className="flex items-center gap-2 cursor-pointer" onClick={() => setIsMinimized(!isMinimized)}>
-              <Coffee size={20} />
-              <div className="flex flex-col">
-                <span className="font-bold leading-tight">Labubu</span>
-                <span className="text-[10px] font-normal opacity-80">AI Assistant</span>
+        {isOpen && (
+          <motion.div
+            key="window"
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8, transition: { duration: 0.15 } }}
+            transition={{ type: "spring", stiffness: 350, damping: 30 }}
+            className={`bg-white rounded-xl shadow-2xl overflow-hidden flex flex-col absolute bottom-0 right-0 pointer-events-auto origin-bottom-right`}
+            style={{
+              width: '100%',
+              height: '100%',
+              border: '1px solid #6F4E37'
+            }}
+          >
+            {/* Header */}
+            <div className={`chat-header flex justify-between items-center text-[#F9F8F4] ${isMobile ? 'p-3' : 'p-5'}`} style={{ backgroundColor: '#6F4E37' }}>
+              <div className="flex items-center gap-3">
+                <Coffee size={isMobile ? 22 : 28} />
+                <div className="flex flex-col">
+                  <span className={`font-bold leading-tight ${isMobile ? 'text-lg' : 'text-xl'}`}>Labubu</span>
+                  <span className="text-sm font-normal opacity-90">AI Assistant</span>
+                </div>
               </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <button onClick={() => setIsMinimized(!isMinimized)} className="hover:opacity-80"><Minimize2 size={16} /></button>
-              <button onClick={() => setIsOpen(false)} className="hover:opacity-80"><X size={20} /></button>
-            </div>
-          </div>
-
-          {!isMinimized && (
-            <>
-              <div className="chat-messages flex-1 overflow-y-auto p-4 flex flex-col gap-3 bg-[#FAF9F6]">
-                {messages.map((msg, index) => (
-                  <div key={index}
-                    className={`message p-3 rounded-lg max-w-[85%] text-sm ${msg.isUser ? 'self-end' : 'self-start'}`}
-                    style={{
-                      whiteSpace: 'pre-wrap', // Essential for lists!
-                      backgroundColor: msg.isUser ? '#2C1810' : '#EFEBE9',
-                      color: msg.isUser ? '#F3E5AB' : '#2C1810',
-                      border: msg.isUser ? 'none' : '1px solid #D7CCC8',
-                      borderRadius: '8px'
-                    }}>
-                    {msg.text}
-                  </div>
-                ))}
-
-                {isLoading && (
-                  <div className="bg-[#EFEBE9] p-3 rounded-lg flex items-center gap-2 text-[#2C1810] text-sm w-fit border border-[#D7CCC8]">
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Brewing answer...</span>
-                  </div>
-                )}
-                <div ref={messagesEndRef} />
-              </div>
-
-              <div className="chat-input-area p-3 border-t border-gray-200 bg-white flex gap-2">
-                <input
-                  type="text"
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                  placeholder="Ask about menu, calories..."
-                  disabled={isLoading}
-                  className="flex-1 p-2 border border-gray-300 rounded-md focus:outline-none focus:border-[#2C1810] text-sm"
-                />
-                <button
-                  onClick={handleSend}
-                  disabled={isLoading || !input.trim()}
-                  className="p-2 rounded-md disabled:opacity-50"
-                  style={{ backgroundColor: '#2C1810', color: '#F3E5AB' }}
-                >
-                  <Send size={18} />
+              <div className="flex items-center gap-2">
+                <button onClick={() => setIsOpen(false)} className="hover:opacity-80 transition-opacity">
+                  <X size={isMobile ? 20 : 24} />
                 </button>
               </div>
-            </>
-          )}
-        </div>
-      )}
+            </div>
+
+            {/* Chat Messages */}
+            <div className={`chat-messages flex-1 overflow-y-auto flex flex-col gap-4 bg-[#FAF9F6] ${isMobile ? 'p-3' : 'p-5'}`}>
+              {messages.map((msg, index) => (
+                <div key={index}
+                  className={`message rounded-xl max-w-[85%] leading-relaxed shadow-sm ${msg.isUser ? 'self-end' : 'self-start'} ${isMobile ? 'p-3 text-[14px]' : 'p-4 text-[16px]'}`}
+                  style={{
+                    whiteSpace: 'pre-wrap',
+                    backgroundColor: msg.isUser ? '#6F4E37' : '#EFEBE9',
+                    color: msg.isUser ? '#F9F8F4' : '#2C1810',
+                    border: msg.isUser ? 'none' : '1px solid #D7CCC8',
+                    borderRadius: '16px',
+                    borderBottomRightRadius: msg.isUser ? '2px' : '16px',
+                    borderBottomLeftRadius: msg.isUser ? '16px' : '2px'
+                  }}>
+                  {msg.text}
+                </div>
+              ))}
+
+              {isLoading && (
+                <div className={`bg-[#EFEBE9] rounded-xl flex items-center gap-3 text-[#2C1810] w-fit border border-[#D7CCC8] ${isMobile ? 'p-3 text-[14px]' : 'p-4 text-[15px]'}`}>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <span>Brewing answer...</span>
+                </div>
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+
+            {/* Input Area */}
+            <div className={`chat-input-area border-t border-gray-200 bg-white flex gap-3 ${isMobile ? 'p-3' : 'p-4'}`}>
+              <input
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                placeholder="Ask about menu, calories..."
+                disabled={isLoading}
+                className={`flex-1 border border-gray-300 rounded-xl focus:outline-none focus:border-[#6F4E37] ${isMobile ? 'p-3 text-[14px]' : 'p-3.5 text-[16px]'}`}
+              />
+              <button
+                onClick={handleSend}
+                disabled={isLoading || !input.trim()}
+                className={`rounded-xl disabled:opacity-50 transition-all hover:brightness-110 shadow-sm ${isMobile ? 'p-3' : 'p-3.5'}`}
+                style={{ backgroundColor: '#6F4E37', color: '#F9F8F4' }}
+              >
+                <Send size={isMobile ? 18 : 22} />
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
