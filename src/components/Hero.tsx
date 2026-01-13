@@ -14,6 +14,9 @@ const Hero: React.FC = () => {
     <section className="relative h-screen w-full overflow-hidden flex items-center justify-center bg-black">
       <motion.div
         style={{ scale }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 1.5, ease: "easeInOut" }}
         className="absolute inset-0 z-0 overflow-hidden"
       >
         <video
@@ -40,7 +43,7 @@ const Hero: React.FC = () => {
           <motion.img
             src="/media/logo.png"
             alt="Rabuste Coffee"
-            className="w-72 md:w-96 mx-auto object-contain"
+            className="w-80 md:w-[28rem] mx-auto object-contain"
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.5, duration: 1 }}

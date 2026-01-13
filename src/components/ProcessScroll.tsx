@@ -1,5 +1,5 @@
 
-import React, { useRef } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { motion, useScroll, useTransform, useSpring, MotionValue } from 'framer-motion';
 
 const ProcessCard: React.FC<{
@@ -7,7 +7,8 @@ const ProcessCard: React.FC<{
     index: number;
     x: MotionValue<string>;
     containerScroll: MotionValue<number>;
-}> = ({ step, index, x, containerScroll }) => {
+    onImageLoad?: () => void;
+}> = ({ step, index, x, containerScroll, onImageLoad }) => {
 
     // Parallax the image inside the card based on global scroll
     // We Map global scroll 0-1 to a shift in image position
@@ -27,6 +28,7 @@ const ProcessCard: React.FC<{
                     src={step.img}
                     alt={step.title}
                     className="w-full h-full object-cover transition-all duration-700 ease-out"
+                    onLoad={onImageLoad}
                 />
             </div>
 
@@ -71,21 +73,41 @@ const ProcessScroll: React.FC = () => {
     const [viewportWidth, setViewportWidth] = React.useState(0);
 
     // Measure the width of the horizontal content to determine exact scroll distance
-    React.useLayoutEffect(() => {
+    useEffect(() => {
+        const element = scrollContainerRef.current;
+        if (!element) return;
+
         const updateScrollRange = () => {
             if (scrollContainerRef.current) {
                 const scrollWidth = scrollContainerRef.current.scrollWidth;
                 const clientWidth = window.innerWidth;
-                setScrollRange(scrollWidth - clientWidth);
+                const newRange = scrollWidth - clientWidth;
+                // Only update if dimensions actually changed significantly to avoid loops
+                setScrollRange(current => Math.abs(current - newRange) > 1 ? newRange : current);
                 setViewportWidth(clientWidth);
             }
         };
 
+        // Initial measurement
         updateScrollRange();
 
-        // Add listener for resize to handle orientation changes or window resizing
+        // Robust measurement using ResizeObserver
+        const resizeObserver = new ResizeObserver(() => {
+            updateScrollRange();
+        });
+
+        resizeObserver.observe(element);
+
+        // Fallback: Check measurement again after a short delay for late image loads
+        const timeout = setTimeout(updateScrollRange, 1000);
+
         window.addEventListener('resize', updateScrollRange);
-        return () => window.removeEventListener('resize', updateScrollRange);
+
+        return () => {
+            resizeObserver.disconnect();
+            window.removeEventListener('resize', updateScrollRange);
+            clearTimeout(timeout);
+        };
     }, []);
 
     const { scrollYProgress } = useScroll({
@@ -164,6 +186,10 @@ const ProcessScroll: React.FC = () => {
                             x={springX}
                             // Pass raw scrollYProgress for parallax internal to card if needed
                             containerScroll={scrollYProgress}
+                            onImageLoad={() => {
+                                // Force a recalculation when image loads
+                                window.dispatchEvent(new Event('resize'));
+                            }}
                         />
                     ))}
 
