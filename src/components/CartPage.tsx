@@ -145,6 +145,18 @@ const CartPage: React.FC<CartPageProps> = ({
           'counter'
         );
 
+        // --- NEW: Save to local storage for recommendations (Limit 5) ---
+        try {
+          const recentOrdersRaw = window.localStorage.getItem('rabuste_recent_orders');
+          const recentOrders = recentOrdersRaw ? JSON.parse(recentOrdersRaw) : [];
+          // Add new order to start, keep max 5
+          const updatedOrders = [order, ...recentOrders].slice(0, 5);
+          window.localStorage.setItem('rabuste_recent_orders', JSON.stringify(updatedOrders));
+        } catch (err) {
+          console.error('[Cart] Failed to save recent order to local storage', err);
+        }
+        // ---------------------------------------------------------------
+
         // Order saved successfully - now try to send email (non-blocking)
         try {
           const itemsHTML = generateEmailHTML(cart);
@@ -286,6 +298,22 @@ const CartPage: React.FC<CartPageProps> = ({
 
             const verifyResult = await verifyResponse.json();
             console.log('[PAYMENT] Payment verified and order saved:', verifyResult);
+
+            // --- NEW: Save to local storage for recommendations (Limit 5) ---
+            try {
+              // Construct the order object that was saved (verifyResult might be the order, or we use orderData)
+              // Ideally verifyResult is the saved order. If not, we reconstruct it roughly for local preference tracking.
+              // Assuming verifyResult IS the saved order or contains it. If not, use orderData with ID.
+              const savedOrder = verifyResult.order || { ...orderData, id: verifyResult.id || orderData.id };
+
+              const recentOrdersRaw = window.localStorage.getItem('rabuste_recent_orders');
+              const recentOrders = recentOrdersRaw ? JSON.parse(recentOrdersRaw) : [];
+              const updatedOrders = [savedOrder, ...recentOrders].slice(0, 5);
+              window.localStorage.setItem('rabuste_recent_orders', JSON.stringify(updatedOrders));
+            } catch (err) {
+              console.error('[Cart] Failed to save update recent orders (UPI)', err);
+            }
+            // ---------------------------------------------------------------
 
             // Payment verified and order saved - now try to send email (non-blocking)
             try {

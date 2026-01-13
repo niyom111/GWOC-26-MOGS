@@ -20,7 +20,9 @@ import {
   X,
   ChevronDown,
   Layers,
+  TrendingUp,
 } from 'lucide-react';
+import SalesInsights from './SalesInsights';
 import {
   useDataContext,
   CoffeeAdminItem,
@@ -58,8 +60,9 @@ interface FranchiseFaqItem {
 }
 
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'coffee' | 'orders' | 'art' | 'workshops' | 'manage_categories' | 'franchise_enquiries' | 'franchise_faqs' | 'franchise_settings'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'coffee' | 'orders' | 'art' | 'workshops' | 'manage_categories' | 'franchise_enquiries' | 'franchise_faqs' | 'franchise_settings' | 'sales_trends'>('overview');
   const [isFranchiseOpen, setIsFranchiseOpen] = useState(false);
+  const [isInsightsOpen, setIsInsightsOpen] = useState(false);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('');
 
   const tabs = [
@@ -670,7 +673,16 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
     setEnquiries(prev => prev.filter(e => e.id !== id));
   };
 
-  const activeTabLabel = tabs.find(t => t.id === activeTab)?.label;
+  const activeTabLabel = useMemo(() => {
+    const allItems = [
+      ...tabs,
+      { id: 'franchise_enquiries', label: 'Franchise Enquiries' },
+      { id: 'franchise_faqs', label: 'Franchise FAQs' },
+      { id: 'franchise_settings', label: 'Franchise Settings' },
+      { id: 'sales_trends', label: 'Sales Trends' }
+    ];
+    return allItems.find(t => t.id === activeTab)?.label || 'Dashboard';
+  }, [activeTab]);
 
   // Classification helpers for beverages vs food based on category naming
   const foodItems = menuItems.filter(item => item.category.trim().toUpperCase().includes('FOOD'));
@@ -708,6 +720,45 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
               <span>{tab.label}</span>
             </button>
           ))}
+
+          {/* Insights Section */}
+          <div className="pt-2">
+            <button
+              onClick={() => setIsInsightsOpen(!isInsightsOpen)}
+              className={`w-full flex items-center justify-between px-3 py-2 text-left transition-all border-l-2 ${['sales_trends'].includes(activeTab)
+                ? 'border-black text-[#0a0a0a]'
+                : 'border-transparent text-zinc-500 hover:text-[#0a0a0a] hover:border-black/10'
+                }`}
+            >
+              <div className="flex items-center space-x-3">
+                <TrendingUp className="w-4 h-4" />
+                <span>Insights</span>
+              </div>
+              <ChevronDown
+                className={`w-4 h-4 transition-transform duration-200 ${isInsightsOpen ? 'rotate-180' : ''}`}
+              />
+            </button>
+            <AnimatePresence>
+              {isInsightsOpen && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  className="overflow-hidden"
+                >
+                  <button
+                    onClick={() => setActiveTab('sales_trends')}
+                    className={`w-full flex items-center space-x-3 px-3 py-2 pl-10 text-left transition-all ${activeTab === 'sales_trends'
+                      ? 'text-[#0a0a0a] font-semibold'
+                      : 'text-zinc-500 hover:text-[#0a0a0a]'
+                      }`}
+                  >
+                    <span className="text-[10px] tracking-[0.25em]">Sales Trends</span>
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
 
           {/* Franchise Section */}
           <div className="pt-2">
@@ -832,6 +883,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
             <OverviewCard label="Franchise Leads" value={enquiryCount} />
           </div>
         )}
+
+        {activeTab === 'sales_trends' && <SalesInsights />}
 
         {activeTab === 'coffee' && (
           <CoffeeTable
