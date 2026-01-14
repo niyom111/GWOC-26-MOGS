@@ -219,9 +219,15 @@ const TrackOrderPage: React.FC<TrackOrderPageProps> = ({ onNavigate }) => {
                             minute: '2-digit'
                           })}
                         </p>
-                        <p className="text-xs text-zinc-500 font-sans mt-1">
-                          Pickup time: {order.pickupTime}
-                        </p>
+                        {order.pickupTime ? (
+                          <p className="text-xs text-zinc-500 font-sans mt-1">
+                            Pickup time: {order.pickupTime}
+                          </p>
+                        ) : (
+                          <p className="text-xs text-zinc-500 font-sans mt-1">
+                            Order from store
+                          </p>
+                        )}
                       </div>
                       <div className="text-right">
                         <p className="font-serif text-xl">₹{order.total.toFixed(0)}</p>

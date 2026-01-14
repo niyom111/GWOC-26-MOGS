@@ -360,7 +360,7 @@ const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate, onBac
                       <strong>Phone:</strong> {order.customer.phone}
                     </p>
                     <p className="text-xs text-zinc-500 font-sans">
-                      <strong>Pickup:</strong> {order.pickupTime} | {new Date(order.date).toLocaleDateString()}
+                      <strong>Pickup:</strong> {order.pickupTime ? `${order.pickupTime} | ` : 'Order from store | '}{new Date(order.date).toLocaleDateString()}
                     </p>
                   </div>
                   <div className="text-right">

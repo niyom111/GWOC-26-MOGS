@@ -1617,7 +1617,7 @@ const OrdersTable: React.FC<{ items: Order[] }> = ({ items }) => (
             <td className="px-6 py-4 text-xs font-sans uppercase tracking-[0.1em] text-zinc-600">
               {order.payment_method?.includes('Counter') ? 'Counter' : (order.payment_method?.includes('Online') ? 'Online' : order.payment_method || 'Counter')}
             </td>
-            <td className="px-6 py-4 text-sm text-zinc-700">{order.pickupTime}</td>
+            <td className="px-6 py-4 text-sm text-zinc-700">{order.pickupTime || 'Order from store'}</td>
             <td className="px-6 py-4 text-xs text-zinc-500">
               {order.date}
             </td>
