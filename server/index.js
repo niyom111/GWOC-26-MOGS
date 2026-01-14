@@ -16,9 +16,29 @@ const __dirname = path.dirname(__filename);
 // CONFIGURATION & SETUP
 // -----------------------------------------------------
 const app = express();
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
 
-app.use(cors());
+// CORS configuration - allow frontend domains
+app.use(cors({
+  origin: function (origin, callback) {
+    // Allow requests with no origin (mobile apps, Postman, etc.)
+    if (!origin) return callback(null, true);
+    
+    // Allow localhost for development
+    if (origin.startsWith('http://localhost')) return callback(null, true);
+    
+    // Allow all Vercel domains
+    if (origin.includes('.vercel.app')) return callback(null, true);
+    
+    // Allow custom domain if set
+    if (process.env.FRONTEND_URL && origin === process.env.FRONTEND_URL) {
+      return callback(null, true);
+    }
+    
+    callback(null, true); // Allow all origins for now
+  },
+  credentials: true
+}));
 app.use(express.json());
 
 // Request Logging

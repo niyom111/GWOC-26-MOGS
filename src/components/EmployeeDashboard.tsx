@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion as motionBase } from 'framer-motion';
-import { ArrowLeft, Lock, Package, ChefHat, Clock, CheckCircle2 } from 'lucide-react';
+import { Lock, Package, ChefHat, Clock } from 'lucide-react';
 import { Page } from '../types';
+import { API_BASE_URL } from '../config';
 
 const motion = motionBase as any;
 
@@ -37,8 +38,7 @@ const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate, onBac
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
-  const [statusUpdates, setStatusUpdates] = useState<Record<string, string>>({});
+  const [markingReadyId, setMarkingReadyId] = useState<string | null>(null);
 
   const EMPLOYEE_PIN = '0022';
 
@@ -49,22 +49,60 @@ const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate, onBac
       setIsAuthenticated(true);
       fetchActiveOrders();
     }
+    
+    // Scroll to top on mount - use multiple methods to ensure it works
+    const scrollToTop = () => {
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+    };
+    
+    // Run immediately
+    scrollToTop();
+    
+    // Also run after a short delay to ensure DOM is ready
+    const timeout = setTimeout(scrollToTop, 100);
+    
+    return () => clearTimeout(timeout);
   }, []);
+
+  // Handle browser back button - log out and navigate to home
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    // Push a state when authenticated so we can detect back button
+    const currentState = window.history.state;
+    if (!currentState || !currentState.employeeDashboard) {
+      window.history.pushState({ employeeDashboard: true }, '', window.location.pathname);
+    }
+
+    const handlePopState = () => {
+      // When back button is pressed, log out and go to home
+      // Clear session storage first
+      sessionStorage.removeItem('rabuste_employee_auth');
+      setIsAuthenticated(false);
+      setOrders([]);
+      // Navigate to home
+      onBack();
+    };
+
+    window.addEventListener('popstate', handlePopState);
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [isAuthenticated, onBack]);
 
   const fetchActiveOrders = async () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch('http://localhost:5000/api/orders/active');
+      const response = await fetch(`${API_BASE_URL}/api/orders/active`);
       if (!response.ok) throw new Error('Failed to fetch orders');
       const data = await response.json();
-      setOrders(data || []);
-      // Initialize status updates with current statuses
-      const initialStatuses: Record<string, string> = {};
-      (data || []).forEach((order: Order) => {
-        initialStatuses[order.id] = order.status;
-      });
-      setStatusUpdates(initialStatuses);
+      // Filter out orders with status "ready" - employees don't see ready orders
+      const filteredOrders = (data || []).filter((order: Order) => order.status !== 'ready' && order.status !== 'completed');
+      setOrders(filteredOrders);
     } catch (err: any) {
       setError(err.message || 'Failed to load orders');
     } finally {
@@ -86,33 +124,94 @@ const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate, onBac
     }
   };
 
-  const handleStatusChange = (orderId: string, newStatus: string) => {
-    setStatusUpdates(prev => ({
-      ...prev,
-      [orderId]: newStatus
-    }));
+  // Calculate displayed status based on elapsed time (auto-update from placed to preparing)
+  const getDisplayStatus = (order: Order): string => {
+    const orderDate = new Date(order.date).getTime();
+    const now = Date.now();
+    const elapsed = now - orderDate;
+    const twoMinutes = 2 * 60 * 1000; // 2 minutes in milliseconds
+
+    // If order is "placed" and 2 minutes have passed, show as "preparing"
+    if (order.status === 'placed' && elapsed >= twoMinutes) {
+      return 'preparing';
+    }
+    return order.status;
   };
 
-  const handleUpdateStatus = async (orderId: string) => {
-    const newStatus = statusUpdates[orderId];
-    if (!newStatus) return;
+  // Auto-update status from placed to preparing (client-side)
+  useEffect(() => {
+    if (!isAuthenticated || orders.length === 0) return;
 
-    setUpdatingOrderId(orderId);
-    try {
-      const response = await fetch(`http://localhost:5000/api/orders/${orderId}/status`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus, updated_by: 'employee' })
+    const updateStatuses = async () => {
+      const now = Date.now();
+      const twoMinutes = 2 * 60 * 1000;
+      let hasUpdates = false;
+      const ordersToUpdate: string[] = [];
+
+      // Check which orders need updating
+      orders.forEach((order) => {
+        if (order.status === 'placed') {
+          const orderDate = new Date(order.date).getTime();
+          const elapsed = now - orderDate;
+          if (elapsed >= twoMinutes) {
+            ordersToUpdate.push(order.id);
+            hasUpdates = true;
+          }
+        }
       });
 
-      if (!response.ok) throw new Error('Failed to update status');
+      // Update orders that need status change
+      if (hasUpdates) {
+        try {
+          await Promise.all(
+            ordersToUpdate.map(async (orderId) => {
+              try {
+                const response = await fetch(`${API_BASE_URL}/api/orders/${orderId}/status`, {
+                  method: 'PUT',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ status: 'preparing', updated_by: 'system' })
+                });
+                if (response.ok) {
+                  // Update local state
+                  setOrders(prevOrders => 
+                    prevOrders.map(order => 
+                      order.id === orderId ? { ...order, status: 'preparing' } : order
+                    )
+                  );
+                }
+              } catch (err) {
+                console.error('Failed to auto-update status:', err);
+              }
+            })
+          );
+        } catch (err) {
+          console.error('Error updating statuses:', err);
+        }
+      }
+    };
 
-      // Refresh orders
+    // Check every 5 seconds
+    const interval = setInterval(updateStatuses, 5000);
+    return () => clearInterval(interval);
+  }, [isAuthenticated, orders]);
+
+  const handleMarkReady = async (orderId: string) => {
+    setMarkingReadyId(orderId);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/orders/${orderId}/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'ready', updated_by: 'employee' })
+      });
+
+      if (!response.ok) throw new Error('Failed to mark order as ready');
+
+      // Refresh orders - ready orders will be filtered out
       await fetchActiveOrders();
     } catch (err: any) {
-      setError(err.message || 'Failed to update status');
+      setError(err.message || 'Failed to mark order as ready');
     } finally {
-      setUpdatingOrderId(null);
+      setMarkingReadyId(null);
     }
   };
 
@@ -120,10 +219,10 @@ const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate, onBac
     setIsAuthenticated(false);
     sessionStorage.removeItem('rabuste_employee_auth');
     setOrders([]);
-    setStatusUpdates({});
   };
 
   const getStatusIcon = (status: string) => {
+    if (!status) return <Package className="w-4 h-4" />;
     switch (status.toLowerCase()) {
       case 'placed':
         return <Package className="w-4 h-4" />;
@@ -131,8 +230,6 @@ const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate, onBac
         return <ChefHat className="w-4 h-4" />;
       case 'ready':
         return <Clock className="w-4 h-4" />;
-      case 'completed':
-        return <CheckCircle2 className="w-4 h-4" />;
       default:
         return <Package className="w-4 h-4" />;
     }
@@ -140,11 +237,11 @@ const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate, onBac
 
   if (!isAuthenticated) {
     return (
-      <div className="bg-[#F9F8F4] text-[#0a0a0a] min-h-screen flex items-center justify-center px-4">
+      <div className="bg-[#F9F8F4] text-[#0a0a0a] min-h-screen flex items-center justify-center px-4 w-full overflow-x-hidden">
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="w-full max-w-sm bg-white border border-black/10 rounded-xl shadow-sm p-8"
+          className="w-full max-w-sm bg-white border border-black/10 rounded-xl shadow-sm p-6 md:p-8"
         >
           <div className="flex items-center justify-center mb-6">
             <div className="p-3 bg-black/5 rounded-full">
@@ -188,33 +285,25 @@ const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate, onBac
   }
 
   return (
-    <div className="bg-[#F9F8F4] text-[#0a0a0a] pt-24 md:pt-32 pb-40 px-6 md:px-10 min-h-screen">
-      <div className="max-w-6xl mx-auto">
+    <div className="bg-[#F9F8F4] text-[#0a0a0a] pt-16 md:pt-32 pb-20 md:pb-40 px-4 md:px-10 min-h-screen w-full overflow-x-hidden" style={{ WebkitOverflowScrolling: 'touch' }}>
+      <div className="max-w-6xl mx-auto w-full">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={handleLogout}
-              className="p-2 hover:bg-black/5 rounded-full transition-colors"
+          <div>
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="text-[9px] md:text-[10px] uppercase tracking-[0.4em] md:tracking-[0.5em] text-zinc-500 mb-3 md:mb-4 font-sans"
             >
-              <ArrowLeft className="w-5 h-5" />
-            </button>
-            <div>
-              <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="text-[9px] md:text-[10px] uppercase tracking-[0.4em] md:tracking-[0.5em] text-zinc-500 mb-3 md:mb-4 font-sans"
-              >
-                Employee Dashboard
-              </motion.p>
-              <motion.h1
-                initial={{ opacity: 0, y: 24 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="text-3xl md:text-5xl font-serif italic tracking-tight"
-              >
-                Active Orders
-              </motion.h1>
-            </div>
+              Employee Dashboard
+            </motion.p>
+            <motion.h1
+              initial={{ opacity: 0, y: 24 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-3xl md:text-5xl font-serif italic tracking-tight"
+            >
+              Active Orders
+            </motion.h1>
           </div>
           <button
             onClick={fetchActiveOrders}
@@ -257,8 +346,8 @@ const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate, onBac
                     <div className="flex items-center gap-3 mb-2">
                       <h3 className="font-serif text-lg">Order #{order.id.slice(-8)}</h3>
                       <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] uppercase tracking-[0.2em] font-sans font-medium bg-zinc-100 text-zinc-700">
-                        {getStatusIcon(order.status)}
-                        {order.status}
+                        {getStatusIcon(getDisplayStatus(order))}
+                        {getDisplayStatus(order)}
                       </span>
                     </div>
                     <p className="text-xs text-zinc-500 font-sans mb-1">
@@ -271,7 +360,7 @@ const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate, onBac
                       <strong>Phone:</strong> {order.customer.phone}
                     </p>
                     <p className="text-xs text-zinc-500 font-sans">
-                      <strong>Pickup:</strong> {order.pickupTime} | {new Date(order.date).toLocaleDateString()}
+                      <strong>Pickup:</strong> {order.pickupTime ? `${order.pickupTime} | ` : 'Order from store | '}{new Date(order.date).toLocaleDateString()}
                     </p>
                   </div>
                   <div className="text-right">
@@ -285,42 +374,33 @@ const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate, onBac
                 <div className="border-t border-black/5 pt-4 mb-4">
                   <p className="text-xs uppercase tracking-[0.3em] text-zinc-500 font-sans mb-2">Items</p>
                   <div className="space-y-1">
-                    {order.items.map((item, idx) => (
-                      <div key={idx} className="flex justify-between text-sm font-sans">
+                    {order.items
+                      .filter(item => item.id && item.name && item.price != null && item.quantity != null)
+                      .map((item, idx) => (
+                      <div key={item.id || idx} className="flex justify-between text-sm font-sans">
                         <span>
-                          {item.name} × {item.quantity}
+                          {item.name || 'Unknown Item'} × {item.quantity ?? 0}
                         </span>
                         <span className="text-zinc-600">
-                          ₹{(item.price * item.quantity).toFixed(0)}
+                          ₹{((item.price ?? 0) * (item.quantity ?? 0)).toFixed(0)}
                         </span>
                       </div>
                     ))}
                   </div>
                 </div>
 
-                {/* Status Update Section */}
-                <div className="border-t border-black/5 pt-4 flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-                  <div className="flex-1">
-                    <label className="block text-[11px] uppercase tracking-[0.25em] mb-2 font-sans">Update Status</label>
-                    <select
-                      value={statusUpdates[order.id] || order.status}
-                      onChange={(e) => handleStatusChange(order.id, e.target.value)}
-                      className="w-full bg-transparent border border-black/20 rounded-md px-3 py-2 outline-none focus:border-black text-sm font-sans"
+                {/* Ready Button - Show for orders in placed or preparing status */}
+                {(getDisplayStatus(order) === 'placed' || getDisplayStatus(order) === 'preparing') && (
+                  <div className="border-t border-black/5 pt-4">
+                    <button
+                      onClick={() => handleMarkReady(order.id)}
+                      disabled={markingReadyId === order.id}
+                      className="px-4 py-1.5 bg-[#0a0a0a] text-[#F9F8F4] text-[10px] uppercase tracking-[0.3em] font-sans rounded-lg hover:bg-black transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                     >
-                      <option value="placed">Placed</option>
-                      <option value="preparing">Preparing</option>
-                      <option value="ready">Ready</option>
-                      <option value="completed">Completed</option>
-                    </select>
+                      {markingReadyId === order.id ? 'Marking Ready...' : 'Ready?'}
+                    </button>
                   </div>
-                  <button
-                    onClick={() => handleUpdateStatus(order.id)}
-                    disabled={updatingOrderId === order.id || (statusUpdates[order.id] || order.status) === order.status}
-                    className="px-6 py-2 bg-[#0a0a0a] text-[#F9F8F4] text-[10px] uppercase tracking-[0.3em] font-sans rounded-lg hover:bg-black transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-                  >
-                    {updatingOrderId === order.id ? 'Updating...' : 'Update Status'}
-                  </button>
-                </div>
+                )}
               </motion.div>
             ))}
           </div>

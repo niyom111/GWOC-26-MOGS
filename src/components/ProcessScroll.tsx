@@ -1,5 +1,5 @@
 
-import React, { useRef } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { motion, useScroll, useTransform, useSpring, MotionValue } from 'framer-motion';
 
 const ProcessCard: React.FC<{
@@ -7,7 +7,8 @@ const ProcessCard: React.FC<{
     index: number;
     x: MotionValue<string>;
     containerScroll: MotionValue<number>;
-}> = ({ step, index, x, containerScroll }) => {
+    onImageLoad?: () => void;
+}> = ({ step, index, x, containerScroll, onImageLoad }) => {
 
     // Parallax the image inside the card based on global scroll
     // We Map global scroll 0-1 to a shift in image position
@@ -19,7 +20,7 @@ const ProcessCard: React.FC<{
 
     return (
         <motion.div
-            className="relative h-[70vh] w-[90vw] md:w-[40vw] flex-shrink-0 overflow-hidden bg-[#F9F8F4] border-r border-black/10 group perspective-1000"
+            className="relative h-[60vh] w-[85vw] md:h-[70vh] md:w-[40vw] flex-shrink-0 overflow-hidden bg-[#F9F8F4] border-r border-black/10 group perspective-1000"
         >
             {/* Parallax Image Content */}
             <div className="absolute inset-0 w-full h-full">
@@ -27,6 +28,7 @@ const ProcessCard: React.FC<{
                     src={step.img}
                     alt={step.title}
                     className="w-full h-full object-cover transition-all duration-700 ease-out"
+                    onLoad={onImageLoad}
                 />
             </div>
 
@@ -66,13 +68,58 @@ const ProcessCard: React.FC<{
 
 const ProcessScroll: React.FC = () => {
     const targetRef = useRef<HTMLDivElement>(null);
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
+    const [scrollRange, setScrollRange] = React.useState(0);
+    const [viewportWidth, setViewportWidth] = React.useState(0);
+
+    // Measure the width of the horizontal content to determine exact scroll distance
+    useEffect(() => {
+        const element = scrollContainerRef.current;
+        if (!element) return;
+
+        const updateScrollRange = () => {
+            if (scrollContainerRef.current) {
+                const scrollWidth = scrollContainerRef.current.scrollWidth;
+                const clientWidth = window.innerWidth;
+                const newRange = scrollWidth - clientWidth;
+                // Only update if dimensions actually changed significantly to avoid loops
+                setScrollRange(current => Math.abs(current - newRange) > 1 ? newRange : current);
+                setViewportWidth(clientWidth);
+            }
+        };
+
+        // Initial measurement
+        updateScrollRange();
+
+        // Robust measurement using ResizeObserver
+        const resizeObserver = new ResizeObserver(() => {
+            updateScrollRange();
+        });
+
+        resizeObserver.observe(element);
+
+        // Fallback: Check measurement again after a short delay for late image loads
+        const timeout = setTimeout(updateScrollRange, 1000);
+
+        window.addEventListener('resize', updateScrollRange);
+
+        return () => {
+            resizeObserver.disconnect();
+            window.removeEventListener('resize', updateScrollRange);
+            clearTimeout(timeout);
+        };
+    }, []);
+
     const { scrollYProgress } = useScroll({
         target: targetRef,
     });
 
-    const x = useTransform(scrollYProgress, [0, 1], ["0%", "-55%"]); // Reduced travel relative to width to prevent overscroll
-    // Moredamping = less bounce, Slower stiffness = smoother follow
-    const springX = useSpring(x, { stiffness: 40, damping: 30, mass: 1.2 });
+    // Map vertical scroll (0 to 1) to horizontal translation (0 to -scrollRange in px)
+    // We scroll exactly the "excess" width so the last item aligns with the right edge
+    const x = useTransform(scrollYProgress, [0, 1], [0, -scrollRange]);
+
+    // Smoother spring physics for the scroll
+    const springX = useSpring(x, { stiffness: 60, damping: 30, mass: 1 });
 
     const steps = [
         {
@@ -102,12 +149,12 @@ const ProcessScroll: React.FC = () => {
     ];
 
     return (
-        // Increased height to 250vh to give more "time" for the scroll to happen smoothly
-        <section ref={targetRef} className="relative h-[250vh] bg-[#F9F8F4]">
+        // Height controls the "speed" of the scroll. 300vh allows enough scroll distance to feel natural.
+        <section ref={targetRef} className="relative h-[300vh] bg-[#F9F8F4]">
             <div className="sticky top-0 flex h-screen items-center overflow-hidden bg-[#F9F8F4] text-[#1A1A1A]">
 
-                {/* Intro Block */}
-                <motion.div style={{ x: springX }} className="flex">
+                {/* Horizontal Moving Container using ref for measurement */}
+                <motion.div ref={scrollContainerRef} style={{ x: springX }} className="flex">
                     <div className="flex-shrink-0 w-[100vw] md:w-[50vw] h-screen flex flex-col justify-center px-10 md:px-24 border-r border-black/10">
                         <motion.span
                             initial={{ opacity: 0 }}
@@ -126,7 +173,7 @@ const ProcessScroll: React.FC = () => {
                                 <div className="w-1 h-1 bg-black rounded-full animate-ping" />
                             </div>
                             <p className="text-xs uppercase tracking-[0.3em] font-sans text-zinc-500">
-                                Scroll to Inititate
+                                Scroll to Initiate
                             </p>
                         </div>
                     </div>
@@ -137,7 +184,12 @@ const ProcessScroll: React.FC = () => {
                             step={step}
                             index={index}
                             x={springX}
+                            // Pass raw scrollYProgress for parallax internal to card if needed
                             containerScroll={scrollYProgress}
+                            onImageLoad={() => {
+                                // Force a recalculation when image loads
+                                window.dispatchEvent(new Event('resize'));
+                            }}
                         />
                     ))}
 

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion as motionBase } from 'framer-motion';
 import { CoffeeItem } from '../types';
+import { API_BASE_URL } from '../config';
 
 // Fix for framer-motion type mismatch
 const motion = motionBase as any;
@@ -57,7 +58,7 @@ const BrewDeskPopup: React.FC<BrewDeskPopupProps> = ({ onClose, onAddToCart }) =
     setError(null);
 
     try {
-      const res = await fetch('http://localhost:5000/api/recommendations/context', {
+      const res = await fetch(`${API_BASE_URL}/api/recommendations/context`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ mood, activity }),

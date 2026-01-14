@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Rabuste Café | Bold. Intentional. Robusta.</title>
   <link rel="icon" type="image/png" href="/media/orange-logo.png" />
   <script src="https://cdn.tailwindcss.com"></script>
@@ -11,12 +11,17 @@
   <link href="https://fonts.googleapis.com/css2?family=Bonheur+Royale&display=swap" rel="stylesheet">
   <!-- Editorial Serif, Gothic Header, and Modern Body Fonts -->
   <link
-    href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;700;900&family=Space+Grotesk:wght@300;400;700&family=UnifrakturMaguntia&family=Pirata+One&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Racing+Sans+One&family=Bungee+Shade&family=Fraunces:opsz,wght@9..144,400;700;900&family=Space+Grotesk:wght@300;400;700&family=UnifrakturMaguntia&family=Pirata+One&display=swap"
     rel="stylesheet">
   <style>
     :root {
       --cream: #F9F8F4;
       --charcoal: #1A1A1A;
+    }
+
+    html {
+      font-size: 14px;
+      /* Reduced scale from default 16px */
     }
 
     .font-serif {
@@ -35,26 +40,55 @@
       font-family: 'UnifrakturMaguntia', cursive;
     }
 
+    .font-bungee {
+      font-family: 'Bungee Shade', cursive;
+    }
+
+    .font-racing {
+      font-family: 'Racing Sans One', cursive;
+    }
+
     ::-webkit-scrollbar {
-      width: 6px;
+      display: none;
     }
 
-    ::-webkit-scrollbar-track {
-      background: var(--charcoal);
-    }
-
-    ::-webkit-scrollbar-thumb {
-      background: #444;
-    }
-
-    ::-webkit-scrollbar-thumb:hover {
-      background: #666;
+    /* Hide scrollbar for standard browsers (if needed in future) */
+    html {
+      scrollbar-width: none;
+      /* Firefox */
+      -ms-overflow-style: none;
+      /* IE and Edge */
+      scroll-behavior: smooth;
+      -webkit-overflow-scrolling: touch;
     }
 
     body {
       background-color: var(--cream);
       color: var(--charcoal);
       overflow-x: hidden;
+      scroll-behavior: smooth;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    /* Smooth scrolling for mobile */
+    @media (max-width: 768px) {
+      * {
+        -webkit-overflow-scrolling: touch;
+      }
+      
+      /* Smooth scrolling with momentum on iOS */
+      html, body {
+        -webkit-overflow-scrolling: touch;
+        scroll-behavior: auto;
+        overflow-x: hidden;
+      }
+      
+      /* Ensure admin dashboard can scroll naturally on mobile */
+      body {
+        position: relative;
+        height: auto;
+        min-height: 100vh;
+      }
     }
 
     .text-balance {

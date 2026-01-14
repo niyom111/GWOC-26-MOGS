@@ -71,9 +71,9 @@ const ArtworkCard: React.FC<ArtworkCardProps> = ({ art, index, onAddToCart }) =>
           >
             <div className="w-full h-full overflow-hidden relative bg-zinc-100">
               <img
-                src={art.image}
+                src={art.image || ''}
                 className={`w-full h-full object-cover transition-all duration-1000 ${isAvailable ? 'grayscale-0' : 'grayscale'}`}
-                alt={art.title}
+                alt={art.title || 'Art piece'}
               />
               <div className="absolute top-4 left-4 flex space-x-2">
                 <div className={`px-3 py-1 text-[8px] font-sans uppercase tracking-[0.2em] font-bold backdrop-blur-md ${isAvailable ? 'bg-white/90 text-black border border-black/5' : 'bg-red-500/90 text-white'}`}>
@@ -102,7 +102,7 @@ const ArtworkCard: React.FC<ArtworkCardProps> = ({ art, index, onAddToCart }) =>
               <div className="flex-1 flex flex-col justify-start" style={{ maxWidth: '100%' }}>
                 {/* Title - Large Serif, Italic */}
                 <h2 className="text-4xl md:text-5xl font-serif italic mb-5 leading-tight" style={{ color: '#f2f2f2' }}>
-                  {art.title}
+                  {art.title || 'Untitled Art'}
                 </h2>
 
                 {/* Artist Name - Uppercase, Roman, Spaced */}
@@ -118,7 +118,7 @@ const ArtworkCard: React.FC<ArtworkCardProps> = ({ art, index, onAddToCart }) =>
                   className="text-base font-sans font-medium mb-8"
                   style={{ color: '#f2f2f2' }}
                 >
-                  ₹{art.price.toLocaleString()}
+                  ₹{(art.price ?? 0).toLocaleString()}
                 </p>
 
                 {/* Artist Bio - Concise */}

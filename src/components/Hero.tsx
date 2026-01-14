@@ -14,6 +14,9 @@ const Hero: React.FC = () => {
     <section className="relative h-screen w-full overflow-hidden flex items-center justify-center bg-black">
       <motion.div
         style={{ scale }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 1.5, ease: "easeInOut" }}
         className="absolute inset-0 z-0 overflow-hidden"
       >
         <video
@@ -40,7 +43,7 @@ const Hero: React.FC = () => {
           <motion.img
             src="/media/logo.png"
             alt="Rabuste Coffee"
-            className="w-72 md:w-96 mx-auto object-contain"
+            className="w-80 md:w-[28rem] mx-auto object-contain"
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.5, duration: 1 }}
@@ -55,14 +58,31 @@ const Hero: React.FC = () => {
           </motion.span>
         </motion.div>
 
-        <motion.p
-          initial={{ opacity: 0, clipPath: 'inset(0 100% 0 0)' }}
-          animate={{ opacity: 1, clipPath: 'inset(0 0% 0 0)' }}
-          transition={{ delay: 1.5, duration: 2, ease: [0.22, 1, 0.36, 1] }}
-          className="mt-16 text-6xl md:text-8xl font-script text-[#F9F8F4] tracking-wide text-center pt-4"
+        <motion.div
+          initial="hidden"
+          animate="visible"
+          variants={{
+            hidden: { opacity: 0 },
+            visible: {
+              opacity: 1,
+              transition: { staggerChildren: 0.05, delayChildren: 1.5 }
+            }
+          }}
+          className="mt-16 text-center pt-4"
         >
-          Robusta at Rabuste
-        </motion.p>
+          {Array.from("Robusta at Rabuste").map((char, index) => (
+            <motion.span
+              key={index}
+              variants={{
+                hidden: { opacity: 0, y: 20, filter: 'blur(10px)' },
+                visible: { opacity: 1, y: 0, filter: 'blur(0px)', transition: { duration: 0.8, ease: "easeOut" } }
+              }}
+              className="inline-block text-4xl md:text-7xl font-serif font-bold italic text-white tracking-tighter"
+            >
+              {char === " " ? "\u00A0" : char}
+            </motion.span>
+          ))}
+        </motion.div>
 
 
       </div>

@@ -63,7 +63,7 @@ const CaffeineComparison: React.FC = () => {
 
                 {/* Footer */}
                 <div className="pt-8 border-t border-black/10">
-                    <p className="font-sans text-sm text-zinc-600 leading-relaxed">
+                    <p className="font-sans text-xl text-zinc-600 leading-relaxed font-medium">
                         <strong className="text-black">Translation:</strong> You drink half as much to get twice as much done. Efficiency is the ultimate luxury.
                     </p>
                 </div>
@@ -104,25 +104,44 @@ const ManifestoSection: React.FC = () => {
                 {/* LEFT: Text Content */}
                 <div className="flex flex-col gap-16">
                     {/* Kinetic Headline - No Blur */}
-                    <div className="flex flex-wrap content-start gap-x-4 gap-y-2 md:gap-x-6">
-                        {words.map((word, i) => {
-                            const start = i / words.length * 0.5; // faster staggered
-                            const end = start + 0.2;
-                            const opacity = useTransform(scrollYProgress, [start, end], [0.2, 1]);
-                            const y = useTransform(scrollYProgress, [start, end], [30, 0]);
+                    <div className="flex flex-wrap content-start gap-x-3 gap-y-2 md:gap-x-4">
+                        {/* Phase 1: We reject the smooth */}
+                        <motion.div
+                            initial={{ opacity: 0.2, y: 30 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true, margin: "-10%" }}
+                            transition={{ duration: 0.8, ease: "easeOut" }}
+                            className="w-full"
+                        >
+                            <span className="text-4xl md:text-6xl lg:text-7xl font-sans font-bold italic text-zinc-400">"</span>
+                            <span className="text-4xl md:text-6xl lg:text-7xl font-sans font-bold tracking-tight text-[#1A1A1A]">We reject the </span>
+                            <span className="text-4xl md:text-6xl lg:text-7xl font-sans font-bold tracking-tight text-[#A35D36]">smooth.</span>
+                        </motion.div>
 
-                            // Removed blur transform
+                        {/* Phase 2: We reject the mild */}
+                        <motion.div
+                            initial={{ opacity: 0.2, y: 30 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true, margin: "-10%" }}
+                            transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
+                            className="w-full"
+                        >
+                            <span className="text-4xl md:text-6xl lg:text-7xl font-sans font-bold tracking-tight text-[#1A1A1A]">We reject the </span>
+                            <span className="text-4xl md:text-6xl lg:text-7xl font-sans font-bold tracking-tight text-[#A35D36]">mild.</span>
+                        </motion.div>
 
-                            return (
-                                <motion.span
-                                    key={i}
-                                    style={{ opacity, y }}
-                                    className={`text-5xl md:text-7xl lg:text-8xl font-black tracking-tight leading-[0.9] ${word.includes('.') ? 'text-[#A35D36]' : 'text-[#1A1A1A]'}`}
-                                >
-                                    {word}
-                                </motion.span>
-                            );
-                        })}
+                        {/* Phase 3: Coffee was meant to wake you up */}
+                        <motion.div
+                            initial={{ opacity: 0.2, y: 30 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true, margin: "-10%" }}
+                            transition={{ duration: 0.8, delay: 0.4, ease: "easeOut" }}
+                            className="w-full mt-4"
+                        >
+                            <span className="text-4xl md:text-6xl lg:text-7xl font-sans font-bold tracking-tight text-[#1A1A1A]">Coffee was meant to </span>
+                            <span className="text-4xl md:text-6xl lg:text-7xl font-sans font-bold tracking-tight text-[#A35D36]">wake you up.</span>
+                            <span className="text-4xl md:text-6xl lg:text-7xl font-sans font-bold italic text-zinc-400">"</span>
+                        </motion.div>
                     </div>
 
                     {/* Divider & Doctrine */}
@@ -145,7 +164,7 @@ const ManifestoSection: React.FC = () => {
                 </div>
 
                 {/* RIGHT: Visual Element */}
-                <div className="hidden lg:block h-full min-h-[600px] border-l border-black/5">
+                <div className="block h-full min-h-[400px] lg:min-h-[600px] border-l border-black/5 border-t lg:border-t-0 mt-10 lg:mt-0 pt-10 lg:pt-0">
                     <CaffeineComparison />
                 </div>
 

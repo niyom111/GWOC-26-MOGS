@@ -35,6 +35,15 @@ import StatsSection from './components/StatsSection';
 // Fix for framer-motion type mismatch in the current environment
 const motion = motionBase as any;
 
+// ScrollToTop component to reset scroll only when new page mounts
+// Moved outside App to prevent re-mounting on state changes (like cart updates)
+const ScrollToTop = () => {
+  React.useLayoutEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+  return null;
+};
+
 const App: React.FC = () => {
   const pathToPage = (path: string): Page => {
     switch (path) {
@@ -163,17 +172,14 @@ const App: React.FC = () => {
   const cartCount = cart.reduce((acc, item) => acc + item.quantity, 0);
 
   // ScrollToTop component to reset scroll only when new page mounts
-  const ScrollToTop = () => {
-    React.useLayoutEffect(() => {
-      window.scrollTo(0, 0);
-    }, []);
-    return null;
-  };
+  // Moved outside App to prevent re-mounting on state changes (like cart updates)
 
   return (
     <DataProvider>
       <div className="min-h-screen font-sans bg-[#F9F8F4] text-[#1A1A1A]">
-        <Header onNavigate={navigateTo} currentPage={currentPage} cartCount={cartCount} />
+        {currentPage !== Page.ADMIN && currentPage !== Page.EMPLOYEE && (
+          <Header onNavigate={navigateTo} currentPage={currentPage} cartCount={cartCount} />
+        )}
 
         <AnimatePresence mode="wait">
           <motion.div
@@ -181,7 +187,16 @@ const App: React.FC = () => {
             initial={{ opacity: 0, y: 20, filter: 'blur(10px)' }}
             animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
             exit={{ opacity: 0, y: -20, filter: 'blur(10px)' }}
-            transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }} // Custom cubic-bezier for liquid smooth feel
+            transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+            onAnimationComplete={() => {
+              // Vital for position: fixed/sticky to work
+              document.body.style.overflowX = 'hidden';
+              const element = document.getElementById('page-transition-wrapper');
+              if (element) {
+                element.style.transform = "none";
+              }
+            }}
+            id="page-transition-wrapper"
           >
             <ScrollToTop />
             {currentPage === Page.HOME && (
@@ -259,12 +274,12 @@ const App: React.FC = () => {
           </motion.div>
         </AnimatePresence>
 
-        {currentPage !== Page.ADMIN && <Footer onNavigate={navigateTo} />}
+        {currentPage !== Page.ADMIN && currentPage !== Page.EMPLOYEE && <Footer onNavigate={navigateTo} />}
 
         {/* --- ADDED CHAT WIDGET HERE --- */}
-        <ChatWidget />
-      </div>
-    </DataProvider>
+        {currentPage !== Page.EMPLOYEE && <ChatWidget />}
+      </div >
+    </DataProvider >
   );
 };
 

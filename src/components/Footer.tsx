@@ -34,7 +34,7 @@ const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
               className="h-24 md:h-32 object-contain"
             />
           </div>
-          <p className="text-sm md:text-base font-sans text-zinc-300 max-w-md uppercase tracking-widest leading-relaxed">
+          <p className="text-base md:text-lg font-sans text-zinc-400 max-w-md leading-relaxed">
             Rabuste is a specialty coffee collective focused on the reclamation of Robusta coffee, operating from Surat.
           </p>
         </div>

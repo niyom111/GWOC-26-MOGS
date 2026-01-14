@@ -1,12 +1,20 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { CartItem } from './types';
+import { API_BASE_URL } from './config';
 
 // Shared data shapes for menu, art, and workshops
 export interface CoffeeAdminItem {
   id: string;
   name: string;
-  // Category label, can be predefined or custom
-  category: string;
+  // Legacy category field (for backward compatibility)
+  category?: string;
+  // New FK-based category fields
+  category_id?: string | null;
+  sub_category_id?: string | null;
+  // Display names from joins
+  category_name?: string;
+  sub_category_name?: string;
+
   price: number;
 
   // Legacy label (e.g. "High", "Extreme"); kept for compatibility with chatbot logic
@@ -14,7 +22,6 @@ export interface CoffeeAdminItem {
 
   // New schema-aligned fields (all optional on the client side)
   caffeine_mg?: number | null;
-  milk_based?: number | null; // 0/1 integer flag
 
   calories?: number | null;
   shareable?: number | null; // 0/1 integer flag
@@ -22,8 +29,35 @@ export interface CoffeeAdminItem {
   intensity_level?: string | null;
   image: string;
   description: string;
-  tags?: string;
+  // Tags as array of tag objects (from join table)
+  tags?: { id: string; name: string }[];
+  // Legacy string tags field for backward compatibility
+  tags_legacy?: string;
 }
+
+// New interfaces for dynamic categories
+export interface Category {
+  id: string;
+  name: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface SubCategory {
+  id: string;
+  category_id: string;
+  name: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface Tag {
+  id: string;
+  name: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
 
 export interface ArtAdminItem {
   id: string;
@@ -263,16 +297,28 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const fetchData = async () => {
       try {
         const [menuRes, artRes, workshopRes, orderRes] = await Promise.all([
-          fetch('http://localhost:5000/api/menu'),
-          fetch('http://localhost:5000/api/art'),
-          fetch('http://localhost:5000/api/workshops'),
-          fetch('http://localhost:5000/api/orders')
+          fetch(`${API_BASE_URL}/api/menu`),
+          fetch(`${API_BASE_URL}/api/art`),
+          fetch(`${API_BASE_URL}/api/workshops`),
+          fetch(`${API_BASE_URL}/api/orders`)
         ]);
 
-        if (menuRes.ok) setMenuItems(await menuRes.json());
-        if (artRes.ok) setArtItems(await artRes.json());
-        if (workshopRes.ok) setWorkshops(await workshopRes.json());
-        if (orderRes.ok) setOrders(await orderRes.json());
+        if (menuRes.ok) {
+          const menuData = await menuRes.json();
+          setMenuItems(Array.isArray(menuData) ? menuData : []);
+        }
+        if (artRes.ok) {
+          const artData = await artRes.json();
+          setArtItems(Array.isArray(artData) ? artData : []);
+        }
+        if (workshopRes.ok) {
+          const workshopData = await workshopRes.json();
+          setWorkshops(Array.isArray(workshopData) ? workshopData : []);
+        }
+        if (orderRes.ok) {
+          const orderData = await orderRes.json();
+          setOrders(Array.isArray(orderData) ? orderData : []);
+        }
       } catch (err) {
         console.error("Failed to fetch data:", err);
       }
@@ -280,19 +326,29 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     fetchData();
   }, []);
 
+  // Helper to refresh menu
+  const refreshMenu = async () => {
+    try {
+      const res = await fetch('http://localhost:5000/api/menu');
+      if (res.ok) setMenuItems(await res.json());
+    } catch (err) {
+      console.error("Failed to refresh menu:", err);
+    }
+  };
+
   // --- MENU ACTIONS ---
   const addMenuItem = async (item: CoffeeAdminItem) => {
     try {
-      const res = await fetch('http://localhost:5000/api/menu', {
+      const res = await fetch(`${API_BASE_URL}/api/menu`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(item)
       });
       if (res.ok) {
-        const newItem = await res.json();
-        setMenuItems(prev => [...prev, newItem]);
+        await refreshMenu();
       } else {
-        throw new Error('Failed to add menu item');
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || 'Failed to add menu item');
       }
     } catch (err) {
       console.error(err);
@@ -302,13 +358,16 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const updateMenuItem = async (id: string, updates: Partial<CoffeeAdminItem>) => {
     try {
-      const res = await fetch(`http://localhost:5000/api/menu/${id}`, {
+      const res = await fetch(`${API_BASE_URL}/api/menu/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updates)
       });
-      if (!res.ok) throw new Error('Failed to update menu item');
-      setMenuItems(prev => prev.map(item => (item.id === id ? { ...item, ...updates } : item)));
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || 'Failed to update menu item');
+      }
+      await refreshMenu();
     } catch (err) {
       console.error(err);
       throw err;
@@ -317,7 +376,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const deleteMenuItem = async (id: string) => {
     try {
-      await fetch(`http://localhost:5000/api/menu/${id}`, { method: 'DELETE' });
+      await fetch(`${API_BASE_URL}/api/menu/${id}`, { method: 'DELETE' });
       setMenuItems(prev => prev.filter(item => item.id !== id));
     } catch (err) { console.error(err); }
   };
@@ -325,7 +384,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // --- ART ACTIONS ---
   const addArtItem = async (item: ArtAdminItem) => {
     try {
-      const res = await fetch('http://localhost:5000/api/art', {
+      const res = await fetch(`${API_BASE_URL}/api/art`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(item)
@@ -345,7 +404,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const updateArtItem = async (id: string, updates: Partial<ArtAdminItem>) => {
     try {
-      const res = await fetch(`http://localhost:5000/api/art/${id}`, {
+      const res = await fetch(`${API_BASE_URL}/api/art/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updates)
@@ -370,7 +429,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const deleteArtItem = async (id: string) => {
     try {
-      await fetch(`http://localhost:5000/api/art/${id}`, { method: 'DELETE' });
+      await fetch(`${API_BASE_URL}/api/art/${id}`, { method: 'DELETE' });
       setArtItems(prev => prev.filter(item => item.id !== id));
     } catch (err) { console.error(err); }
   };
@@ -423,8 +482,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     // Save to backend - throw error if it fails
     try {
-      console.log('[FRONTEND] Sending POST to http://localhost:5000/api/orders');
-      const response = await fetch('http://localhost:5000/api/orders', {
+      console.log('[FRONTEND] Sending POST to', `${API_BASE_URL}/api/orders`);
+      const response = await fetch(`${API_BASE_URL}/api/orders`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...newOrder, paymentMethod })

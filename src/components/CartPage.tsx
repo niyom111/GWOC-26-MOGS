@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { motion as motionBase, AnimatePresence } from 'framer-motion';
 import { CartItem } from '../types';
-import { Trash2, Minus, Plus, ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { Trash2, Minus, Plus, ArrowLeft, CheckCircle2, X } from 'lucide-react';
 import emailjs from '@emailjs/browser';
 import { useDataContext } from '../DataContext';
+import { API_BASE_URL } from '../config';
 
 const motion = motionBase as any;
 
@@ -57,7 +58,11 @@ const CartPage: React.FC<CartPageProps> = ({
     }
   }, []);
 
-  const subtotal = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
+  const subtotal = cart.reduce((acc, item) => {
+    const price = item.price ?? 0;
+    const quantity = item.quantity ?? 0;
+    return acc + price * quantity;
+  }, 0);
   const total = subtotal;
 
   const [checkoutOpen, setCheckoutOpen] = useState(false);
@@ -67,6 +72,7 @@ const CartPage: React.FC<CartPageProps> = ({
   const [customer, setCustomer] = useState({ name: '', phone: '', email: '' });
   const [pickupTime, setPickupTime] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<'counter' | 'upi'>('counter');
+  const [orderType, setOrderType] = useState<'grab-and-go' | 'order-from-store' | null>(null);
 
   // Razorpay configuration
   const RAZORPAY_KEY_ID = import.meta.env.VITE_RAZORPAY_KEY_ID as string;
@@ -78,10 +84,14 @@ const CartPage: React.FC<CartPageProps> = ({
     }
 
     return items
+      .filter(item => item.id && item.name && item.price != null && item.quantity != null)
       .map(item => {
         const notesPart = item.notes ? ` - ${item.notes.toUpperCase()}` : '';
-        const itemLine = `${item.name}${notesPart} × ${item.quantity}`;
-        const itemPrice = `₹${(item.price * item.quantity).toFixed(0)}`;
+        const itemName = item.name || 'Unknown Item';
+        const itemQuantity = item.quantity ?? 0;
+        const itemPriceValue = (item.price ?? 0) * itemQuantity;
+        const itemLine = `${itemName}${notesPart} × ${itemQuantity}`;
+        const itemPrice = `₹${itemPriceValue.toFixed(0)}`;
 
         return `
 <tr>
@@ -96,9 +106,9 @@ const CartPage: React.FC<CartPageProps> = ({
     e.preventDefault();
     if (cart.length === 0) return;
 
-    const name = customer.name.trim();
-    const phoneDigits = customer.phone.replace(/\D/g, '');
-    const email = customer.email.trim().toLowerCase();
+    const name = (customer.name ?? '').trim();
+    const phoneDigits = (customer.phone ?? '').replace(/\D/g, '');
+    const email = (customer.email ?? '').trim().toLowerCase();
 
     // Validation
     if (!name) {
@@ -113,7 +123,12 @@ const CartPage: React.FC<CartPageProps> = ({
       setError('Please enter a valid email address.');
       return;
     }
-    if (!pickupTime) {
+    if (!orderType) {
+      setError('Please select an order type.');
+      return;
+    }
+    // Only require pickup time for grab-and-go orders
+    if (orderType === 'grab-and-go' && !pickupTime) {
       setError('Please select a pickup time.');
       return;
     }
@@ -121,12 +136,15 @@ const CartPage: React.FC<CartPageProps> = ({
     setSubmitting(true);
     setError(null);
 
+    // For "Order from store", set pickup time to empty string
+    const finalPickupTime = orderType === 'grab-and-go' ? pickupTime : '';
+    
     const orderData = {
       id: Date.now().toString(),
       customer: { name, phone: customer.phone, email },
       items: cart,
       total,
-      pickupTime,
+      pickupTime: finalPickupTime,
       date: new Date().toISOString()
     };
 
@@ -140,9 +158,21 @@ const CartPage: React.FC<CartPageProps> = ({
           { name, phone: customer.phone, email },
           cart,
           total,
-          pickupTime,
+          finalPickupTime,
           'counter'
         );
+
+        // --- NEW: Save to local storage for recommendations (Limit 5) ---
+        try {
+          const recentOrdersRaw = window.localStorage.getItem('rabuste_recent_orders');
+          const recentOrders = recentOrdersRaw ? JSON.parse(recentOrdersRaw) : [];
+          // Add new order to start, keep max 5
+          const updatedOrders = [order, ...recentOrders].slice(0, 5);
+          window.localStorage.setItem('rabuste_recent_orders', JSON.stringify(updatedOrders));
+        } catch (err) {
+          console.error('[Cart] Failed to save recent order to local storage', err);
+        }
+        // ---------------------------------------------------------------
 
         // Order saved successfully - now try to send email (non-blocking)
         try {
@@ -157,7 +187,7 @@ const CartPage: React.FC<CartPageProps> = ({
             order_id: order.id,
             message: itemsHTML,
             total_price: total.toFixed(0),
-            pickup_time: pickupTime,
+            pickup_time: finalPickupTime || 'Order from store',
           };
 
           console.log('[Cart] Sending EmailJS with params:', templateParams);
@@ -231,7 +261,7 @@ const CartPage: React.FC<CartPageProps> = ({
 
     try {
       // Create Razorpay order
-      const response = await fetch('http://localhost:5000/api/payments/create-order', {
+      const response = await fetch(`${API_BASE_URL}/api/payments/create-order`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -267,7 +297,7 @@ const CartPage: React.FC<CartPageProps> = ({
             console.log('[PAYMENT] Razorpay payment success, verifying...');
 
             // Verify payment
-            const verifyResponse = await fetch('http://localhost:5000/api/payments/verify-payment', {
+            const verifyResponse = await fetch(`${API_BASE_URL}/api/payments/verify-payment`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -286,6 +316,22 @@ const CartPage: React.FC<CartPageProps> = ({
             const verifyResult = await verifyResponse.json();
             console.log('[PAYMENT] Payment verified and order saved:', verifyResult);
 
+            // --- NEW: Save to local storage for recommendations (Limit 5) ---
+            try {
+              // Construct the order object that was saved (verifyResult might be the order, or we use orderData)
+              // Ideally verifyResult is the saved order. If not, we reconstruct it roughly for local preference tracking.
+              // Assuming verifyResult IS the saved order or contains it. If not, use orderData with ID.
+              const savedOrder = verifyResult.order || { ...orderData, id: verifyResult.id || orderData.id };
+
+              const recentOrdersRaw = window.localStorage.getItem('rabuste_recent_orders');
+              const recentOrders = recentOrdersRaw ? JSON.parse(recentOrdersRaw) : [];
+              const updatedOrders = [savedOrder, ...recentOrders].slice(0, 5);
+              window.localStorage.setItem('rabuste_recent_orders', JSON.stringify(updatedOrders));
+            } catch (err) {
+              console.error('[Cart] Failed to save update recent orders (UPI)', err);
+            }
+            // ---------------------------------------------------------------
+
             // Payment verified and order saved - now try to send email (non-blocking)
             try {
               const itemsHTML = generateEmailHTML(orderData.items);
@@ -298,7 +344,7 @@ const CartPage: React.FC<CartPageProps> = ({
                 order_id: orderData.id,
                 message: itemsHTML,
                 total_price: orderData.total.toFixed(0),
-                pickup_time: orderData.pickupTime,
+                pickup_time: orderData.pickupTime || 'Order from store',
               };
 
               console.log('[Payment] Sending EmailJS with params:', templateParams);
@@ -419,7 +465,9 @@ const CartPage: React.FC<CartPageProps> = ({
               </div>
 
               <div className="divide-y divide-black/10">
-                {cart.map((item) => (
+                {cart.map((item) => {
+                  if (!item.id || !item.name || item.price == null || item.quantity == null) return null;
+                  return (
                   <div key={item.id} className="py-4 flex items-center justify-between gap-4">
                     <div className="flex-1">
                       <p className="font-serif text-[15px]">{item.name}</p>
@@ -450,7 +498,7 @@ const CartPage: React.FC<CartPageProps> = ({
 
                       <div className="text-right">
                         <p className="text-sm font-semibold font-sans">
-                          ₹{(item.price * item.quantity).toFixed(0)}
+                          ₹{((item.price ?? 0) * (item.quantity ?? 0)).toFixed(0)}
                         </p>
                         <button
                           onClick={() => onRemove(item.id)}
@@ -462,7 +510,8 @@ const CartPage: React.FC<CartPageProps> = ({
                       </div>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 
@@ -504,66 +553,63 @@ const CartPage: React.FC<CartPageProps> = ({
       {/* Checkout Modal */}
       <AnimatePresence>
         {checkoutOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 md:p-6 overflow-y-auto">
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="w-full max-w-md mx-4 bg-white rounded-xl border border-black/10 shadow-xl p-6 md:p-8"
+              className="w-full max-w-2xl bg-white rounded-xl border border-black/10 shadow-xl p-6 md:p-10 my-auto"
             >
-              <h2 className="text-2xl font-serif mb-4">Checkout</h2>
-
-              {/* Payment Method Selection */}
-              <div className="mb-6">
-                <label className="block text-[11px] uppercase tracking-[0.25em] mb-3">Payment Method</label>
-                <div className="space-y-2">
-                  <label className="flex items-center gap-3 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="paymentMethod"
-                      value="counter"
-                      checked={paymentMethod === 'counter'}
-                      onChange={(e) => setPaymentMethod(e.target.value as 'counter' | 'upi')}
-                      className="w-4 h-4 text-[#0a0a0a] border-black/20 focus:ring-[#0a0a0a]"
-                    />
-                    <span className="text-sm">Pay at Counter</span>
-                  </label>
-                  <label className="flex items-center gap-3 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="paymentMethod"
-                      value="upi"
-                      checked={paymentMethod === 'upi'}
-                      onChange={(e) => setPaymentMethod(e.target.value as 'counter' | 'upi')}
-                      className="w-4 h-4 text-[#0a0a0a] border-black/20 focus:ring-[#0a0a0a]"
-                      disabled={!RAZORPAY_KEY_ID}
-                    />
-                    <span className="text-sm">
-                      Pay Online
-                      {!RAZORPAY_KEY_ID && <span className="text-xs text-zinc-400 ml-2">(Unavailable)</span>}
-                    </span>
-                  </label>
-                </div>
-                {paymentMethod === 'counter' && (
-                  <p className="text-xs text-zinc-500 font-sans mt-3">
-                    Reserve your order now. A receipt will be emailed to you. Please pay at the counter when ready.
-                  </p>
-                )}
-                {paymentMethod === 'upi' && (
-                  <p className="text-xs text-zinc-500 font-sans mt-3">
-                    Complete payment via Razorpay. Your order will be confirmed after successful payment.
-                  </p>
-                )}
+              <div className="flex items-center justify-between mb-6 md:mb-8">
+                <h2 className="text-2xl md:text-3xl font-serif">Checkout</h2>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCheckoutOpen(false);
+                    setError(null);
+                    setPaymentMethod('counter');
+                    setOrderType(null);
+                    setPickupTime('');
+                    setCustomer({ name: '', phone: '', email: '' });
+                  }}
+                  className="text-zinc-500 hover:text-black transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
               </div>
 
-              <form onSubmit={handleCheckoutSubmit} className="space-y-5 font-sans text-sm">
+              {/* Order Type Selection - Two side-by-side buttons */}
+              {!orderType && (
+                <div className="mb-6 md:mb-8">
+                  <div className="flex gap-0">
+                    <button
+                      type="button"
+                      onClick={() => setOrderType('order-from-store')}
+                      className="flex-1 py-5 md:py-6 px-4 md:px-6 bg-white border border-black/20 border-r-0 rounded-l-lg text-sm md:text-base font-sans hover:bg-black/5 active:bg-black/10 transition-colors duration-150"
+                    >
+                      Instant order
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setOrderType('grab-and-go')}
+                      className="flex-1 py-5 md:py-6 px-4 md:px-6 bg-white border border-black/20 rounded-r-lg text-sm md:text-base font-sans hover:bg-black/5 active:bg-black/10 transition-colors duration-150"
+                    >
+                      Grab-and-go
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Form Fields - Only show after order type is selected */}
+              {orderType && (
+                <form onSubmit={handleCheckoutSubmit} className="space-y-5 md:space-y-6 font-sans text-sm md:text-base">
                 <div>
                   <label className="block text-[11px] uppercase tracking-[0.25em] mb-1">Name</label>
                   <input
                     required
                     value={customer.name}
                     onChange={(e) => setCustomer((prev) => ({ ...prev, name: e.target.value }))}
-                    className="w-full bg-transparent border border-black/20 rounded-md px-3 py-2 outline-none focus:border-black"
+                    className="w-full bg-transparent border border-black/20 rounded-md px-3 md:px-4 py-2.5 md:py-3 outline-none focus:border-black text-sm md:text-base"
                   />
                 </div>
 
@@ -576,18 +622,7 @@ const CartPage: React.FC<CartPageProps> = ({
                     onChange={(e) => handlePhoneChange(e.target.value)}
                     placeholder="10-digit phone number"
                     maxLength={10}
-                    className="w-full bg-transparent border border-black/20 rounded-md px-3 py-2 outline-none focus:border-black"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[11px] uppercase tracking-[0.25em] mb-1">Pickup Time</label>
-                  <input
-                    required
-                    type="time"
-                    value={pickupTime}
-                    onChange={(e) => setPickupTime(e.target.value)}
-                    className="w-full bg-transparent border border-black/20 rounded-md px-3 py-2 outline-none focus:border-black"
+                    className="w-full bg-transparent border border-black/20 rounded-md px-3 md:px-4 py-2.5 md:py-3 outline-none focus:border-black text-sm md:text-base"
                   />
                 </div>
 
@@ -598,36 +633,69 @@ const CartPage: React.FC<CartPageProps> = ({
                     type="email"
                     value={customer.email}
                     onChange={(e) => setCustomer((prev) => ({ ...prev, email: e.target.value }))}
-                    className="w-full bg-transparent border border-black/20 rounded-md px-3 py-2 outline-none focus:border-black"
+                    className="w-full bg-transparent border border-black/20 rounded-md px-3 md:px-4 py-2.5 md:py-3 outline-none focus:border-black text-sm md:text-base"
                   />
+                </div>
+
+                {/* Pickup Time - Only show for grab-and-go orders */}
+                {orderType === 'grab-and-go' && (
+                  <div>
+                    <label className="block text-[11px] uppercase tracking-[0.25em] mb-1">Pickup Time</label>
+                    <input
+                      required
+                      type="time"
+                      value={pickupTime}
+                      onChange={(e) => setPickupTime(e.target.value)}
+                      className="w-full bg-transparent border border-black/20 rounded-md px-3 md:px-4 py-2.5 md:py-3 outline-none focus:border-black text-sm md:text-base"
+                    />
+                  </div>
+                )}
+
+                {/* Payment Method Dropdown */}
+                <div>
+                  <label className="block text-[11px] uppercase tracking-[0.25em] mb-1">Payment Method</label>
+                  <select
+                    value={paymentMethod}
+                    onChange={(e) => setPaymentMethod(e.target.value as 'counter' | 'upi')}
+                    className="w-full bg-transparent border border-black/20 rounded-md px-3 md:px-4 py-2.5 md:py-3 outline-none focus:border-black font-sans text-sm md:text-base"
+                    disabled={paymentMethod === 'upi' && !RAZORPAY_KEY_ID}
+                  >
+                    <option value="counter">Pay by cash</option>
+                    <option value="upi" disabled={!RAZORPAY_KEY_ID}>
+                      Pay Online{!RAZORPAY_KEY_ID && ' (Unavailable)'}
+                    </option>
+                  </select>
                 </div>
 
                 {error && <p className="text-xs text-red-600">{error}</p>}
 
-                <div className="flex justify-end gap-3 pt-4 text-[11px] uppercase tracking-[0.25em]">
+                <div className="flex justify-end gap-3 pt-4 md:pt-6 text-[11px] md:text-xs uppercase tracking-[0.25em]">
                   <button
                     type="button"
                     onClick={() => {
-                      setCheckoutOpen(false);
                       setError(null);
                       setPaymentMethod('counter');
+                      setOrderType(null);
+                      setPickupTime('');
+                      setCustomer({ name: '', phone: '', email: '' });
                     }}
                     disabled={submitting}
-                    className="px-4 py-2 text-zinc-500 hover:text-black"
+                    className="px-4 md:px-6 py-2.5 md:py-3 text-zinc-500 hover:text-black transition-colors"
                   >
-                    Cancel
+                    Back
                   </button>
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="px-6 py-2 bg-[#0a0a0a] text-[#F9F8F4] rounded-full hover:bg-black disabled:opacity-60"
+                    className="px-6 md:px-8 py-2.5 md:py-3 bg-[#0a0a0a] text-[#F9F8F4] rounded-full hover:bg-black disabled:opacity-60 transition-colors text-sm md:text-base"
                   >
                     {submitting
                       ? (paymentMethod === 'upi' ? 'Processing Payment...' : 'Placing Order...')
                       : (paymentMethod === 'upi' ? 'Pay Online' : 'Confirm Order')}
                   </button>
                 </div>
-              </form>
+                </form>
+              )}
             </motion.div>
           </div>
         )}
@@ -639,7 +707,7 @@ const CartPage: React.FC<CartPageProps> = ({
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="w-full max-w-md mx-4 bg-white rounded-xl border border-black/10 shadow-xl p-6 md:p-8 text-center"
+              className="w-full max-w-lg mx-4 bg-white rounded-xl border border-black/10 shadow-xl p-6 md:p-10 text-center"
             >
               <CheckCircle2 className="w-16 h-16 mx-auto mb-6 text-black" />
               <h2 className="text-2xl font-serif mb-3">Order Placed Successfully</h2>
@@ -652,6 +720,8 @@ const CartPage: React.FC<CartPageProps> = ({
                 onClick={() => {
                   setSuccessOpen(false);
                   setPaymentMethod('counter');
+                  setOrderType(null);
+                  setPickupTime('');
                   onBackToHome();
                 }}
                 className="px-8 py-3 bg-[#0a0a0a] text-[#F9F8F4] text-[10px] uppercase tracking-[0.3em] font-sans rounded-full hover:bg-black"
