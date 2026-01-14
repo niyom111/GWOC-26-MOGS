@@ -20,7 +20,10 @@ import {
   X,
   ChevronDown,
   Layers,
+  TrendingUp,
+  Menu,
 } from 'lucide-react';
+import SalesInsights from './SalesInsights';
 import {
   useDataContext,
   CoffeeAdminItem,
@@ -58,9 +61,35 @@ interface FranchiseFaqItem {
 }
 
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'coffee' | 'orders' | 'art' | 'workshops' | 'manage_categories' | 'franchise_enquiries' | 'franchise_faqs' | 'franchise_settings'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'coffee' | 'orders' | 'art' | 'workshops' | 'manage_categories' | 'franchise_enquiries' | 'franchise_faqs' | 'franchise_settings' | 'sales_trends'>('overview');
   const [isFranchiseOpen, setIsFranchiseOpen] = useState(false);
+  const [isInsightsOpen, setIsInsightsOpen] = useState(false);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // Scroll to top on mount - use useLayoutEffect to run before paint
+  useEffect(() => {
+    const scrollToTop = () => {
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+      // Also scroll any scrollable containers
+      const scrollableElements = document.querySelectorAll('[style*="overflow"]');
+      scrollableElements.forEach(el => {
+        if (el instanceof HTMLElement) {
+          el.scrollTop = 0;
+        }
+      });
+    };
+    
+    // Run immediately
+    scrollToTop();
+    
+    // Also run after a short delay to ensure DOM is ready
+    const timeout = setTimeout(scrollToTop, 100);
+    
+    return () => clearTimeout(timeout);
+  }, []);
 
   const tabs = [
     { id: 'overview' as const, label: 'Overview', icon: LayoutDashboard },
@@ -270,8 +299,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
   // Fetch categories and tags on mount
   useEffect(() => {
     Promise.all([
-      fetch('http://localhost:5000/api/categories').then(r => r.ok ? r.json() : []),
-      fetch('http://localhost:5000/api/tags').then(r => r.ok ? r.json() : [])
+      fetch(`${API_BASE_URL}/api/categories`).then(r => r.ok ? r.json() : []),
+      fetch(`${API_BASE_URL}/api/tags`).then(r => r.ok ? r.json() : [])
     ])
       .then(([cats, tags]) => {
         setCategories(cats || []);
@@ -287,7 +316,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
       return;
     }
     try {
-      const res = await fetch(`http://localhost:5000/api/sub-categories?category_id=${categoryId}`);
+      const res = await fetch(`${API_BASE_URL}/api/sub-categories?category_id=${categoryId}`);
       if (res.ok) {
         const data = await res.json();
         setSubCategories(data || []);
@@ -438,7 +467,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
 
     // Determine if food based on category name
     const categoryName = item.category_name || item.category || '';
-    const isFoodCategory = categoryName.toUpperCase().includes('FOOD');
+    const isFoodCategory = (categoryName ?? '').trim().toUpperCase().includes('FOOD');
     setItemKind(isFoodCategory ? 'food' : 'beverage');
     setCoffeeDraft(item);
 
@@ -451,7 +480,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
 
     // Load tags for this item
     try {
-      const res = await fetch(`http://localhost:5000/api/menu/${item.id}/tags`);
+      const res = await fetch(`${API_BASE_URL}/api/menu/${item.id}/tags`);
       if (res.ok) {
         const tags = await res.json();
         setSelectedTags(tags || []);
@@ -511,7 +540,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
   const saveCoffeeItem = async () => {
     if (!coffeeDraft.name || coffeeDraft.price == null) return;
 
-    const draftName = (coffeeDraft.name as string).trim();
+    const draftName = (coffeeDraft.name ?? '').trim();
     if (!draftName) return;
 
     let categoryId = coffeeDraft.category_id;
@@ -519,15 +548,16 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
 
     // Handle creating new category
     if (coffeeDraft.category_id === '__NEW__') {
-      if (!newCategoryName.trim()) {
+      const trimmedNewCategory = (newCategoryName ?? '').trim();
+      if (!trimmedNewCategory) {
         showToast('Please enter a name for the new category', 'error');
         return;
       }
       try {
-        const res = await fetch('http://localhost:5000/api/categories', {
+        const res = await fetch(`${API_BASE_URL}/api/categories`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: newCategoryName.trim() })
+          body: JSON.stringify({ name: trimmedNewCategory })
         });
         if (res.ok || res.status === 201) {
           const newCat = await res.json();
@@ -546,7 +576,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
 
     // Handle creating new sub-category
     if (coffeeDraft.sub_category_id === '__NEW__') {
-      if (!newSubCategoryName.trim()) {
+      const trimmedNewSubCategory = (newSubCategoryName ?? '').trim();
+      if (!trimmedNewSubCategory) {
         showToast('Please enter a name for the new sub-category', 'error');
         return;
       }
@@ -557,10 +588,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
       }
 
       try {
-        const res = await fetch('http://localhost:5000/api/sub-categories', {
+        const res = await fetch(`${API_BASE_URL}/api/sub-categories`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ category_id: categoryId, name: newSubCategoryName.trim() })
+          body: JSON.stringify({ category_id: categoryId, name: trimmedNewSubCategory })
         });
         if (res.ok || res.status === 201) {
           const newSubCat = await res.json();
@@ -670,21 +701,60 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
     setEnquiries(prev => prev.filter(e => e.id !== id));
   };
 
-  const activeTabLabel = tabs.find(t => t.id === activeTab)?.label;
+  const activeTabLabel = useMemo(() => {
+    const allItems = [
+      ...tabs,
+      { id: 'franchise_enquiries', label: 'Franchise Enquiries' },
+      { id: 'franchise_faqs', label: 'Franchise FAQs' },
+      { id: 'franchise_settings', label: 'Franchise Settings' },
+      { id: 'sales_trends', label: 'Sales Trends' }
+    ];
+    return allItems.find(t => t.id === activeTab)?.label || 'Dashboard';
+  }, [activeTab]);
 
   // Classification helpers for beverages vs food based on category naming
-  const foodItems = menuItems.filter(item => item.category.trim().toUpperCase().includes('FOOD'));
-  const beverageItems = menuItems.filter(item => !item.category.trim().toUpperCase().includes('FOOD'));
+  const foodItems = menuItems.filter(item => (item.category ?? '').trim().toUpperCase().includes('FOOD'));
+  const beverageItems = menuItems.filter(item => !(item.category ?? '').trim().toUpperCase().includes('FOOD'));
   const beverageCount = beverageItems.length;
   const foodCount = foodItems.length;
   const enquiryCount = enquiries.length;
 
   return (
-    <div className="flex h-screen bg-[#F9F8F4] pt-10 text-[#0a0a0a]">
-      {/* Sidebar */}
-      <aside className="w-64 border-r border-black/5 px-6 pt-10 pb-6 flex flex-col bg-white/80">
-        <div className="mb-6 text-[#0a0a0a]">
-          <p className="text-3xl font-serif font-bold text-black">Admin Panel</p>
+    <div className="flex min-h-screen md:h-screen bg-[#F9F8F4] pt-0 md:pt-10 text-[#0a0a0a] relative" style={{ minHeight: '100vh' }}>
+      {/* Mobile Hamburger Button - Only show when menu is closed */}
+      {!isMobileMenuOpen && (
+        <button
+          onClick={() => setIsMobileMenuOpen(true)}
+          className="md:hidden fixed top-4 left-4 z-50 p-2 bg-white/90 border border-black/10 rounded-lg shadow-sm hover:bg-white transition-colors"
+          aria-label="Open menu"
+        >
+          <Menu className="w-5 h-5 text-[#0a0a0a]" />
+        </button>
+      )}
+
+      {/* Mobile Overlay */}
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="md:hidden fixed inset-0 z-40 bg-black/60"
+            onClick={() => setIsMobileMenuOpen(false)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Sidebar - Desktop visible, Mobile as drawer */}
+      <motion.aside
+        initial={false}
+        animate={{ x: isMobileMenuOpen ? 0 : '-100%' }}
+        transition={{ duration: 0.3, ease: 'easeOut' }}
+        className="fixed md:relative w-64 h-full border-r border-black/5 px-6 pt-2 md:pt-10 pb-4 md:pb-6 flex flex-col bg-white z-40 md:z-auto md:translate-x-0 md:!translate-x-0 top-0 overflow-y-auto"
+      >
+        <div className="mb-4 md:mb-6 text-[#0a0a0a] mt-12 md:mt-0">
+          <p className="text-2xl md:text-3xl font-serif font-bold text-black">Admin Panel</p>
         </div>
 
         <nav className="flex-1 space-y-1 text-sm font-sans uppercase tracking-[0.18em]">
@@ -698,7 +768,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
           ].map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
+              onClick={() => {
+                setActiveTab(tab.id as any);
+                setIsMobileMenuOpen(false);
+              }}
               className={`w-full flex items-center space-x-3 px-3 py-2 text-left transition-all border-l-2 ${activeTab === tab.id
                 ? 'border-black font-semibold text-[#0a0a0a]'
                 : 'border-transparent text-zinc-500 hover:text-[#0a0a0a] hover:border-black/10'
@@ -708,6 +781,48 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
               <span>{tab.label}</span>
             </button>
           ))}
+
+          {/* Insights Section */}
+          <div className="pt-2">
+            <button
+              onClick={() => setIsInsightsOpen(!isInsightsOpen)}
+              className={`w-full flex items-center justify-between px-3 py-2 text-left transition-all border-l-2 ${['sales_trends'].includes(activeTab)
+                ? 'border-black text-[#0a0a0a]'
+                : 'border-transparent text-zinc-500 hover:text-[#0a0a0a] hover:border-black/10'
+                }`}
+            >
+              <div className="flex items-center space-x-3">
+                <TrendingUp className="w-4 h-4" />
+                <span>Insights</span>
+              </div>
+              <ChevronDown
+                className={`w-4 h-4 transition-transform duration-200 ${isInsightsOpen ? 'rotate-180' : ''}`}
+              />
+            </button>
+            <AnimatePresence>
+              {isInsightsOpen && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  className="overflow-hidden"
+                >
+                  <button
+                    onClick={() => {
+                      setActiveTab('sales_trends');
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className={`w-full flex items-center space-x-3 px-3 py-2 pl-10 text-left transition-all ${activeTab === 'sales_trends'
+                      ? 'text-[#0a0a0a] font-semibold'
+                      : 'text-zinc-500 hover:text-[#0a0a0a]'
+                      }`}
+                  >
+                    <span className="text-[10px] tracking-[0.25em]">Sales Trends</span>
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
 
           {/* Franchise Section */}
           <div className="pt-2">
@@ -742,7 +857,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
                   ].map((sub) => (
                     <button
                       key={sub.id}
-                      onClick={() => setActiveTab(sub.id as any)}
+                      onClick={() => {
+                        setActiveTab(sub.id as any);
+                        setIsMobileMenuOpen(false);
+                      }}
                       className={`w-full flex items-center space-x-3 px-3 py-2 pl-10 text-left transition-all ${activeTab === sub.id
                         ? 'text-[#0a0a0a] font-semibold'
                         : 'text-zinc-500 hover:text-[#0a0a0a]'
@@ -758,31 +876,41 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
           </div>
         </nav>
 
+        {/* Mobile Close Button */}
+        <button
+          onClick={() => setIsMobileMenuOpen(false)}
+          className="md:hidden absolute top-4 right-4 p-2 hover:bg-black/5 rounded-lg transition-colors"
+          aria-label="Close menu"
+        >
+          <X className="w-5 h-5 text-[#0a0a0a]" />
+        </button>
+
         {/* Rabuste logo near bottom, above Exit button */}
-        <div className="mt-auto mb-12 px-3 flex items-center justify-center">
+        <div className="mt-auto mb-4 md:mb-12 px-3 flex items-center justify-center">
           <img
             src="/media/logo.png"
             alt="Rabuste Coffee Logo"
-            className="h-24 w-auto object-contain mx-auto brightness-0"
+            className="h-16 md:h-24 w-auto object-contain mx-auto brightness-0"
           />
         </div>
 
         <button
           onClick={() => {
+            setIsMobileMenuOpen(false);
             onLogout();
             onBack();
           }}
-          className="flex items-center space-x-2 px-3 py-2 text-[11px] uppercase tracking-[0.18em] text-zinc-500 hover:text-red-500 transition-all"
+          className="flex items-center space-x-2 px-3 py-2 text-[11px] uppercase tracking-[0.18em] text-zinc-500 hover:text-red-500 transition-all mb-4 md:mb-0"
         >
           <LogOut className="w-4 h-4" />
           <span>Exit Dashboard</span>
         </button>
-      </aside>
+      </motion.aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto p-10">
-        <div className="flex items-end justify-between mb-6">
-          <div>
+      <main className="flex-1 p-4 md:p-10 w-full md:w-auto overflow-visible md:overflow-y-auto md:h-full">
+        <div className="flex flex-col md:flex-row items-center md:items-end justify-center md:justify-between mb-6">
+          <div className="text-center md:text-left">
             <h1 className="text-4xl md:text-5xl font-serif italic tracking-tight mb-3">
               {activeTabLabel}
             </h1>
@@ -791,35 +919,37 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
             </p>
           </div>
 
-          {activeTab === 'coffee' && (
-            <button
-              onClick={openCoffeeModalForNew}
-              className="inline-flex items-center space-x-2 px-6 py-3 bg-[#0a0a0a] text-[#F9F8F4] text-[11px] uppercase tracking-[0.3em] font-bold hover:bg-black transition-all"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Add New Item</span>
-            </button>
-          )}
+          <div className="mt-4 md:mt-0">
+            {activeTab === 'coffee' && (
+              <button
+                onClick={openCoffeeModalForNew}
+                className="inline-flex items-center space-x-2 px-6 py-3 bg-[#0a0a0a] text-[#F9F8F4] text-[11px] uppercase tracking-[0.3em] font-bold hover:bg-black transition-all"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Add New Item</span>
+              </button>
+            )}
 
-          {activeTab === 'art' && (
-            <button
-              onClick={openArtModalForNew}
-              className="inline-flex items-center space-x-2 px-6 py-3 bg-[#0a0a0a] text-[#F9F8F4] text-[11px] uppercase tracking-[0.3em] font-bold hover:bg-black transition-all"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Upload Art</span>
-            </button>
-          )}
+            {activeTab === 'art' && (
+              <button
+                onClick={openArtModalForNew}
+                className="inline-flex items-center space-x-2 px-6 py-3 bg-[#0a0a0a] text-[#F9F8F4] text-[11px] uppercase tracking-[0.3em] font-bold hover:bg-black transition-all"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Upload Art</span>
+              </button>
+            )}
 
-          {activeTab === 'workshops' && (
-            <button
-              onClick={createWorkshop}
-              className="inline-flex items-center space-x-2 px-6 py-3 bg-[#0a0a0a] text-[#F9F8F4] text-[11px] uppercase tracking-[0.3em] font-bold hover:bg-black transition-all"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Create Workshop</span>
-            </button>
-          )}
+            {activeTab === 'workshops' && (
+              <button
+                onClick={createWorkshop}
+                className="inline-flex items-center space-x-2 px-6 py-3 bg-[#0a0a0a] text-[#F9F8F4] text-[11px] uppercase tracking-[0.3em] font-bold hover:bg-black transition-all"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Create Workshop</span>
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Tab content */}
@@ -832,6 +962,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
             <OverviewCard label="Franchise Leads" value={enquiryCount} />
           </div>
         )}
+
+        {activeTab === 'sales_trends' && <SalesInsights />}
 
         {activeTab === 'coffee' && (
           <CoffeeTable
@@ -1177,17 +1309,18 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
                         </button>
                       ))}
 
-                    {tagSearchQuery.trim() && !allTags.some(t =>
-                      t.name.toLowerCase() === tagSearchQuery.trim().toLowerCase()
+                    {(tagSearchQuery ?? '').trim() && !allTags.some(t =>
+                      t.name.toLowerCase() === (tagSearchQuery ?? '').trim().toLowerCase()
                     ) && (
                         <button
                           type="button"
                           onClick={async () => {
                             try {
-                              const res = await fetch('http://localhost:5000/api/tags', {
+                              const trimmedTag = (tagSearchQuery ?? '').trim();
+                              const res = await fetch(`${API_BASE_URL}/api/tags`, {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ name: tagSearchQuery.trim() })
+                                body: JSON.stringify({ name: trimmedTag })
                               });
                               if (res.ok) {
                                 const newTag = await res.json();
@@ -1202,7 +1335,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
                           }}
                           className="w-full text-left px-4 py-2.5 text-[13px] text-blue-600 hover:bg-blue-50 transition-colors border-t border-black/5"
                         >
-                          + Create "{tagSearchQuery.trim()}"
+                          + Create "{(tagSearchQuery ?? '').trim()}"
                         </button>
                       )}
 
@@ -1484,7 +1617,7 @@ const OrdersTable: React.FC<{ items: Order[] }> = ({ items }) => (
             <td className="px-6 py-4 text-xs font-sans uppercase tracking-[0.1em] text-zinc-600">
               {order.payment_method?.includes('Counter') ? 'Counter' : (order.payment_method?.includes('Online') ? 'Online' : order.payment_method || 'Counter')}
             </td>
-            <td className="px-6 py-4 text-sm text-zinc-700">{order.pickupTime}</td>
+            <td className="px-6 py-4 text-sm text-zinc-700">{order.pickupTime || 'Order from store'}</td>
             <td className="px-6 py-4 text-xs text-zinc-500">
               {order.date}
             </td>

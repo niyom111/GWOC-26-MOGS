@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Rabuste Café | Bold. Intentional. Robusta.</title>
   <link rel="icon" type="image/png" href="/media/orange-logo.png" />
   <script src="https://cdn.tailwindcss.com"></script>
@@ -58,12 +58,37 @@
       /* Firefox */
       -ms-overflow-style: none;
       /* IE and Edge */
+      scroll-behavior: smooth;
+      -webkit-overflow-scrolling: touch;
     }
 
     body {
       background-color: var(--cream);
       color: var(--charcoal);
       overflow-x: hidden;
+      scroll-behavior: smooth;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    /* Smooth scrolling for mobile */
+    @media (max-width: 768px) {
+      * {
+        -webkit-overflow-scrolling: touch;
+      }
+      
+      /* Smooth scrolling with momentum on iOS */
+      html, body {
+        -webkit-overflow-scrolling: touch;
+        scroll-behavior: auto;
+        overflow-x: hidden;
+      }
+      
+      /* Ensure admin dashboard can scroll naturally on mobile */
+      body {
+        position: relative;
+        height: auto;
+        min-height: 100vh;
+      }
     }
 
     .text-balance {

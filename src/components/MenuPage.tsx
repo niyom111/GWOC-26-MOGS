@@ -266,10 +266,172 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
     fetchTrending();
   }, []);
 
+  // --- RECOMMENDATION ENGINE ---
+  const [recommendedItems, setRecommendedItems] = useState<CoffeeItem[]>([]);
+
+  useEffect(() => {
+    if (!menuItems || menuItems.length === 0) return;
+
+    try {
+      const rawOrders = window.localStorage.getItem('rabuste_recent_orders');
+      if (!rawOrders) return;
+
+      const recentOrders = JSON.parse(rawOrders);
+      // Constraint: user must have at least 3 items/orders history to get recommendations
+      // The prompt said "3 or more orders".
+      if (!Array.isArray(recentOrders) || recentOrders.length < 3) {
+        setRecommendedItems([]);
+        return;
+      }
+
+      // 1. Flatten all purchased line items
+      const purchasedItems = recentOrders.flatMap((o: any) => o.items || []);
+      if (purchasedItems.length === 0) return;
+
+      // 2. Analyze preferences
+      const categoryCounts: Record<string, number> = {};
+      const subCategoryCounts: Record<string, number> = {};
+      const tagCounts: Record<string, number> = {};
+      const purchasedIds = new Set(purchasedItems.map((i: any) => i.id));
+
+      purchasedItems.forEach((pItem: any) => {
+        // Match with full menu item to get rich data
+        const fullItem = menuItems.find(m => m.id === pItem.id);
+        if (fullItem) {
+          // Count Category (Legacy or ID based)
+          const cat = fullItem.category_name || fullItem.category || 'Unknown';
+          categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
+
+          // Count SubCategory/Group
+          // In legacy data, 'notes' in cart often held the group, or we parse from category string
+          const subCat = fullItem.sub_category_name || (fullItem.category ? fullItem.category.split('(')[0].trim() : 'Unknown');
+          subCategoryCounts[subCat] = (subCategoryCounts[subCat] || 0) + 1;
+
+          // Count Tags
+          // Support both array of objects or legacy string
+          if (Array.isArray(fullItem.tags)) {
+            fullItem.tags.forEach(t => {
+              tagCounts[t.name] = (tagCounts[t.name] || 0) + 1;
+            });
+          } else if (typeof fullItem.tags_legacy === 'string') {
+            fullItem.tags_legacy.split(',').forEach(t => {
+              const tag = t.trim();
+              if (tag) tagCounts[tag] = (tagCounts[tag] || 0) + 1;
+            });
+          }
+        }
+      });
+
+      // Find top preferences
+      const topSubCategory = Object.keys(subCategoryCounts).sort((a, b) => subCategoryCounts[b] - subCategoryCounts[a])[0];
+      const topTags = Object.keys(tagCounts).sort((a, b) => tagCounts[b] - tagCounts[a]);
+      const topTag = topTags.length > 0 ? topTags[0] : null;
+
+      const recommendations: CoffeeItem[] = [];
+      const addedIds = new Set<string>();
+
+      // Rule 1: Familiar Favorite (Same SubCategory/Group, but different item if possible)
+      // Filter menu items by top subcategory
+      const sameGroupItems = menuItems.filter(m => {
+        const mSub = m.sub_category_name || (m.category ? m.category.split('(')[0].trim() : '');
+        return mSub === topSubCategory && !purchasedIds.has(m.id);
+      });
+
+      if (sameGroupItems.length > 0) {
+        // Pick random
+        const pick = sameGroupItems[Math.floor(Math.random() * sameGroupItems.length)];
+        recommendations.push(toCoffeeItem(pick));
+        addedIds.add(pick.id);
+      } else {
+        // If they bought everything in that group, maybe suggest one re-order? 
+        // Or pick from 2nd top category. Let's pick a high rated item from same group even if bought.
+        const sameGroupAll = menuItems.filter(m => {
+          const mSub = m.sub_category_name || (m.category ? m.category.split('(')[0].trim() : '');
+          return mSub === topSubCategory;
+        });
+        if (sameGroupAll.length > 0) {
+          const pick = sameGroupAll[Math.floor(Math.random() * sameGroupAll.length)];
+          if (!addedIds.has(pick.id)) {
+            recommendations.push(toCoffeeItem(pick));
+            addedIds.add(pick.id);
+          }
+        }
+      }
+
+      // Rule 2: Tag Match (Similar profile)
+      if (topTag) {
+        const tagMatchItems = menuItems.filter(m => {
+          if (addedIds.has(m.id)) return false;
+          let hasTag = false;
+          if (Array.isArray(m.tags)) hasTag = m.tags.some(t => t.name === topTag);
+          else if (typeof m.tags_legacy === 'string') hasTag = m.tags_legacy.includes(topTag);
+          return hasTag;
+        });
+
+        if (tagMatchItems.length > 0) {
+          const pick = tagMatchItems[Math.floor(Math.random() * tagMatchItems.length)];
+          recommendations.push(toCoffeeItem(pick));
+          addedIds.add(pick.id);
+        }
+      }
+
+      // Rule 3: Variety / Wildcard (Different Category Group)
+      // Pick something from a category NOT in their top 2 purchased categories
+      const top2SubCats = Object.keys(subCategoryCounts).sort((a, b) => subCategoryCounts[b] - subCategoryCounts[a]).slice(0, 2);
+      const varietyItems = menuItems.filter(m => {
+        if (addedIds.has(m.id)) return false;
+        const mSub = m.sub_category_name || (m.category ? m.category.split('(')[0].trim() : '');
+        return !top2SubCats.includes(mSub);
+      });
+
+      if (varietyItems.length > 0) {
+        const pick = varietyItems[Math.floor(Math.random() * varietyItems.length)];
+        recommendations.push(toCoffeeItem(pick));
+        addedIds.add(pick.id);
+      }
+
+      // Fill up if we don't have 3 recommendations yet
+      if (recommendations.length < 3) {
+        const remaining = menuItems.filter(m => !addedIds.has(m.id));
+        while (recommendations.length < 3 && remaining.length > 0) {
+          const idx = Math.floor(Math.random() * remaining.length);
+          const pick = remaining[idx];
+          recommendations.push(toCoffeeItem(pick));
+          addedIds.add(pick.id);
+          remaining.splice(idx, 1);
+        }
+      }
+
+      setRecommendedItems(recommendations.slice(0, 3));
+
+    } catch (err) {
+      console.error('Error generating recommendations:', err);
+    }
+  }, [menuItems]);
+
+  // Helper to convert Admin item to UI CoffeeItem
+  const toCoffeeItem = (item: any): CoffeeItem => {
+    const group = item.sub_category_name || (item.category ? item.category.split('(')[0].trim() : 'Specialty');
+    return {
+      id: item.id,
+      name: item.name,
+      notes: group,
+      caffeine: item.caffeine || 'Medium',
+      intensity: 4, // Default or derived
+      image: item.image || '/media/menu-placeholder.jpg',
+      price: item.price,
+      description: item.description || item.name
+    };
+  };
+  // -----------------------------
+
   // Set initial active category once we have data
   useEffect(() => {
     if (!activeCategoryId && menuItems.length) {
-      const firstCategory = menuItems[0].category.trim().toUpperCase();
+      const firstItem = menuItems[0];
+      if (!firstItem?.category) return;
+      const firstCategory = (firstItem.category ?? '').trim().toUpperCase();
+      if (!firstCategory) return; // Skip if empty after trimming
       const id = firstCategory
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, '-')
@@ -310,19 +472,112 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
     }, 1500);
   };
 
+  // Fuzzy search helper - checks if query is similar to text (handles typos)
+  const fuzzyMatch = (text: string, query: string): boolean => {
+    const textLower = text.toLowerCase();
+    const queryLower = query.toLowerCase();
+    
+    // Exact substring match (highest priority)
+    if (textLower.includes(queryLower)) return true;
+    
+    // If query is too short, only do exact match
+    if (queryLower.length < 3) return false;
+    
+    // Normalize: remove special characters and spaces
+    const normalizedText = textLower.replace(/[^a-z0-9]/g, '');
+    const normalizedQuery = queryLower.replace(/[^a-z0-9]/g, '');
+    
+    // Check if normalized query is a substring of normalized text
+    if (normalizedText.includes(normalizedQuery)) return true;
+    
+    // Only do fuzzy matching for queries 4+ characters to avoid false matches
+    if (normalizedQuery.length < 4) return false;
+    
+    // Split into words for word-by-word matching (prevents "tea" matching "coffee")
+    const textWords = textLower.split(/[\s\-_]+/).filter(w => w.length > 0);
+    const queryWords = queryLower.split(/[\s\-_]+/).filter(w => w.length > 0);
+    
+    // Check if any query word matches any text word
+    for (const queryWord of queryWords) {
+      if (queryWord.length < 3) continue; // Skip very short words
+      
+      for (const textWord of textWords) {
+        // Exact match in word
+        if (textWord.includes(queryWord)) return true;
+        
+        // Only do fuzzy matching if words are similar length (within 2 chars)
+        if (Math.abs(textWord.length - queryWord.length) > 2) continue;
+        
+        // Check if words share the same first 2-3 characters (prefix match)
+        // This prevents "tea" from matching "coffee" (different prefixes)
+        const minPrefix = Math.min(3, Math.min(textWord.length, queryWord.length));
+        if (textWord.substring(0, minPrefix) !== queryWord.substring(0, minPrefix)) {
+          continue; // Different words, skip fuzzy matching
+        }
+        
+        // For words that share a prefix, allow common typos
+        const normalizedTextWord = textWord.replace(/[^a-z0-9]/g, '');
+        const normalizedQueryWord = queryWord.replace(/[^a-z0-9]/g, '');
+        
+        // Common character swaps only for similar words
+        const commonSwaps: [string, string][] = [
+          ['ee', 'e'], ['e', 'ee'], // coffee/cofee
+          ['a', 'e'], ['e', 'a'], // bagel/begel
+        ];
+        
+        for (const [from, to] of commonSwaps) {
+          const swappedQuery = normalizedQueryWord.replace(new RegExp(from, 'g'), to);
+          if (normalizedTextWord.includes(swappedQuery) || swappedQuery.includes(normalizedTextWord)) {
+            return true;
+          }
+        }
+        
+        // For longer words (5+ chars), allow 1 character difference if they're very similar
+        if (normalizedQueryWord.length >= 5 && normalizedTextWord.length >= 5) {
+          // Count matching characters in order
+          let matchingChars = 0;
+          let textIndex = 0;
+          for (let i = 0; i < normalizedQueryWord.length && textIndex < normalizedTextWord.length; i++) {
+            if (normalizedTextWord[textIndex] === normalizedQueryWord[i]) {
+              matchingChars++;
+              textIndex++;
+            } else if (textIndex + 1 < normalizedTextWord.length && 
+                       normalizedTextWord[textIndex + 1] === normalizedQueryWord[i]) {
+              // Allow skipping one character
+              textIndex += 2;
+              matchingChars++;
+            }
+          }
+          // Only match if at least 80% of query characters match (very strict)
+          const matchRatio = matchingChars / normalizedQueryWord.length;
+          if (matchRatio >= 0.8) return true;
+        }
+      }
+    }
+    
+    return false;
+  };
+
   const filteredCategories = useMemo(() => {
-    const query = search.trim().toLowerCase();
+    const query = (search || '').trim().toLowerCase();
 
     // Build categories from live menu items (deduped by trimmed, uppercased category)
     const categoryMap = new Map<string, MenuCategory>();
 
     menuItems.forEach(item => {
-      const canonicalCategory = item.category.trim().toUpperCase();
+      // Skip items without required fields
+      if (!item.category || !item.name || item.price == null || !item.id) return;
+      
+      // Use safe defaults to ensure trim() is always called on a string
+      const categoryStr = (item.category ?? '').trim();
+      if (!categoryStr) return; // Skip if category is empty after trimming
+      
+      const canonicalCategory = categoryStr.toUpperCase();
       const id = canonicalCategory
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/(^-|-$)/g, '');
-      const group = canonicalCategory.split('(')[0].trim();
+      const group = (canonicalCategory.split('(')[0] ?? '').trim();
 
       if (!categoryMap.has(canonicalCategory)) {
         categoryMap.set(canonicalCategory, {
@@ -333,7 +588,29 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
         });
       }
 
-      if (!query || item.name.toLowerCase().includes(query)) {
+      // If no search query, include all items
+      if (!query) {
+        categoryMap.get(canonicalCategory)!.items.push({
+          id: item.id,
+          name: item.name,
+          price: item.price,
+        });
+        return;
+      }
+
+      // Search in multiple fields:
+      // 1. Item name
+      const nameStr = (item.name ?? '').toLowerCase();
+      const nameMatches = fuzzyMatch(nameStr, query);
+      
+      // 2. Category name (so "coffee" finds items even if it's just a category heading)
+      const categoryMatches = fuzzyMatch(categoryStr.toLowerCase(), query);
+      
+      // 3. Group name (e.g., "Robusta Specialty", "Blend")
+      const groupMatches = fuzzyMatch(group.toLowerCase(), query);
+      
+      // Include item if any field matches
+      if (nameMatches || categoryMatches || groupMatches) {
         categoryMap.get(canonicalCategory)!.items.push({
           id: item.id,
           name: item.name,
@@ -517,6 +794,58 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
 
           {/* Sections list */}
           <div className="space-y-10">
+            {/* Recommended Section (Personalized) */}
+            {recommendedItems.length > 0 && (
+              <section id="recommended-for-you" className="scroll-mt-28 mb-10">
+                <div className="mb-4">
+                  <p className="text-[10px] uppercase tracking-[0.4em] text-zinc-500 font-sans mb-1">
+                    picked for you
+                  </p>
+                  <h2 className="text-3xl md:text-4xl font-serif italic tracking-tight text-[#0a0a0a]">
+                    Recommended
+                  </h2>
+                </div>
+                <div>
+                  {recommendedItems.map(item => (
+                    <div
+                      key={`rec-${item.id}`}
+                      className="flex items-center justify-between gap-4 py-3 border-b border-black/10 hover:bg-black/5 transition-all duration-200"
+                    >
+                      <div className="flex-1">
+                        <span className="font-medium text-[15px] font-serif">
+                          {item.name}
+                        </span>
+                        <p className="text-[11px] text-zinc-500 mt-0.5 font-sans">
+                          {item.notes} • Based on your taste
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-4">
+                        <span className="text-sm font-semibold font-sans">
+                          ₹{item.price}
+                        </span>
+                        <button
+                          onClick={() => {
+                            onAddToCart(item);
+                            setToastMessage(`${item.name} added to cart`);
+                            if (toastTimeoutRef.current) {
+                              window.clearTimeout(toastTimeoutRef.current);
+                            }
+                            toastTimeoutRef.current = window.setTimeout(() => {
+                              setToastMessage(null);
+                            }, 1500);
+                          }}
+                          className="px-4 py-2 text-[10px] uppercase tracking-[0.3em] font-sans border border-black/40 rounded-full hover:bg-[#0a0a0a] hover:text-[#F9F8F4] transition-colors"
+                        >
+                          Add to Cart
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
             {/* Trending Now Section */}
             {trendingItems.length >= 3 && (
               <section
@@ -532,8 +861,11 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
                 <div>
                   {trendingItems.map(item => {
                     // Find the category group for this item
-                    const canonicalCategory = item.category.trim().toUpperCase();
-                    const group = canonicalCategory.split('(')[0].trim();
+                    if (!item.category || !item.name || !item.id || item.price == null) return null; // Skip items without required fields
+                    const categoryStr = (item.category ?? '').trim();
+                    if (!categoryStr) return null; // Skip if category is empty after trimming
+                    const canonicalCategory = categoryStr.toUpperCase();
+                    const group = (canonicalCategory.split('(')[0] ?? '').trim();
 
                     const cartItem: CoffeeItem = {
                       id: item.id,

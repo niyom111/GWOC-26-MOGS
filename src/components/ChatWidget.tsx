@@ -51,7 +51,7 @@ export default function ChatWidget() {
   };
 
   const handleSend = async () => {
-    if (!input.trim()) return;
+    if (!(input ?? '').trim()) return;
 
     const userMessage = input;
     setMessages(prev => [...prev, { text: userMessage, isUser: true }]);
@@ -218,7 +218,7 @@ export default function ChatWidget() {
               />
               <button
                 onClick={handleSend}
-                disabled={isLoading || !input.trim()}
+                disabled={isLoading || !(input ?? '').trim()}
                 className={`rounded-xl disabled:opacity-50 transition-all hover:brightness-110 shadow-sm ${isMobile ? 'p-3' : 'p-3.5'}`}
                 style={{ backgroundColor: '#A35D36', color: '#F9F8F4' }}
               >

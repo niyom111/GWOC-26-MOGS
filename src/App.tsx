@@ -272,10 +272,10 @@ const App: React.FC = () => {
           </motion.div>
         </AnimatePresence>
 
-        {currentPage !== Page.ADMIN && <Footer onNavigate={navigateTo} />}
+        {currentPage !== Page.ADMIN && currentPage !== Page.EMPLOYEE && <Footer onNavigate={navigateTo} />}
 
         {/* --- ADDED CHAT WIDGET HERE --- */}
-        <ChatWidget />
+        {currentPage !== Page.EMPLOYEE && <ChatWidget />}
       </div >
     </DataProvider >
   );

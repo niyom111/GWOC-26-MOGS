@@ -303,10 +303,22 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           fetch(`${API_BASE_URL}/api/orders`)
         ]);
 
-        if (menuRes.ok) setMenuItems(await menuRes.json());
-        if (artRes.ok) setArtItems(await artRes.json());
-        if (workshopRes.ok) setWorkshops(await workshopRes.json());
-        if (orderRes.ok) setOrders(await orderRes.json());
+        if (menuRes.ok) {
+          const menuData = await menuRes.json();
+          setMenuItems(Array.isArray(menuData) ? menuData : []);
+        }
+        if (artRes.ok) {
+          const artData = await artRes.json();
+          setArtItems(Array.isArray(artData) ? artData : []);
+        }
+        if (workshopRes.ok) {
+          const workshopData = await workshopRes.json();
+          setWorkshops(Array.isArray(workshopData) ? workshopData : []);
+        }
+        if (orderRes.ok) {
+          const orderData = await orderRes.json();
+          setOrders(Array.isArray(orderData) ? orderData : []);
+        }
       } catch (err) {
         console.error("Failed to fetch data:", err);
       }

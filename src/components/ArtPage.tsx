@@ -29,19 +29,21 @@ const ArtPage: React.FC<ArtPageProps> = ({ onAddToCart }) => {
   const handleAddToCart = (art: ArtAdminItem) => {
     // Treat Art as a CoffeeItem for the cart (shared structure)
     // Note: In a real app, we might distinguish types more clearly
+    if (!art.id || !art.title || art.price == null) return; // Skip invalid items
+    
     const artistName = art.artist_name || art.artist || 'Unknown Artist';
     onAddToCart({
       id: art.id,
-      name: art.title,
+      name: art.title || 'Untitled Art',
       notes: artistName,
       caffeine: 'N/A',
       intensity: 0,
-      image: art.image,
-      price: art.price,
+      image: art.image || '',
+      price: art.price || 0,
       description: `Art piece by ${artistName}`
     });
 
-    setToastMessage(`${art.title} added to collection`);
+    setToastMessage(`${art.title || 'Art'} added to collection`);
 
     if (toastTimeoutRef.current) {
       window.clearTimeout(toastTimeoutRef.current);
