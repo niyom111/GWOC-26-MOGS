@@ -696,7 +696,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
   const enquiryCount = enquiries.length;
 
   return (
-    <div className="flex h-screen bg-[#F9F8F4] pt-10 text-[#0a0a0a] relative">
+    <div className="flex h-screen bg-[#F9F8F4] pt-0 md:pt-10 text-[#0a0a0a] relative overflow-hidden">
       {/* Mobile Hamburger Button - Only show when menu is closed */}
       {!isMobileMenuOpen && (
         <button
@@ -727,10 +727,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
         initial={false}
         animate={{ x: isMobileMenuOpen ? 0 : '-100%' }}
         transition={{ duration: 0.3, ease: 'easeOut' }}
-        className="fixed md:relative w-64 h-full border-r border-black/5 px-6 pt-10 pb-6 flex flex-col bg-white z-40 md:z-auto md:translate-x-0 md:!translate-x-0"
+        className="fixed md:relative w-64 h-full border-r border-black/5 px-6 pt-2 md:pt-10 pb-4 md:pb-6 flex flex-col bg-white z-40 md:z-auto md:translate-x-0 md:!translate-x-0 top-0 overflow-y-auto"
       >
-        <div className="mb-6 text-[#0a0a0a]">
-          <p className="text-3xl font-serif font-bold text-black">Admin Panel</p>
+        <div className="mb-4 md:mb-6 text-[#0a0a0a] mt-12 md:mt-0">
+          <p className="text-2xl md:text-3xl font-serif font-bold text-black">Admin Panel</p>
         </div>
 
         <nav className="flex-1 space-y-1 text-sm font-sans uppercase tracking-[0.18em]">
@@ -862,11 +862,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
         </button>
 
         {/* Rabuste logo near bottom, above Exit button */}
-        <div className="mt-auto mb-12 px-3 flex items-center justify-center">
+        <div className="mt-auto mb-4 md:mb-12 px-3 flex items-center justify-center">
           <img
             src="/media/logo.png"
             alt="Rabuste Coffee Logo"
-            className="h-24 w-auto object-contain mx-auto brightness-0"
+            className="h-16 md:h-24 w-auto object-contain mx-auto brightness-0"
           />
         </div>
 
@@ -876,7 +876,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
             onLogout();
             onBack();
           }}
-          className="flex items-center space-x-2 px-3 py-2 text-[11px] uppercase tracking-[0.18em] text-zinc-500 hover:text-red-500 transition-all"
+          className="flex items-center space-x-2 px-3 py-2 text-[11px] uppercase tracking-[0.18em] text-zinc-500 hover:text-red-500 transition-all mb-4 md:mb-0"
         >
           <LogOut className="w-4 h-4" />
           <span>Exit Dashboard</span>
@@ -884,9 +884,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
       </motion.aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto p-4 md:p-10 w-full md:w-auto">
-        <div className="flex items-end justify-between mb-6">
-          <div>
+      <main className="flex-1 overflow-y-auto p-4 md:p-10 w-full md:w-auto scroll-smooth">
+        <div className="flex flex-col md:flex-row items-center md:items-end justify-center md:justify-between mb-6">
+          <div className="text-center md:text-left">
             <h1 className="text-4xl md:text-5xl font-serif italic tracking-tight mb-3">
               {activeTabLabel}
             </h1>
@@ -895,35 +895,37 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
             </p>
           </div>
 
-          {activeTab === 'coffee' && (
-            <button
-              onClick={openCoffeeModalForNew}
-              className="inline-flex items-center space-x-2 px-6 py-3 bg-[#0a0a0a] text-[#F9F8F4] text-[11px] uppercase tracking-[0.3em] font-bold hover:bg-black transition-all"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Add New Item</span>
-            </button>
-          )}
+          <div className="mt-4 md:mt-0">
+            {activeTab === 'coffee' && (
+              <button
+                onClick={openCoffeeModalForNew}
+                className="inline-flex items-center space-x-2 px-6 py-3 bg-[#0a0a0a] text-[#F9F8F4] text-[11px] uppercase tracking-[0.3em] font-bold hover:bg-black transition-all"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Add New Item</span>
+              </button>
+            )}
 
-          {activeTab === 'art' && (
-            <button
-              onClick={openArtModalForNew}
-              className="inline-flex items-center space-x-2 px-6 py-3 bg-[#0a0a0a] text-[#F9F8F4] text-[11px] uppercase tracking-[0.3em] font-bold hover:bg-black transition-all"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Upload Art</span>
-            </button>
-          )}
+            {activeTab === 'art' && (
+              <button
+                onClick={openArtModalForNew}
+                className="inline-flex items-center space-x-2 px-6 py-3 bg-[#0a0a0a] text-[#F9F8F4] text-[11px] uppercase tracking-[0.3em] font-bold hover:bg-black transition-all"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Upload Art</span>
+              </button>
+            )}
 
-          {activeTab === 'workshops' && (
-            <button
-              onClick={createWorkshop}
-              className="inline-flex items-center space-x-2 px-6 py-3 bg-[#0a0a0a] text-[#F9F8F4] text-[11px] uppercase tracking-[0.3em] font-bold hover:bg-black transition-all"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Create Workshop</span>
-            </button>
-          )}
+            {activeTab === 'workshops' && (
+              <button
+                onClick={createWorkshop}
+                className="inline-flex items-center space-x-2 px-6 py-3 bg-[#0a0a0a] text-[#F9F8F4] text-[11px] uppercase tracking-[0.3em] font-bold hover:bg-black transition-all"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Create Workshop</span>
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Tab content */}

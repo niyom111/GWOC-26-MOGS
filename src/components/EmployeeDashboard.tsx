@@ -170,11 +170,11 @@ const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate, onBac
 
   if (!isAuthenticated) {
     return (
-      <div className="bg-[#F9F8F4] text-[#0a0a0a] min-h-screen flex items-center justify-center px-4">
+      <div className="bg-[#F9F8F4] text-[#0a0a0a] min-h-screen flex items-center justify-center px-4 w-full overflow-x-hidden">
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="w-full max-w-sm bg-white border border-black/10 rounded-xl shadow-sm p-8"
+          className="w-full max-w-sm bg-white border border-black/10 rounded-xl shadow-sm p-6 md:p-8"
         >
           <div className="flex items-center justify-center mb-6">
             <div className="p-3 bg-black/5 rounded-full">
@@ -218,8 +218,8 @@ const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate, onBac
   }
 
   return (
-    <div className="bg-[#F9F8F4] text-[#0a0a0a] pt-24 md:pt-32 pb-40 px-6 md:px-10 min-h-screen">
-      <div className="max-w-6xl mx-auto">
+    <div className="bg-[#F9F8F4] text-[#0a0a0a] pt-16 md:pt-32 pb-20 md:pb-40 px-4 md:px-10 min-h-screen w-full overflow-x-hidden">
+      <div className="max-w-6xl mx-auto w-full">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
