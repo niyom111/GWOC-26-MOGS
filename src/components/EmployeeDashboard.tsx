@@ -50,6 +50,10 @@ const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate, onBac
       setIsAuthenticated(true);
       fetchActiveOrders();
     }
+    // Scroll to top on mount
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
   }, []);
 
   // Handle browser back button - log out and navigate to home
@@ -218,7 +222,7 @@ const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate, onBac
   }
 
   return (
-    <div className="bg-[#F9F8F4] text-[#0a0a0a] pt-16 md:pt-32 pb-20 md:pb-40 px-4 md:px-10 min-h-screen w-full overflow-x-hidden">
+    <div className="bg-[#F9F8F4] text-[#0a0a0a] pt-16 md:pt-32 pb-20 md:pb-40 px-4 md:px-10 min-h-screen w-full overflow-x-hidden" style={{ WebkitOverflowScrolling: 'touch' }}>
       <div className="max-w-6xl mx-auto w-full">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">

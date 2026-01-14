@@ -67,6 +67,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
+  // Scroll to top on mount
+  useEffect(() => {
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  }, []);
+
   const tabs = [
     { id: 'overview' as const, label: 'Overview', icon: LayoutDashboard },
     { id: 'coffee' as const, label: 'Menu', icon: Coffee },
@@ -696,7 +703,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
   const enquiryCount = enquiries.length;
 
   return (
-    <div className="flex h-screen bg-[#F9F8F4] pt-0 md:pt-10 text-[#0a0a0a] relative overflow-hidden">
+    <div className="flex h-screen bg-[#F9F8F4] pt-0 md:pt-10 text-[#0a0a0a] relative" style={{ height: '100vh', overflow: 'hidden' }}>
       {/* Mobile Hamburger Button - Only show when menu is closed */}
       {!isMobileMenuOpen && (
         <button
@@ -884,7 +891,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
       </motion.aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto p-4 md:p-10 w-full md:w-auto scroll-smooth">
+      <main className="flex-1 overflow-y-auto p-4 md:p-10 w-full md:w-auto" style={{ WebkitOverflowScrolling: 'touch', overflowY: 'auto', height: '100%' }}>
         <div className="flex flex-col md:flex-row items-center md:items-end justify-center md:justify-between mb-6">
           <div className="text-center md:text-left">
             <h1 className="text-4xl md:text-5xl font-serif italic tracking-tight mb-3">
