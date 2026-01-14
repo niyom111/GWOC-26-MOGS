@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { motion as motionBase, useScroll, useTransform } from 'framer-motion';
 
@@ -12,6 +11,7 @@ const Hero: React.FC = () => {
 
   return (
     <section className="relative h-screen w-full overflow-hidden flex items-center justify-center bg-black">
+      {/* Background Video */}
       <motion.div
         style={{ scale }}
         initial={{ opacity: 0 }}
@@ -30,10 +30,12 @@ const Hero: React.FC = () => {
         <div className="absolute inset-0 bg-black/50" />
       </motion.div>
 
-      {/* Top gradient behind navbar for readability */}
+      {/* Top gradient behind navbar */}
       <div className="pointer-events-none absolute top-0 left-0 w-full h-32 z-10 bg-gradient-to-b from-black/60 to-transparent" />
 
+      {/* Content */}
       <div className="relative z-20 flex flex-col items-center justify-center px-6 text-center">
+        {/* Logo */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -48,16 +50,9 @@ const Hero: React.FC = () => {
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.5, duration: 1 }}
           />
-          <motion.span
-            initial={{ opacity: 0, x: 20, y: 10 }}
-            animate={{ opacity: 1, x: 0, y: 0 }}
-            transition={{ delay: 1, duration: 0.8 }}
-            className="absolute -bottom-6 right-0 text-[11px] uppercase tracking-[0.4em] font-sans text-zinc-300"
-          >
-
-          </motion.span>
         </motion.div>
 
+        {/* Hero Text */}
         <motion.div
           initial="hidden"
           animate="visible"
@@ -65,30 +60,45 @@ const Hero: React.FC = () => {
             hidden: { opacity: 0 },
             visible: {
               opacity: 1,
-              transition: { staggerChildren: 0.05, delayChildren: 1.5 }
+              transition: {
+                staggerChildren: 0.3,
+                delayChildren: 1.5
+              }
             }
           }}
           className="mt-16 text-center pt-4"
         >
-          {Array.from("Robusta at Rabuste").map((char, index) => (
+          {["“Robusta", "at", "Rabuste”"].map((word, index) => (
             <motion.span
               key={index}
               variants={{
-                hidden: { opacity: 0, y: 20, filter: 'blur(10px)' },
-                visible: { opacity: 1, y: 0, filter: 'blur(0px)', transition: { duration: 0.8, ease: "easeOut" } }
+                hidden: {
+                  opacity: 0,
+                  y: 50,
+                  filter: 'blur(20px)'
+                },
+                visible: {
+                  opacity: 1,
+                  y: 0,
+                  filter: 'blur(0px)',
+                  transition: {
+                    duration: 1.2,
+                    ease: [0.22, 1, 0.36, 1]
+                  }
+                }
               }}
-              className="inline-block text-4xl md:text-7xl font-serif font-bold italic text-white tracking-tighter"
+              className="inline-block text-5xl md:text-8xl text-[#FEF9E7] tracking-tight drop-shadow-2xl mx-2 md:mx-4"
+              style={{
+                fontFamily: "'Melodrama', serif",
+                fontWeight: 700
+              }}
             >
-              {char === " " ? "\u00A0" : char}
+              {word}
             </motion.span>
           ))}
         </motion.div>
-
-
       </div>
-
-
-    </section>
+    </section >
   );
 };
 

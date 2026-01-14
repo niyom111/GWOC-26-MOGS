@@ -5,7 +5,7 @@ import { motion, useScroll, useTransform, useTime } from 'framer-motion';
 const CaffeineComparison: React.FC = () => {
     return (
         <div className="w-full h-full min-h-[500px] flex items-center justify-center p-8">
-            <div className="relative w-full max-w-md bg-[#F9F8F4] text-[#1A1A1A] p-10 border border-black/5">
+            <div className="relative w-full max-w-md bg-[#F3EFE0] text-[#1A1A1A] p-10 border border-black/5">
                 {/* Header */}
                 <div className="flex justify-between items-start mb-12">
                     <div>
@@ -35,12 +35,12 @@ const CaffeineComparison: React.FC = () => {
                     {/* Bar 1: Arabica */}
                     <div className="w-1/2 flex flex-col gap-4 relative z-10 group">
                         <div className="text-right">
-                            <span className="text-2xl font-mono text-zinc-400 group-hover:text-zinc-600 transition-colors">1.2%</span>
+                            <span className="text-2xl font-mono text-zinc-900 group-hover:text-black transition-colors">1.2%</span>
                         </div>
-                        <div className="h-[100px] w-full bg-zinc-200 relative overflow-hidden">
+                        <div className="h-[100px] w-full bg-black relative overflow-hidden">
                             <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20" />
                         </div>
-                        <span className="text-xs uppercase tracking-widest text-zinc-400 font-medium">Standard Arabica</span>
+                        <span className="text-xs uppercase tracking-widest text-zinc-900 font-medium">Standard Arabica</span>
                     </div>
 
                     {/* Bar 2: Rabuste */}
@@ -86,7 +86,7 @@ const ManifestoSection: React.FC = () => {
     ];
 
     return (
-        <section ref={containerRef} className="relative min-h-screen flex items-center bg-[#F9F8F4] text-[#1A1A1A] overflow-hidden py-24">
+        <section ref={containerRef} className="relative min-h-screen flex items-center bg-[#F3EFE0] text-[#1A1A1A] overflow-hidden py-24">
 
             {/* Background Texture */}
             <div className="absolute inset-0 opacity-[0.03] pointer-events-none z-0">
@@ -113,7 +113,7 @@ const ManifestoSection: React.FC = () => {
                             transition={{ duration: 0.8, ease: "easeOut" }}
                             className="w-full"
                         >
-                            <span className="text-4xl md:text-6xl lg:text-7xl font-sans font-bold italic text-zinc-400">"</span>
+                            <span className="text-4xl md:text-6xl lg:text-7xl font-sans font-bold italic text-zinc-900">"</span>
                             <span className="text-4xl md:text-6xl lg:text-7xl font-sans font-bold tracking-tight text-[#1A1A1A]">We reject the </span>
                             <span className="text-4xl md:text-6xl lg:text-7xl font-sans font-bold tracking-tight text-[#A35D36]">smooth.</span>
                         </motion.div>
@@ -140,7 +140,7 @@ const ManifestoSection: React.FC = () => {
                         >
                             <span className="text-4xl md:text-6xl lg:text-7xl font-sans font-bold tracking-tight text-[#1A1A1A]">Coffee was meant to </span>
                             <span className="text-4xl md:text-6xl lg:text-7xl font-sans font-bold tracking-tight text-[#A35D36]">wake you up.</span>
-                            <span className="text-4xl md:text-6xl lg:text-7xl font-sans font-bold italic text-zinc-400">"</span>
+                            <span className="text-4xl md:text-6xl lg:text-7xl font-sans font-bold italic text-zinc-900">"</span>
                         </motion.div>
                     </div>
 
@@ -148,10 +148,11 @@ const ManifestoSection: React.FC = () => {
                     <motion.div
                         initial={{ opacity: 0 }}
                         whileInView={{ opacity: 1 }}
+                        viewport={{ once: true }}
                         transition={{ delay: 0.5 }}
                         className="pl-8 border-l-4 border-[#A35D36]"
                     >
-                        <h3 className="text-xs font-sans uppercase tracking-[0.4em] text-zinc-400 mb-6 font-bold">
+                        <h3 className="text-xs font-sans uppercase tracking-[0.4em] text-zinc-900 mb-6 font-bold">
                             The Doctrine
                         </h3>
                         <p className="text-lg md:text-xl font-medium font-sans text-zinc-800 leading-relaxed mb-6">

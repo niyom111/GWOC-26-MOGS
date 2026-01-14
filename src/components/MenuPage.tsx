@@ -7,6 +7,7 @@ import { CoffeeItem } from '../types';
 import { useDataContext } from '../DataContext';
 import BrewDeskPopup from './BrewDeskPopup';
 import { API_BASE_URL } from '../config';
+import Toast from './Toast';
 
 // Fix for framer-motion type mismatch in the current environment
 const motion = motionBase as any;
@@ -425,13 +426,13 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
   }, [filteredCategories, activeCategoryId]);
 
   return (
-    <div className="bg-[#F9F8F4] text-[#0a0a0a] pt-24 md:pt-32 pb-40 px-6 md:px-10 min-h-screen">
+    <div className="bg-[#F3EFE0] text-[#0a0a0a] pt-24 md:pt-32 pb-40 px-6 md:px-10 min-h-screen">
       <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-20">
         {/* Sidebar (Desktop Only) */}
         <aside className="hidden md:block md:col-span-3">
           <div className="sticky top-28 space-y-6">
             <div>
-              <p className="text-[10px] uppercase tracking-[0.5em] text-zinc-500 mb-3 font-sans">
+              <p className="text-[13px] uppercase tracking-[0.5em] text-black mb-3 font-sans">
                 Rabuste Menu
               </p>
               <h1 className="text-3xl md:text-4xl font-serif italic tracking-tight">
@@ -457,7 +458,7 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
         </aside>
 
         {/* Mobile Navigation (Sticky Top) */}
-        <div className="md:hidden sticky top-16 z-30 bg-[#F9F8F4]/95 backdrop-blur-sm py-4 -mx-6 px-6 border-b border-black/5 mb-4">
+        <div className="md:hidden sticky top-16 z-30 bg-[#F3EFE0]/95 backdrop-blur-sm py-4 -mx-6 px-6 border-b border-black/5 mb-4">
           <p className="text-[9px] uppercase tracking-[0.4em] text-zinc-500 mb-2 font-sans">Menu Categories</p>
           <div className="flex overflow-x-auto gap-3 pb-2 no-scrollbar snap-x">
             {filteredCategories.map(cat => (
@@ -481,7 +482,7 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
           <div className="mb-6">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div className="relative w-[85%] md:w-full md:max-w-md">
-                <Search className="w-4 h-4 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                <Search className="w-4 h-4 text-black absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   value={search}
                   onChange={e => setSearch(e.target.value)}
@@ -492,7 +493,7 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
 
               <div className="flex flex-row items-center justify-between w-full md:w-auto gap-4 text-sm font-sans md:items-center md:flex-row md:gap-12">
                 <div className="flex items-center gap-2">
-                  <Filter className="w-4 h-4 text-zinc-500" />
+                  <Filter className="w-4 h-4 text-" />
                   <select
                     value={sortBy}
                     onChange={e => setSortBy(e.target.value as any)}
@@ -506,7 +507,7 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
                 <button
                   type="button"
                   onClick={() => setShowBrewDesk(true)}
-                  className="px-4 py-2 rounded-full border border-black/15 text-[10px] uppercase tracking-[0.25em] text-zinc-600 bg-white/40 hover:bg-black/5 hover:text-[#0a0a0a] transition-colors whitespace-nowrap"
+                  className="px-4 py-2 rounded-full border border-black/40 text-[10px] uppercase tracking-[0.25em] text-black bg-white hover:bg-black hover:text-white transition-colors whitespace-nowrap"
                 >
                   Help me choose
                 </button>
@@ -593,9 +594,6 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
                 className="scroll-mt-28"
               >
                 <div className="mb-4">
-                  <p className="text-[10px] uppercase tracking-[0.4em] text-zinc-500 font-sans mb-1">
-                    {category.group}
-                  </p>
                   <h2 className="text-3xl md:text-4xl font-serif italic tracking-tight">
                     {category.label}
                   </h2>
@@ -619,7 +617,7 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
                         </span>
                         <button
                           onClick={() => handleAddToCart(category, item)}
-                          className="px-4 py-2 text-[10px] uppercase tracking-[0.3em] font-sans border border-black/40 rounded-full hover:bg-[#0a0a0a] hover:text-[#F9F8F4] transition-colors"
+                          className="px-4 py-2 text-[10px] uppercase tracking-[0.3em] font-sans border border-black/40 rounded-full bg-white hover:bg-[#0a0a0a] hover:text-[#F9F8F4] transition-colors"
                         >
                           Add to Cart
                         </button>
@@ -633,32 +631,20 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
         </main>
       </div>
 
-      {toastMessage && (
-        <motion.div
-          initial={{ opacity: 0, y: 20, x: '-50%' }}
-          animate={{ opacity: 1, y: 0, x: '-50%' }}
-          exit={{ opacity: 0, y: 20, x: '-50%' }}
-          className="fixed top-8 left-1/2 z-50 bg-[#0a0a0a] text-[#F9F8F4] px-6 py-3 rounded-full text-xs uppercase tracking-[0.25em] shadow-xl"
-        >
-          {toastMessage}
-        </motion.div>
-      )}
-
       {showBrewDesk && typeof document !== 'undefined' && createPortal(
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 font-sans">
           <div className="absolute inset-0" onClick={() => setShowBrewDesk(false)} />
           <div className="relative z-[10000] w-full max-w-lg">
-            <div className="absolute -top-12 right-0 text-white text-xs uppercase tracking-[0.25em] flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => setShowBrewDesk(false)}>
-              <span>Close</span>
-              <X className="w-4 h-4" />
-            </div>
             <BrewDeskPopup onClose={() => setShowBrewDesk(false)} onAddToCart={onAddToCart} />
           </div>
         </div>,
         document.body
       )}
+
+      <Toast message={toastMessage} />
     </div>
   );
 };
+
 
 export default MenuPage;

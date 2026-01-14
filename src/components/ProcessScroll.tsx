@@ -20,7 +20,7 @@ const ProcessCard: React.FC<{
 
     return (
         <motion.div
-            className="relative h-[60vh] w-[85vw] md:h-[70vh] md:w-[40vw] flex-shrink-0 overflow-hidden bg-[#F9F8F4] border-r border-black/10 group perspective-1000"
+            className="relative h-[60vh] w-[85vw] md:h-[70vh] md:w-[40vw] flex-shrink-0 overflow-hidden bg-[#F3EFE0] border-r border-black/10 group perspective-1000"
         >
             {/* Parallax Image Content */}
             <div className="absolute inset-0 w-full h-full">
@@ -116,7 +116,8 @@ const ProcessScroll: React.FC = () => {
 
     // Map vertical scroll (0 to 1) to horizontal translation (0 to -scrollRange in px)
     // We scroll exactly the "excess" width so the last item aligns with the right edge
-    const x = useTransform(scrollYProgress, [0, 1], [0, -scrollRange]);
+    // Finishes 90% of the way through to give a moment of "pause" on the last slide
+    const x = useTransform(scrollYProgress, [0, 0.9], [0, -scrollRange]);
 
     // Smoother spring physics for the scroll
     const springX = useSpring(x, { stiffness: 60, damping: 30, mass: 1 });
@@ -150,29 +151,29 @@ const ProcessScroll: React.FC = () => {
 
     return (
         // Height controls the "speed" of the scroll. 300vh allows enough scroll distance to feel natural.
-        <section ref={targetRef} className="relative h-[300vh] bg-[#F9F8F4]">
-            <div className="sticky top-0 flex h-screen items-center overflow-hidden bg-[#F9F8F4] text-[#1A1A1A]">
+        <section ref={targetRef} className="relative h-[200vh] md:h-[300vh] bg-[#F3EFE0]">
+            <div className="sticky top-0 flex h-screen items-center overflow-hidden bg-[#F3EFE0] text-[#1A1A1A]">
 
                 {/* Horizontal Moving Container using ref for measurement */}
                 <motion.div ref={scrollContainerRef} style={{ x: springX }} className="flex">
-                    <div className="flex-shrink-0 w-[100vw] md:w-[50vw] h-screen flex flex-col justify-center px-10 md:px-24 border-r border-black/10">
+                    <div className="flex-shrink-0 w-[80vw] md:w-[50vw] h-screen flex flex-col justify-center px-10 md:px-24 border-r border-black/10">
                         <motion.span
                             initial={{ opacity: 0 }}
                             whileInView={{ opacity: 1 }}
-                            className="text-[#A35D36] text-xs font-sans uppercase tracking-[0.5em] mb-6"
+                            className="text-[#A35D36] text-m font-sans uppercase tracking-[0.5em] mb-6"
                         >
                             The Ritual
                         </motion.span>
                         <h2 className="text-7xl md:text-[8rem] font-serif leading-[0.85] tracking-tighter mb-12">
                             From<br />
                             Bean To<br />
-                            <span className="italic text-zinc-400">Cup.</span>
+                            <span className="italic text-[#A35D36]">Cup.</span>
                         </h2>
                         <div className="flex items-center gap-4">
                             <div className="w-12 h-12 rounded-full border border-black/20 flex items-center justify-center">
                                 <div className="w-1 h-1 bg-black rounded-full animate-ping" />
                             </div>
-                            <p className="text-xs uppercase tracking-[0.3em] font-sans text-zinc-500">
+                            <p className="text-xs uppercase tracking-[0.3em] font-sans text-[#A35D36]">
                                 Scroll to Initiate
                             </p>
                         </div>

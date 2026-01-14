@@ -72,19 +72,18 @@ const StatBlock: React.FC<{
             initial={{ opacity: 0, y: 30 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.8, delay: index * 0.15, ease: "easeOut" }}
-            className="group relative flex flex-col justify-between p-6 lg:p-14 border-b border-black/10 md:border-b-0 md:border-r last:border-r-0 hover:bg-white transition-colors duration-500 min-h-[50vh]"
+            className="group relative flex flex-col justify-between p-6 lg:p-14 border-b border-black/10 md:border-b-0 md:border-r last:border-r-0 hover:bg-[#EEE8D5] transition-colors duration-500 min-h-[50vh]"
         >
             {/* Top Label */}
             <div className="flex items-center gap-3 mb-12">
                 <div className="w-2 h-2 rounded-full bg-zinc-300 group-hover:bg-[#CE2029] transition-colors duration-300 ring-2 ring-transparent group-hover:ring-red-100" />
-                <span className="text-xs font-sans uppercase tracking-[0.2em] text-zinc-400 group-hover:text-black transition-colors duration-300 font-medium">
+                <span className="text-xs font-sans uppercase tracking-[0.2em] text-zinc-900 group-hover:text-black transition-colors duration-300 font-medium">
                     {label}
                 </span>
             </div>
 
-            {/* Main Value */}
             <div className="mb-12 relative flex justify-center">
-                <div className="text-[5rem] lg:text-[7.5rem] font-normal font-serif text-[#1A1A1A] tracking-tighter leading-[0.9] group-hover:translate-x-2 transition-transform duration-500">
+                <div className="text-[5rem] lg:text-[7.5rem] font-bold font-serif text-[#1A1A1A] tracking-tighter leading-[0.9] group-hover:translate-x-2 transition-transform duration-500">
                     <AnimatedValue value={value} isInView={isInView} />
                 </div>
             </div>
@@ -92,7 +91,7 @@ const StatBlock: React.FC<{
             {/* Bottom Description */}
             <div className="mt-auto">
                 <div className="w-full h-[1px] bg-black/10 mb-6 origin-left scale-x-50 group-hover:scale-x-100 group-hover:bg-[#CE2029] transition-all duration-500" />
-                <p className="text-xl font-sans text-zinc-500 leading-relaxed max-w-[90%] group-hover:text-zinc-800 transition-colors duration-500">
+                <p className="text-xl font-sans text-zinc-900 leading-relaxed max-w-[90%] group-hover:text-black transition-colors duration-500">
                     {sub}
                 </p>
             </div>
@@ -105,7 +104,7 @@ const StatBlock: React.FC<{
 
 const StatsSection: React.FC = () => {
     return (
-        <section className="bg-[#F9F8F4] text-black border-y border-black/10 overflow-hidden">
+        <section className="bg-[#F3EFE0] text-black border-y border-black/10 overflow-hidden">
             <div className="grid grid-cols-1 md:grid-cols-3">
                 <StatBlock
                     index={0}

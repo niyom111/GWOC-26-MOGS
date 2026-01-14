@@ -26,6 +26,8 @@ const EMAIL_CONFIG_HOSTING = {
 };
 
 
+import Toast from './Toast';
+
 const WorkshopPage: React.FC = () => {
   // Check for missing keys on mount
   React.useEffect(() => {
@@ -33,7 +35,7 @@ const WorkshopPage: React.FC = () => {
     if (!EMAIL_CONFIG_RESERVATION.SERVICE_ID) missingKeys.push('VITE_EMAILJS_WORKSHOP_RESERVE_SERVICE_ID');
     if (!EMAIL_CONFIG_RESERVATION.PUBLIC_KEY) missingKeys.push('VITE_EMAILJS_WORKSHOP_RESERVE_PUBLIC_KEY');
     if (!EMAIL_CONFIG_RESERVATION.TEMPLATE_ID_USER) missingKeys.push('VITE_EMAILJS_WORKSHOP_RESERVE_TEMPLATE_ID');
-    
+
     if (!EMAIL_CONFIG_HOSTING.SERVICE_ID) missingKeys.push('VITE_EMAILJS_HOST_SERVICE_ID');
     if (!EMAIL_CONFIG_HOSTING.PUBLIC_KEY) missingKeys.push('VITE_EMAILJS_HOST_PUBLIC_KEY');
     if (!EMAIL_CONFIG_HOSTING.TEMPLATE_ID_ADMIN) missingKeys.push('VITE_EMAILJS_HOST_TEMPLATE_ID');
@@ -42,13 +44,15 @@ const WorkshopPage: React.FC = () => {
       console.warn('⚠️ [Workshops] Missing EmailJS Configuration Keys:', missingKeys.join(', '));
       console.warn('   Please check your .env file.');
     } else {
-        console.log('✅ [Workshops] EmailJS Configuration loaded successfully.');
+      console.log('✅ [Workshops] EmailJS Configuration loaded successfully.');
     }
   }, []);
 
   const [workshops, setWorkshops] = useState(INITIAL_WORKSHOPS);
   const [reservationEmails, setReservationEmails] = useState<{ [key: string]: string }>({});
   const [reservingId, setReservingId] = useState<string | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const toastTimeoutRef = React.useRef<number | null>(null);
 
   // Updated Host Form State
   const [hostForm, setHostForm] = useState({
@@ -120,6 +124,11 @@ const WorkshopPage: React.FC = () => {
         setReservingId(null);
         setReservationEmails(prev => ({ ...prev, [workshopId]: '' }));
 
+        // Show Toast
+        setToastMessage(`Reservation Request Sent for ${workshop.name}`);
+        if (toastTimeoutRef.current) window.clearTimeout(toastTimeoutRef.current);
+        toastTimeoutRef.current = window.setTimeout(() => setToastMessage(null), 2000);
+
         // Show Confirmation
         setModalContent({
           title: "Request Sent.",
@@ -150,6 +159,12 @@ const WorkshopPage: React.FC = () => {
       .then(() => {
         setIsHosting(false);
         setHostForm({ contact_email: '', preferred_date: '', workshop_details: '' });
+
+        // Show Toast
+        setToastMessage("Proposal Received");
+        if (toastTimeoutRef.current) window.clearTimeout(toastTimeoutRef.current);
+        toastTimeoutRef.current = window.setTimeout(() => setToastMessage(null), 2000);
+
         setModalContent({
           title: "Proposal Received.",
           body: "Your workshop concept has been sent to our curation team. We will review your details and reach out via email shortly."
@@ -163,10 +178,10 @@ const WorkshopPage: React.FC = () => {
   };
 
   return (
-    <div className="pt-24 md:pt-32 pb-40 px-6 md:px-8 bg-[#F9F8F4]">
+    <div className="pt-24 md:pt-32 pb-40 px-6 md:px-8 bg-[#F3EFE0]">
       <div className="max-w-7xl mx-auto">
         <header className="mb-20 md:mb-32">
-          <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-[9px] md:text-[10px] uppercase tracking-[0.4em] md:tracking-[0.5em] text-zinc-400 mb-4 md:mb-6 font-sans">Education & Mastery</motion.p>
+          <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-[10px] md:text-[13px] uppercase tracking-[0.4em] md:tracking-[0.5em] text-black mb-4 md:mb-6 font-sans">Education & Mastery</motion.p>
           <motion.h1 initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} className="text-5xl md:text-9xl font-serif italic tracking-tighter leading-none text-[#1A1A1A]">Craft & Community.</motion.h1>
         </header>
 
@@ -362,6 +377,8 @@ const WorkshopPage: React.FC = () => {
           </div>
         )}
       </AnimatePresence>
+
+      <Toast message={toastMessage} />
     </div>
   );
 };

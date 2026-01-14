@@ -176,7 +176,7 @@ const App: React.FC = () => {
 
   return (
     <DataProvider>
-      <div className="min-h-screen font-sans bg-[#F9F8F4] text-[#1A1A1A]">
+      <div className="min-h-screen font-sans bg-[#F3EFE0] text-[#1A1A1A]">
         <Header onNavigate={navigateTo} currentPage={currentPage} cartCount={cartCount} />
 
         <AnimatePresence mode="wait">

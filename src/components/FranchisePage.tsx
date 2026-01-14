@@ -97,7 +97,7 @@ const FranchisePage: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[#F9F8F4] overflow-hidden">
+        <div className="min-h-screen bg-[#F3EFE0] overflow-hidden">
 
             {/* 1. HERO SECTION */}
             <section className="relative h-[90vh] flex items-center justify-center overflow-hidden">
@@ -172,7 +172,7 @@ const FranchisePage: React.FC = () => {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-black">
                         {/* Card 1: Space */}
                         <motion.div
-                            className="bg-[#F9F8F4] p-8 rounded-xl relative group overflow-hidden"
+                            className="bg-[#F3EFE0] p-8 rounded-xl relative group overflow-hidden"
                             whileHover={{ y: -10 }}
                             transition={{ duration: 0.3 }}
                         >
@@ -188,7 +188,7 @@ const FranchisePage: React.FC = () => {
 
                         {/* Card 2: Investment */}
                         <motion.div
-                            className="bg-[#F9F8F4] p-8 rounded-xl relative group overflow-hidden"
+                            className="bg-[#F3EFE0] p-8 rounded-xl relative group overflow-hidden"
                             whileHover={{ y: -10 }}
                             transition={{ duration: 0.3 }}
                         >
@@ -204,7 +204,7 @@ const FranchisePage: React.FC = () => {
 
                         {/* Card 3: Passion */}
                         <motion.div
-                            className="bg-[#F9F8F4] p-8 rounded-xl relative group overflow-hidden"
+                            className="bg-[#F3EFE0] p-8 rounded-xl relative group overflow-hidden"
                             whileHover={{ y: -10 }}
                             transition={{ duration: 0.3 }}
                         >
@@ -249,7 +249,7 @@ const FranchisePage: React.FC = () => {
             </section>
 
             {/* 5. ROADMAP TIMELINE */}
-            <section className="py-24 bg-white">
+            <section className="py-24 bg-[#F3EFE0]">
                 <div className="max-w-7xl mx-auto px-6 md:px-12">
                     <motion.h2 className="text-4xl md:text-5xl font-serif mb-16 text-center" {...fadeInUp}>From Vision to Launch</motion.h2>
 
@@ -438,7 +438,7 @@ const FranchisePage: React.FC = () => {
                     <motion.div
                         initial={{ opacity: 0, scale: 0.95, y: 20 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
-                        className="bg-[#F9F8F4] w-full max-w-lg rounded-2xl shadow-xl overflow-hidden relative z-[10000]"
+                        className="bg-[#F3EFE0] w-full max-w-lg rounded-2xl shadow-xl overflow-hidden relative z-[10000]"
                     >
                         <div className="bg-[#1A1A1A] text-[#F9F8F4] px-8 py-6 flex justify-between items-center">
                             <h3 className="text-2xl font-serif">Partnership Inquiry</h3>

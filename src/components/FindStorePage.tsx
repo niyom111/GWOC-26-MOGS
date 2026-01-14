@@ -11,13 +11,13 @@ const FindStorePage: React.FC = () => {
   };
 
   return (
-    <section className="bg-[#F9F8F4] text-[#1A1A1A] pt-24 md:pt-32 pb-40 px-6 md:px-8 min-h-screen">
+    <section className="bg-[#F3EFE0] text-[#1A1A1A] pt-32 md:pt-48 pb-40 px-6 md:px-8 min-h-screen">
       <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 md:gap-16 items-start">
         <div>
           <motion.p
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-[9px] md:text-[10px] uppercase tracking-[0.4em] md:tracking-[0.5em] text-zinc-500 mb-6 font-sans"
+            className="text-[9px] md:text-[13px] uppercase tracking-[0.4em] md:tracking-[0.5em] text-black mb-6 font-sans"
           >
             Visit Us
           </motion.p>
@@ -33,7 +33,7 @@ const FindStorePage: React.FC = () => {
             <div className="flex items-start space-x-4">
               <MapPin className="w-5 h-5 mt-1 text-zinc-500" />
               <div>
-                <p className="text-zinc-600 text-[10px] mb-2">Physical Storefront</p>
+                <p className="text-black text-[12px] mb-2">Physical Storefront</p>
                 <p className="text-[12px] text-[#1A1A1A] leading-relaxed">
                   Dimpal Row House, 15, Gymkhana Rd,<br />
                   Piplod, Surat, Gujarat 395007, India
@@ -41,7 +41,7 @@ const FindStorePage: React.FC = () => {
               </div>
             </div>
 
-            <p className="text-[10px] text-zinc-700 max-w-sm leading-relaxed">
+            <p className="text-[12px] text-black max-w-sm leading-relaxed">
               A focused bar built around the Robusta standard. Expect limited seating, elevated caffeine
               payloads, and a rotating calendar of workshops and gallery nights.
             </p>
@@ -72,10 +72,6 @@ const FindStorePage: React.FC = () => {
               allowFullScreen
             />
           </motion.div>
-
-          <p className="text-[9px] text-zinc-500 font-sans uppercase tracking-widest">
-            Map is approximate. Use the directions link for live navigation updates.
-          </p>
         </div>
       </div>
     </section>

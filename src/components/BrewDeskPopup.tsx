@@ -6,6 +6,8 @@ import { API_BASE_URL } from '../config';
 // Fix for framer-motion type mismatch
 const motion = motionBase as any;
 
+import Toast from './Toast';
+
 interface BrewDeskPopupProps {
   onClose: () => void;
   onAddToCart: (item: CoffeeItem) => void;
@@ -101,7 +103,7 @@ const BrewDeskPopup: React.FC<BrewDeskPopupProps> = ({ onClose, onAddToCart }) =
   };
 
   return (
-    <div className="w-full max-w-lg bg-[#F9F8F4] border border-black/10 rounded-2xl shadow-xl p-6 md:p-8 font-sans max-h-[85vh] overflow-y-auto no-scrollbar">
+    <div className="w-full max-w-lg bg-[#F3EFE0] border border-black/10 rounded-2xl shadow-xl p-6 md:p-8 font-sans max-h-[85vh] overflow-y-auto no-scrollbar">
       {/* Header row */}
       <div className="flex items-center justify-between mb-6">
         <p className="text-[10px] uppercase tracking-[0.3em] text-zinc-500">BrewDesk Suggestion</p>
@@ -142,7 +144,7 @@ const BrewDeskPopup: React.FC<BrewDeskPopupProps> = ({ onClose, onAddToCart }) =
                     'group w-full px-6 py-4 rounded-xl text-xs uppercase tracking-[0.25em] border transition-all duration-200 flex flex-col items-start justify-center text-left relative overflow-hidden',
                     selected
                       ? 'bg-[#0a0a0a] text-[#F9F8F4] border-[#0a0a0a] shadow-md'
-                      : 'bg-white text-zinc-600 border-zinc-200 hover:border-zinc-400 hover:bg-zinc-50',
+                      : 'bg-white text-zinc-600 border-black/40 hover:border-black/60 hover:bg-zinc-50',
                   ].join(' ')}
                 >
                   <span className="relative z-10 font-semibold">{opt.label}</span>
@@ -182,7 +184,7 @@ const BrewDeskPopup: React.FC<BrewDeskPopupProps> = ({ onClose, onAddToCart }) =
                     'group w-full px-6 py-4 rounded-xl text-xs uppercase tracking-[0.25em] border transition-all duration-200 flex flex-col items-start justify-center text-left relative overflow-hidden',
                     selected
                       ? 'bg-[#0a0a0a] text-[#F9F8F4] border-[#0a0a0a] shadow-md'
-                      : 'bg-white text-zinc-600 border-zinc-200 hover:border-zinc-400 hover:bg-zinc-50',
+                      : 'bg-white text-zinc-600 border-black/40 hover:border-black/60 hover:bg-zinc-50',
                   ].join(' ')}
                 >
                   <span className="relative z-10 font-semibold">{opt.label}</span>
@@ -330,16 +332,7 @@ const BrewDeskPopup: React.FC<BrewDeskPopupProps> = ({ onClose, onAddToCart }) =
       </div>
 
       {/* Toast notification */}
-      {toastMessage && (
-        <motion.div
-          initial={{ opacity: 0, y: 20, x: '-50%' }}
-          animate={{ opacity: 1, y: 0, x: '-50%' }}
-          exit={{ opacity: 0, y: 20, x: '-50%' }}
-          className="fixed top-8 left-1/2 z-50 bg-[#0a0a0a] text-[#F9F8F4] px-6 py-3 rounded-full text-xs uppercase tracking-[0.25em] shadow-xl"
-        >
-          {toastMessage}
-        </motion.div>
-      )}
+      <Toast message={toastMessage} />
     </div>
   );
 };

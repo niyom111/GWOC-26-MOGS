@@ -39,7 +39,7 @@ const AwarenessPage: React.FC<AwarenessPageProps> = ({ onNavigate }) => {
             animate={{ opacity: 1, y: 0 }}
             className="text-[9px] md:text-[10px] uppercase tracking-[0.4em] md:tracking-[0.5em] text-zinc-500 mb-4 font-sans"
           >
-            Our Philosophy
+            Our Story
           </motion.p>
           <motion.h1
             initial={{ opacity: 0, y: 30 }}
@@ -73,7 +73,7 @@ const AwarenessPage: React.FC<AwarenessPageProps> = ({ onNavigate }) => {
             <h2 className="text-3xl md:text-4xl font-serif italic tracking-tight text-[#1A1A1A] mb-4">
               The Why: A Choice, Not an Alternative.
             </h2>
-            <p className="text-sm md:text-base text-zinc-700 leading-relaxed">
+            <p className="text-[10px] md:text-base text-black leading-relaxed">
               Rabuste is built on a singular conviction: <span className="font-semibold">Robusta is not inferior; it is
                 misunderstood.</span> For decades, the conversation has centered on Arabica as the default for "good"
               coffee. We intentionally stepped off that path. By sourcing only high-grade, traceable Robusta, we unlock
@@ -82,8 +82,8 @@ const AwarenessPage: React.FC<AwarenessPageProps> = ({ onNavigate }) => {
           </div>
 
           <div className="space-y-3">
-            <h3 className="text-sm uppercase tracking-[0.4em] text-zinc-500">Caffeine</h3>
-            <p className="text-sm text-zinc-700 leading-relaxed">
+            <h3 className="text-[12px] uppercase tracking-[0.4em] text-zinc-500">Caffeine</h3>
+            <p className="text-[12px] text-zinc-700 leading-relaxed">
               Robusta carries roughly <span className="font-semibold">twice the caffeine</span> of Arabica. It is not a
               jittery rush—it is a deliberate surge, tuned for early studio mornings, double shifts, and late-night
               edits. We design our extractions to deliver power without the crash.

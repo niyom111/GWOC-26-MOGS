@@ -45,27 +45,60 @@ const items = [
     image: "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&q=80&w=1974",
     description: "Pure, unadulterated Robusta concentrate. Thick, syrup-like body with a caffeine payload that hits like a hammer."
   },
+  {
+    id: '4',
+    name: "Verdant Life",
+    tagline: "Breath of Nature.",
+    notes: "Fresh & Organic",
+    caffeine: "None",
+    intensity: 0,
+    price: 600,
+    image: "https://images.unsplash.com/photo-1485955900006-10f4d324d411?auto=format&fit=crop&q=80&w=1772",
+    description: "A touch of green to your space. This curated plant brings life and tranquility to your coffee ritual."
+  },
 ];
 
+// Helper hook for mobile detection
+const useIsMobile = () => {
+  const [isMobile, setIsMobile] = React.useState(() => typeof window !== 'undefined' ? window.innerWidth < 768 : false);
+  React.useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+  return isMobile;
+};
+
 // Helper component for individual cards to handle InView logic separately
-const MenuCard: React.FC<{ item: typeof items[0], index: number, onAddToCart: any }> = ({ item, index, onAddToCart }) => {
+const MenuCard: React.FC<{ item: typeof items[0], index: number, onAddToCart: any, onToast: (msg: string) => void }> = ({ item, index, onAddToCart, onToast }) => {
   // Use a ref locally for this card
   const ref = React.useRef(null);
   // Use framer-motion's useInView hook. 
   // margin: "-40% 0px -40% 0px" means it activates when the middle 20% of the element is in the viewport
   const isInView = useInView(ref, { margin: "-40% 0px -40% 0px" });
+  const isMobile = useIsMobile();
+
+  // Animation variants defined locally
+  const cardVariants = {
+    hidden: isMobile
+      ? { x: '-100%', y: 0, opacity: 0 }
+      : { y: '-100%', x: 0, opacity: 0 },
+    visible: {
+      x: 0,
+      y: 0,
+      opacity: 1,
+      transition: {
+        duration: 1.2,
+        ease: [0.22, 1, 0.36, 1]
+      }
+    }
+  };
 
   return (
     <motion.div
       ref={ref}
-      initial={{ y: -100, opacity: 0 }}
-      whileInView={{ y: 0, opacity: 1 }}
-      viewport={{ once: true, amount: 0.3 }}
-      transition={{
-        duration: 1.8,
-        delay: index * 0.3,
-        ease: [0.22, 1, 0.36, 1]
-      }}
+      variants={cardVariants}
       className="group relative w-full h-full overflow-hidden bg-[#0a0a0a] border-r border-white/10 last:border-r-0 min-h-[80vh] md:min-h-auto"
     >
       {/* Vivid Background Image */}
@@ -102,7 +135,7 @@ const MenuCard: React.FC<{ item: typeof items[0], index: number, onAddToCart: an
               md:opacity-100 md:translate-y-0 md:group-hover:opacity-0 md:group-hover:translate-y-4
               ${isInView ? 'opacity-0 translate-y-4' : 'opacity-100 translate-y-0'}
             `}>
-            <p className="text-sm font-sans text-zinc-300 tracking-wide">
+            <p className="text-2xl font-serif italic text-zinc-300 tracking-wide">
               {item.tagline}
             </p>
             <div className="mt-8 w-12 h-[1px] bg-white/30" />
@@ -123,6 +156,7 @@ const MenuCard: React.FC<{ item: typeof items[0], index: number, onAddToCart: an
                 onClick={(e) => {
                   e.stopPropagation();
                   onAddToCart(item);
+                  onToast(`${item.name} added to cart`);
                 }}
                 className="px-8 py-4 bg-white text-black min-w-[160px] text-[11px] uppercase tracking-[0.3em] font-bold hover:bg-[#A35D36] hover:text-white transition-colors shadow-xl"
               >
@@ -137,15 +171,39 @@ const MenuCard: React.FC<{ item: typeof items[0], index: number, onAddToCart: an
   );
 };
 
+import Toast from './Toast';
+
 const MenuPreview: React.FC<MenuPreviewProps> = ({ onAddToCart, onGoToMenu }) => {
+  const [toastMessage, setToastMessage] = React.useState<string | null>(null);
+  const toastTimeoutRef = React.useRef<number | null>(null);
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    if (toastTimeoutRef.current) window.clearTimeout(toastTimeoutRef.current);
+    toastTimeoutRef.current = window.setTimeout(() => setToastMessage(null), 2000); // 2s duration for visibility
+  };
+
   return (
     <section className="relative w-full h-auto md:h-screen bg-[#111] text-[#F3F3F3] overflow-x-hidden">
       {/* Full Screen Vertical Strips */}
-      <div className="w-full h-full grid grid-cols-1 md:grid-cols-3 border-t border-b border-white/10">
+      <motion.div
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.1 }}
+        variants={{
+          visible: {
+            transition: {
+              staggerChildren: 0.3
+            }
+          }
+        }}
+        className="w-full h-full grid grid-cols-1 md:grid-cols-4 border-t border-b border-white/10"
+      >
         {items.map((item, idx) => (
-          <MenuCard key={idx} item={item} index={idx} onAddToCart={onAddToCart} />
+          <MenuCard key={idx} item={item} index={idx} onAddToCart={onAddToCart} onToast={showToast} />
         ))}
-      </div>
+      </motion.div>
+      <Toast message={toastMessage} />
     </section>
   );
 };

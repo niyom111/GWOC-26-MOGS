@@ -21,15 +21,26 @@ const StickySection: React.FC<StickySectionProps> = ({ onNavigate }) => {
   const img1Y = useTransform(scrollYProgress, [0, 1], [0, -200]);
   const img2Y = useTransform(scrollYProgress, [0, 1], [100, -400]);
 
+  const [shouldAnimate, setShouldAnimate] = React.useState(true);
+
+  React.useEffect(() => {
+    const hasViewed = sessionStorage.getItem('hasViewedStory');
+    if (hasViewed) {
+      setShouldAnimate(false);
+    } else {
+      sessionStorage.setItem('hasViewedStory', 'true');
+    }
+  }, []);
+
   return (
-    <section ref={containerRef} id="standard" className="relative min-h-[180vh] bg-[#F9F8F4] pt-10 md:pt-14 pb-24 md:pb-28 px-6 md:px-16">
+    <section ref={containerRef} id="standard" className="relative min-h-[180vh] bg-[#F3EFE0] pt-10 md:pt-14 pb-24 md:pb-28 px-6 md:px-16">
       <div className="max-w-6xl mx-auto flex flex-col lg:flex-row gap-28">
         {/* Left Sticky Content */}
         <div className="lg:w-[46%] lg:sticky lg:top-20 h-fit self-start z-10 pt-10">
           <motion.div
-            initial="hidden"
+            initial={shouldAnimate ? "hidden" : "visible"}
             whileInView="visible"
-            viewport={{ once: false, margin: "-100px" }}
+            viewport={{ once: true, margin: "-100px" }}
             variants={{
               hidden: { opacity: 0 },
               visible: {
@@ -41,26 +52,26 @@ const StickySection: React.FC<StickySectionProps> = ({ onNavigate }) => {
             <motion.span
               variants={{
                 hidden: { opacity: 0, y: 20 },
-                visible: { opacity: 1, y: 0, transition: { duration: 0.8 } }
+                visible: { opacity: 1, y: 0, transition: { duration: 1.0, ease: [0.22, 1, 0.36, 1] } }
               }}
-              className="text-[10px] uppercase tracking-[0.5em] font-sans text-zinc-400 mb-8 block"
+              className="text-[15px] uppercase tracking-[0.5em] font-sans text-black mb-8 block"
             >
-              The Philosophy
+              Our Story
             </motion.span>
 
             <h2 className="text-5xl md:text-[8rem] font-serif mb-12 leading-[0.9] tracking-tighter text-[#1A1A1A] font-bold italic">
-              <motion.div variants={{ hidden: { y: 50, opacity: 0 }, visible: { y: 0, opacity: 1, transition: { duration: 1 } } }}>A Choice,</motion.div>
-              <motion.div variants={{ hidden: { y: 50, opacity: 0 }, visible: { y: 0, opacity: 1, transition: { duration: 1 } } }}>Not an</motion.div>
-              <motion.div variants={{ hidden: { y: 50, opacity: 0 }, visible: { y: 0, opacity: 1, transition: { duration: 1 } } }}>Alternative.</motion.div>
+              <motion.div variants={{ hidden: { y: 50, opacity: 0 }, visible: { y: 0, opacity: 1, transition: { duration: 1.2, ease: [0.22, 1, 0.36, 1] } } }}>A Choice,</motion.div>
+              <motion.div variants={{ hidden: { y: 50, opacity: 0 }, visible: { y: 0, opacity: 1, transition: { duration: 1.2, ease: [0.22, 1, 0.36, 1] } } }}>Not an</motion.div>
+              <motion.div variants={{ hidden: { y: 50, opacity: 0 }, visible: { y: 0, opacity: 1, transition: { duration: 1.2, ease: [0.22, 1, 0.36, 1] } } }}>Alternative.</motion.div>
             </h2>
 
             <div className="max-w-sm space-y-10">
               <motion.p
                 variants={{
                   hidden: { opacity: 0, y: 20 },
-                  visible: { opacity: 1, y: 0, transition: { duration: 0.8 } }
+                  visible: { opacity: 1, y: 0, transition: { duration: 1.0, ease: [0.22, 1, 0.36, 1] } }
                 }}
-                className="text-lg font-sans leading-relaxed text-[#1A1A1A] tracking-tight"
+                className="text-xl font-sans leading-relaxed text-[#1A1A1A] tracking-tight"
               >
                 Rabuste is built on a singular conviction: Robusta is not inferior; it is misunderstood. We exclusively brew high-grade Robusta for its bold taste, thicker crema, and double the caffeine payload of Arabica. This is coffee for the conscious, energetic, and intentional.
               </motion.p>
@@ -68,33 +79,40 @@ const StickySection: React.FC<StickySectionProps> = ({ onNavigate }) => {
               <motion.div
                 variants={{
                   hidden: { opacity: 0 },
-                  visible: { opacity: 1, transition: { duration: 0.8 } }
+                  visible: { opacity: 1, transition: { duration: 1.0, ease: [0.22, 1, 0.36, 1] } }
                 }}
                 className="flex flex-col space-y-4"
               >
                 <div className="flex items-center space-x-4">
-                  <div className="w-10 h-px bg-zinc-300" />
+                  <div className="w-10 h-[0.5px] bg-[#A35D36]" />
                   <span className="text-[10px] uppercase tracking-[0.3em] font-bold">2x Caffeine Payload</span>
                 </div>
                 <div className="flex items-center space-x-4">
-                  <div className="w-10 h-px bg-zinc-300" />
+                  <div className="w-10 h-[0.5px] bg-[#A35D36]" />
                   <span className="text-[10px] uppercase tracking-[0.3em] font-bold">Intense Crema Structure</span>
                 </div>
               </motion.div>
 
               <motion.button
                 onClick={() => onNavigate(Page.AWARENESS)}
+                whileHover="hover"
                 variants={{
                   hidden: { opacity: 0, x: -20 },
-                  visible: { opacity: 1, x: 0, transition: { duration: 0.8 } }
+                  visible: { opacity: 1, x: 0, transition: { duration: 1.0, ease: [0.22, 1, 0.36, 1] } }
                 }}
-                className="group relative pt-10 flex items-center space-x-6 text-[11px] uppercase tracking-[0.4em] font-bold"
+                className="relative pt-10 flex items-center space-x-6 text-[11px] uppercase tracking-[0.4em] font-bold cursor-pointer"
               >
-                <span>The Sourcing Story</span>
+                <motion.span
+                  variants={{ hover: { color: "#A35D36" } }}
+                  transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                  className="text-[13px] text-[#A35D36]"
+                >
+                  The story behind
+                </motion.span>
                 <motion.div
-                  className="w-12 h-px bg-black"
-                  whileHover={{ width: 80 }}
-                  transition={{ duration: 0.4 }}
+                  className="w-14 h-[0.5px] bg-[#A35D36]"
+                  variants={{ hover: { width: 80 } }}
+                  transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
                 />
               </motion.button>
             </div>
@@ -102,9 +120,13 @@ const StickySection: React.FC<StickySectionProps> = ({ onNavigate }) => {
         </div>
 
         {/* Right Scrolling Parallax Images */}
-        <div className="lg:w-[54%] lg:pl-24 xl:pl-32 pt-24 lg:pt-32 flex flex-col gap-16 items-end justify-center">
+        <div className="lg:w-[54%] lg:pl-24 xl:pl-32 pt-10 lg:pt-32 grid grid-cols-2 gap-4 lg:flex lg:flex-col lg:gap-16 items-start lg:items-end justify-center">
           <motion.div
-            className="relative w-full lg:w-full h-[400px] lg:h-[600px] bg-zinc-100 overflow-hidden shadow-2xl rounded-2xl"
+            initial={shouldAnimate ? { opacity: 0, x: -50 } : { opacity: 1, x: 0 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+            className="relative w-full lg:w-full h-[200px] lg:h-[500px] bg-zinc-100 overflow-hidden shadow-2xl rounded-2xl"
           >
             <img
               src="/media/pic1.jpeg"
@@ -114,7 +136,11 @@ const StickySection: React.FC<StickySectionProps> = ({ onNavigate }) => {
           </motion.div>
 
           <motion.div
-            className="relative w-full lg:w-full h-[600px] bg-zinc-100 overflow-hidden shadow-2xl rounded-2xl"
+            initial={shouldAnimate ? { opacity: 0, x: 50 } : { opacity: 1, x: 0 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+            className="relative w-full lg:w-full h-[200px] lg:h-[500px] bg-zinc-100 overflow-hidden shadow-2xl rounded-2xl"
           >
             <img
               src="/media/pic2.jpeg"
@@ -124,7 +150,11 @@ const StickySection: React.FC<StickySectionProps> = ({ onNavigate }) => {
           </motion.div>
 
           <motion.div
-            className="relative w-full lg:w-full h-[600px] bg-zinc-100 overflow-hidden shadow-2xl rounded-2xl"
+            initial={shouldAnimate ? { opacity: 0, y: 50 } : { opacity: 1, y: 0 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+            className="relative col-span-2 w-full lg:w-full h-[200px] lg:h-[500px] bg-zinc-100 overflow-hidden shadow-2xl rounded-2xl"
           >
             <img
               src="/media/pic3.jpeg"

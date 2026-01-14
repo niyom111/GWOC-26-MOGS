@@ -364,7 +364,7 @@ const CartPage: React.FC<CartPageProps> = ({
   };
 
   return (
-    <div className="bg-[#F9F8F4] text-[#0a0a0a] pt-24 md:pt-32 pb-40 px-6 md:px-10 min-h-screen">
+    <div className="bg-[#F3EFE0] text-[#0a0a0a] pt-24 md:pt-32 pb-40 px-6 md:px-10 min-h-screen">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="flex flex-col md:flex-row items-start md:items-end justify-between mb-8 md:mb-12">
@@ -372,7 +372,7 @@ const CartPage: React.FC<CartPageProps> = ({
             <motion.p
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="text-[9px] md:text-[10px] uppercase tracking-[0.4em] md:tracking-[0.5em] text-zinc-500 mb-3 md:mb-4 font-sans"
+              className="text-[9px] md:text-[12px] uppercase tracking-[0.4em] md:tracking-[0.5em] text-black mb-3 md:mb-4 font-sans"
             >
               Current Selections
             </motion.p>

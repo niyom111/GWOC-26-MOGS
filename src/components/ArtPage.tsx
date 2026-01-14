@@ -3,6 +3,7 @@ import { motion as motionBase, AnimatePresence } from 'framer-motion';
 import { CoffeeItem } from '../types';
 import { useDataContext, ArtAdminItem } from '../DataContext';
 import ArtworkCard from './ArtworkCard';
+import Toast from './Toast';
 
 // Fix for framer-motion type mismatch in the current environment
 const motion = motionBase as any;
@@ -51,14 +52,14 @@ const ArtPage: React.FC<ArtPageProps> = ({ onAddToCart }) => {
   };
 
   return (
-    <div className="pt-24 md:pt-32 pb-40 px-6 md:px-8 bg-[#F9F8F4]">
+    <div className="pt-24 md:pt-32 pb-40 px-6 md:px-8 bg-[#F3EFE0]">
       <div className="max-w-7xl mx-auto">
         <header className="mb-20 md:mb-32 flex flex-col md:flex-row justify-between items-end gap-6 md:gap-10">
           <div>
-            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-[9px] md:text-[10px] uppercase tracking-[0.4em] md:tracking-[0.5em] text-zinc-400 mb-4 md:mb-6">The Micro Gallery</motion.p>
+            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-[10px] md:text-[13px] uppercase tracking-[0.4em] md:tracking-[0.5em] text-black mb-4 md:mb-6">The Micro Gallery</motion.p>
             <motion.h1 initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} className="text-5xl md:text-9xl font-serif italic tracking-tighter leading-none">The Canvas.</motion.h1>
           </div>
-          <p className="max-w-xs text-[10px] md:text-xs font-sans text-zinc-400 uppercase tracking-widest leading-relaxed text-right italic">
+          <p className="max-w-xs text-[14px] md:text-s font-sans text-black uppercase tracking-widest leading-relaxed text-right italic">
             "A curated sanctuary for the emerging. Every piece is selected to mirror the intensity of our brew."
           </p>
         </header>
@@ -75,19 +76,7 @@ const ArtPage: React.FC<ArtPageProps> = ({ onAddToCart }) => {
         </div>
       </div>
 
-      <AnimatePresence>
-        {toastMessage && (
-          <motion.div
-            initial={{ opacity: 0, y: 20, x: '-50%' }}
-            animate={{ opacity: 1, y: 0, x: '-50%' }}
-            exit={{ opacity: 0, y: 20, x: '-50%' }}
-            className="fixed top-8 left-1/2 z-50 bg-[#0a0a0a] text-[#F9F8F4] px-6 py-3 rounded-full text-xs uppercase tracking-[0.25em] shadow-xl"
-          >
-            {toastMessage}
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
+    </div >
   );
 };
 
