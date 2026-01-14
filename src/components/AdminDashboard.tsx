@@ -67,11 +67,28 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // Scroll to top on mount
+  // Scroll to top on mount - use useLayoutEffect to run before paint
   useEffect(() => {
-    window.scrollTo(0, 0);
-    document.documentElement.scrollTop = 0;
-    document.body.scrollTop = 0;
+    const scrollToTop = () => {
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+      // Also scroll any scrollable containers
+      const scrollableElements = document.querySelectorAll('[style*="overflow"]');
+      scrollableElements.forEach(el => {
+        if (el instanceof HTMLElement) {
+          el.scrollTop = 0;
+        }
+      });
+    };
+    
+    // Run immediately
+    scrollToTop();
+    
+    // Also run after a short delay to ensure DOM is ready
+    const timeout = setTimeout(scrollToTop, 100);
+    
+    return () => clearTimeout(timeout);
   }, []);
 
   const tabs = [
@@ -703,7 +720,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
   const enquiryCount = enquiries.length;
 
   return (
-    <div className="flex h-screen bg-[#F9F8F4] pt-0 md:pt-10 text-[#0a0a0a] relative" style={{ height: '100vh', overflow: 'hidden' }}>
+    <div className="flex min-h-screen md:h-screen bg-[#F9F8F4] pt-0 md:pt-10 text-[#0a0a0a] relative" style={{ minHeight: '100vh' }}>
       {/* Mobile Hamburger Button - Only show when menu is closed */}
       {!isMobileMenuOpen && (
         <button
@@ -891,7 +908,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
       </motion.aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto p-4 md:p-10 w-full md:w-auto" style={{ WebkitOverflowScrolling: 'touch', overflowY: 'auto', height: '100%' }}>
+      <main className="flex-1 p-4 md:p-10 w-full md:w-auto overflow-visible md:overflow-y-auto md:h-full">
         <div className="flex flex-col md:flex-row items-center md:items-end justify-center md:justify-between mb-6">
           <div className="text-center md:text-left">
             <h1 className="text-4xl md:text-5xl font-serif italic tracking-tight mb-3">

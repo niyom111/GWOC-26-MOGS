@@ -79,7 +79,15 @@
       /* Smooth scrolling with momentum on iOS */
       html, body {
         -webkit-overflow-scrolling: touch;
-        scroll-behavior: smooth;
+        scroll-behavior: auto;
+        overflow-x: hidden;
+      }
+      
+      /* Ensure admin dashboard can scroll naturally on mobile */
+      body {
+        position: relative;
+        height: auto;
+        min-height: 100vh;
       }
     }
 

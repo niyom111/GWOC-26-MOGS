@@ -50,10 +50,21 @@ const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate, onBac
       setIsAuthenticated(true);
       fetchActiveOrders();
     }
-    // Scroll to top on mount
-    window.scrollTo(0, 0);
-    document.documentElement.scrollTop = 0;
-    document.body.scrollTop = 0;
+    
+    // Scroll to top on mount - use multiple methods to ensure it works
+    const scrollToTop = () => {
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+    };
+    
+    // Run immediately
+    scrollToTop();
+    
+    // Also run after a short delay to ensure DOM is ready
+    const timeout = setTimeout(scrollToTop, 100);
+    
+    return () => clearTimeout(timeout);
   }, []);
 
   // Handle browser back button - log out and navigate to home
