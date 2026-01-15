@@ -304,7 +304,7 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
 
           // Count SubCategory/Group
           // In legacy data, 'notes' in cart often held the group, or we parse from category string
-          const subCat = fullItem.sub_category_name || (fullItem.category ? fullItem.category.split('(')[0].trim() : 'Unknown');
+          const subCat = fullItem.sub_category_name || (fullItem.category ? fullItem.category.split('(')[0].trim() : (fullItem.category_name || 'Unknown'));
           subCategoryCounts[subCat] = (subCategoryCounts[subCat] || 0) + 1;
 
           // Count Tags
@@ -333,7 +333,7 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
       // Rule 1: Familiar Favorite (Same SubCategory/Group, but different item if possible)
       // Filter menu items by top subcategory
       const sameGroupItems = menuItems.filter(m => {
-        const mSub = m.sub_category_name || (m.category ? m.category.split('(')[0].trim() : '');
+        const mSub = m.sub_category_name || (m.category ? m.category.split('(')[0].trim() : (m.category_name || ''));
         return mSub === topSubCategory && !purchasedIds.has(m.id);
       });
 
@@ -346,7 +346,7 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
         // If they bought everything in that group, maybe suggest one re-order? 
         // Or pick from 2nd top category. Let's pick a high rated item from same group even if bought.
         const sameGroupAll = menuItems.filter(m => {
-          const mSub = m.sub_category_name || (m.category ? m.category.split('(')[0].trim() : '');
+          const mSub = m.sub_category_name || (m.category ? m.category.split('(')[0].trim() : (m.category_name || ''));
           return mSub === topSubCategory;
         });
         if (sameGroupAll.length > 0) {
@@ -380,7 +380,7 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
       const top2SubCats = Object.keys(subCategoryCounts).sort((a, b) => subCategoryCounts[b] - subCategoryCounts[a]).slice(0, 2);
       const varietyItems = menuItems.filter(m => {
         if (addedIds.has(m.id)) return false;
-        const mSub = m.sub_category_name || (m.category ? m.category.split('(')[0].trim() : '');
+        const mSub = m.sub_category_name || (m.category ? m.category.split('(')[0].trim() : (m.category_name || ''));
         return !top2SubCats.includes(mSub);
       });
 
@@ -411,7 +411,7 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
 
   // Helper to convert Admin item to UI CoffeeItem
   const toCoffeeItem = (item: any): CoffeeItem => {
-    const group = item.sub_category_name || (item.category ? item.category.split('(')[0].trim() : 'Specialty');
+    const group = item.sub_category_name || (item.category ? item.category.split('(')[0].trim() : (item.category_name || 'Specialty'));
     return {
       id: item.id,
       name: item.name,
@@ -426,11 +426,14 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
   // -----------------------------
 
   // Set initial active category once we have data
+  // Set initial active category once we have data
   useEffect(() => {
     if (!activeCategoryId && menuItems.length) {
       const firstItem = menuItems[0];
-      if (!firstItem?.category) return;
-      const firstCategory = (firstItem.category ?? '').trim().toUpperCase();
+      const categorySource = firstItem.category || firstItem.category_name;
+      if (!categorySource) return;
+
+      const firstCategory = (categorySource ?? '').trim().toUpperCase();
       if (!firstCategory) return; // Skip if empty after trimming
       const id = firstCategory
         .toLowerCase()
@@ -565,19 +568,25 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
     const categoryMap = new Map<string, MenuCategory>();
 
     menuItems.forEach(item => {
-      // Skip items without required fields
-      if (!item.category || !item.name || item.price == null || !item.id) return;
+      // Compatibility: use category (legacy) or category_name (new)
+      const categorySource = item.category || item.category_name;
 
-      // Use safe defaults to ensure trim() is always called on a string
-      const categoryStr = (item.category ?? '').trim();
-      if (!categoryStr) return; // Skip if category is empty after trimming
+      // Skip items without required fields
+      if (!categorySource || !item.name || item.price == null || !item.id) return;
+
+      // Use safe defaults
+      const categoryStr = (categorySource ?? '').trim();
+      if (!categoryStr) return;
 
       const canonicalCategory = categoryStr.toUpperCase();
       const id = canonicalCategory
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/(^-|-$)/g, '');
-      const group = (canonicalCategory.split('(')[0] ?? '').trim();
+
+      // Attempt to derive group from sub_category_name first, fallback to regex on category string
+      const groupSource = item.sub_category_name || categorySource;
+      const group = (groupSource.split('(')[0] ?? '').trim();
 
       if (!categoryMap.has(canonicalCategory)) {
         categoryMap.set(canonicalCategory, {

@@ -4,6 +4,7 @@ import { CoffeeItem } from '../types';
 import { useDataContext, ArtAdminItem } from '../DataContext';
 import ArtworkCard from './ArtworkCard';
 import Toast from './Toast';
+import { API_BASE_URL } from '../config';
 
 // Fix for framer-motion type mismatch in the current environment
 const motion = motionBase as any;
@@ -31,7 +32,7 @@ const ArtPage: React.FC<ArtPageProps> = ({ onAddToCart }) => {
     // Treat Art as a CoffeeItem for the cart (shared structure)
     // Note: In a real app, we might distinguish types more clearly
     if (!art.id || !art.title || art.price == null) return; // Skip invalid items
-    
+
     // Check stock availability
     if (art.stock <= 0) {
       setToastMessage(`${art.title || 'Art'} is out of stock`);

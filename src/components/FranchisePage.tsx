@@ -125,15 +125,8 @@ const FranchisePage: React.FC = () => {
         }
     };
 
-    const fadeInUp = {
-        initial: { opacity: 0, y: 30 },
-        whileInView: { opacity: 1, y: 0 },
-        viewport: { once: true },
-        transition: { duration: 0.8 }
-    };
-
     return (
-        <div className="min-h-screen bg-[#F3EFE0] overflow-hidden">
+        <div className="min-h-screen bg-[#F9F8F4] overflow-hidden text-[#1A1A1A]" ref={targetRef}>
 
             {/* 1. HERO SECTION - Clean, No Image, Just Vibe */}
             <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden pt-20">
@@ -252,10 +245,8 @@ const FranchisePage: React.FC = () => {
                         viewport={{ once: true, margin: "-10%" }}
                     >
                         {/* Card 1: Space */}
-                        <motion.div
-                            className="bg-[#F3EFE0] p-8 rounded-xl relative group overflow-hidden"
-                            whileHover={{ y: -10 }}
-                            transition={{ duration: 0.3 }}
+                        <motion.div variants={itemVariants}
+                            className="bg-[#F9F8F4] p-8 md:p-10 rounded-xl relative group overflow-hidden hover:bg-white transition-colors duration-300"
                         >
                             <div className="absolute -right-8 -top-8 opacity-5 group-hover:opacity-10 transition-opacity duration-500 transform group-hover:rotate-12">
                                 <MapPin className="w-48 h-48" />
@@ -268,10 +259,8 @@ const FranchisePage: React.FC = () => {
                         </motion.div>
 
                         {/* Card 2: Investment */}
-                        <motion.div
-                            className="bg-[#F3EFE0] p-8 rounded-xl relative group overflow-hidden"
-                            whileHover={{ y: -10 }}
-                            transition={{ duration: 0.3 }}
+                        <motion.div variants={itemVariants}
+                            className="bg-[#F9F8F4] p-8 md:p-10 rounded-xl relative group overflow-hidden hover:bg-white transition-colors duration-300"
                         >
                             <div className="absolute -right-8 -top-8 opacity-5 group-hover:opacity-10 transition-opacity duration-500 transform group-hover:rotate-12">
                                 <DollarSign className="w-48 h-48" />
@@ -284,10 +273,8 @@ const FranchisePage: React.FC = () => {
                         </motion.div>
 
                         {/* Card 3: Passion */}
-                        <motion.div
-                            className="bg-[#F3EFE0] p-8 rounded-xl relative group overflow-hidden"
-                            whileHover={{ y: -10 }}
-                            transition={{ duration: 0.3 }}
+                        <motion.div variants={itemVariants}
+                            className="bg-[#F9F8F4] p-8 md:p-10 rounded-xl relative group overflow-hidden hover:bg-white transition-colors duration-300"
                         >
                             <div className="absolute -right-8 -top-8 opacity-5 group-hover:opacity-10 transition-opacity duration-500 transform group-hover:rotate-12">
                                 <Heart className="w-48 h-48" />
@@ -336,9 +323,25 @@ const FranchisePage: React.FC = () => {
             </section>
 
             {/* 5. ROADMAP TIMELINE */}
-            <section className="py-24 bg-[#F3EFE0]">
-                <div className="max-w-7xl mx-auto px-6 md:px-12">
-                    <motion.h2 className="text-4xl md:text-5xl font-serif mb-16 text-center" {...fadeInUp}>From Vision to Launch</motion.h2>
+            <section className="py-24 bg-white relative overflow-hidden">
+                {/* Background Noise/Gradient */}
+                <div className="absolute inset-0 z-0 opacity-[0.03] pointer-events-none">
+                    <svg width="100%" height="100%">
+                        <filter id="noise2">
+                            <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3" stitchTiles="stitch" />
+                            <feColorMatrix type="saturate" values="0" />
+                        </filter>
+                        <rect width="100%" height="100%" filter="url(#noise2)" />
+                    </svg>
+                </div>
+
+                <div className="max-w-7xl mx-auto px-6 md:px-12 relative z-10">
+                    <motion.h2
+                        className="text-4xl md:text-5xl font-serif italic mb-20 text-center"
+                        initial={{ opacity: 0, y: 30 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                    >From Vision to Launch.</motion.h2>
 
                     <div className="relative">
                         {/* Progressive Line */}
@@ -540,20 +543,11 @@ const FranchisePage: React.FC = () => {
 
             {/* MODAL (Same as before, preserved) */}
             {isModalOpen && typeof document !== 'undefined' && createPortal(
-                <div className="fixed inset-0 z-[9999] flex items-center justify-center px-4">
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-6 font-sans">
                     <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        onClick={() => setIsModalOpen(false)}
-                        className="absolute inset-0 bg-black/80 backdrop-blur-sm"
-                    />
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                        initial={{ opacity: 0, scale: 0.95, y: 20 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                        transition={{ type: "spring", duration: 0.6, bounce: 0.3 }}
-                        className="relative bg-[#F3EFE0] w-full max-w-lg rounded-2xl shadow-xl overflow-hidden"
+                        className="bg-[#F9F8F4] w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden relative z-[10000]"
                     >
                         <div className="bg-[#1A1A1A] text-[#F9F8F4] px-8 py-8 flex justify-between items-center">
                             <div>

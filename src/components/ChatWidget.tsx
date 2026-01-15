@@ -83,15 +83,11 @@ export default function ChatWidget() {
 
       let botReply = "I'm not sure how to respond to that.";
 
-      const data: ApiResponse = await response.json();
-
-      let botResponse = "I didn't catch that.";
-
       if (data.action === 'navigate' && data.parameters?.route) {
-        botResponse = `Taking you to the ${data.parameters.route.replace('/', '')} page...`;
+        botReply = `Taking you to the ${data.parameters.route.replace('/', '')} page...`;
         setTimeout(() => { window.location.href = data.parameters?.route || '/'; }, 1500);
       } else if (data.action === 'respond' && data.parameters?.message) {
-        botResponse = data.parameters.message;
+        botReply = data.parameters.message;
       } else if (data.reply) {
         botReply = data.reply;
       }
@@ -187,36 +183,6 @@ export default function ChatWidget() {
                 </button>
               </div>
             </div>
-            <button onClick={() => setIsOpen(false)} className="text-white/60 hover:text-white transition-colors">
-              <X size={20} />
-            </button>
-          </div>
-
-          {!isMinimized && (
-            <>
-              <div className="chat-messages flex-1 overflow-y-auto p-4 flex flex-col gap-3 bg-[#FAF9F6]">
-                {messages.map((msg, index) => (
-                  <div key={index}
-                    className={`message p-3 rounded-lg max-w-[85%] text-sm ${msg.isUser ? 'self-end' : 'self-start'}`}
-                    style={{
-                      whiteSpace: 'pre-wrap', // Essential for lists!
-                      backgroundColor: msg.isUser ? '#2C1810' : '#EFEBE9',
-                      color: msg.isUser ? '#F3E5AB' : '#2C1810',
-                      border: msg.isUser ? 'none' : '1px solid #D7CCC8',
-                      borderRadius: '8px'
-                    }}>
-                    {msg.text}
-                  </div>
-                ))}
-
-                {isLoading && (
-                  <div className="bg-[#EFEBE9] p-3 rounded-lg flex items-center gap-2 text-[#2C1810] text-sm w-fit border border-[#D7CCC8]">
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Brewing answer...</span>
-                  </div>
-                )}
-                <div ref={messagesEndRef} />
-              </div>
 
             {/* Chat Messages */}
             <div className={`chat-messages flex-1 overflow-y-auto flex flex-col gap-4 bg-[#F3EFE0] ${isMobile ? 'p-3' : 'p-5'}`}>
@@ -232,45 +198,45 @@ export default function ChatWidget() {
                     borderBottomRightRadius: msg.isUser ? '2px' : '16px',
                     borderBottomLeftRadius: msg.isUser ? '16px' : '2px'
                   }}>
-                  {msg.text}
+                  <FormatMessage text={msg.text} />
                 </div>
-              </div>
-            ))}
-            {isLoading && (
-              <div className="flex justify-start">
-                <div className="bg-[#F3F0EB] p-3 rounded-2xl rounded-tl-none border border-[#E7E5E4] flex items-center gap-2 text-xs text-[#8B5E3C] font-medium tracking-wide">
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  BREWING...
+              ))}
+              {isLoading && (
+                <div className="flex justify-start">
+                  <div className="bg-[#F3F0EB] p-3 rounded-2xl rounded-tl-none border border-[#E7E5E4] flex items-center gap-2 text-xs text-[#8B5E3C] font-medium tracking-wide">
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    BREWING...
+                  </div>
                 </div>
-              </div>
-            )}
-            <div ref={messagesEndRef} />
-          </div>
-
-          {/* Input */}
-          <div className="p-4 bg-white border-t border-[#E7E5E4]">
-            <div className="flex gap-2 items-center bg-transparent">
-              <input
-                type="text"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                placeholder="Ask about menu, calories..."
-                disabled={isLoading}
-                className={`flex-1 border border-gray-300 rounded-xl focus:outline-none focus:border-[#A35D36] ${isMobile ? 'p-3 text-[14px]' : 'p-3.5 text-[16px]'}`}
-              />
-              <button
-                onClick={handleSend}
-                disabled={isLoading || !(input ?? '').trim()}
-                className={`rounded-xl disabled:opacity-50 transition-all hover:brightness-110 shadow-sm ${isMobile ? 'p-3' : 'p-3.5'}`}
-                style={{ backgroundColor: '#A35D36', color: '#F9F8F4' }}
-              >
-                <Send className="w-5 h-5 -ml-0.5 mt-0.5" />
-              </button>
+              )}
+              <div ref={messagesEndRef} />
             </div>
-          </div>
-        </div>
-      )}
-    </>
+
+            {/* Input */}
+            <div className="p-4 bg-white border-t border-[#E7E5E4]">
+              <div className="flex gap-2 items-center bg-transparent">
+                <input
+                  type="text"
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                  placeholder="Ask about menu, calories..."
+                  disabled={isLoading}
+                  className={`flex-1 border border-gray-300 rounded-xl focus:outline-none focus:border-[#A35D36] ${isMobile ? 'p-3 text-[14px]' : 'p-3.5 text-[16px]'}`}
+                />
+                <button
+                  onClick={handleSend}
+                  disabled={isLoading || !(input ?? '').trim()}
+                  className={`rounded-xl disabled:opacity-50 transition-all hover:brightness-110 shadow-sm ${isMobile ? 'p-3' : 'p-3.5'}`}
+                  style={{ backgroundColor: '#A35D36', color: '#F9F8F4' }}
+                >
+                  <Send className="w-5 h-5 -ml-0.5 mt-0.5" />
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }

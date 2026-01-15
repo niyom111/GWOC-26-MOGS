@@ -43,7 +43,7 @@ const motion = motionBase as any;
 
 const AppContent: React.FC = () => {
   const { artItems, refreshArtItems } = useDataContext();
-  
+
   const pathToPage = (path: string): Page => {
     switch (path) {
       case '/menu':
@@ -172,7 +172,7 @@ const AppContent: React.FC = () => {
   const removeFromCart = async (id: string) => {
     // Check if this is an art item (ID starts with 'a' or exists in artItems)
     const isArtItem = id.startsWith('a') || artItems.some(item => item.id === id);
-    
+
     if (isArtItem) {
       try {
         // Increment stock when art item is removed from cart
@@ -252,110 +252,109 @@ const AppContent: React.FC = () => {
   };
 
   return (
-    <DataProvider>
-      <div className="min-h-screen font-sans bg-[#F3EFE0] text-[#1A1A1A]">
-        {currentPage !== Page.ADMIN && currentPage !== Page.EMPLOYEE && (
+    <div className="min-h-screen font-sans bg-[#F3EFE0] text-[#1A1A1A]">
+      {currentPage !== Page.ADMIN && currentPage !== Page.EMPLOYEE && (
         <Header onNavigate={navigateTo} currentPage={currentPage} cartCount={cartCount} />
-        )}
+      )}
 
-        <AnimatePresence mode="wait" onExitComplete={handleExitComplete}>
-          <motion.div
-            key={currentPage}
-            initial={{ opacity: 0, y: 20, filter: 'blur(10px)' }}
-            animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-            exit={{ opacity: 0, y: -20, filter: 'blur(10px)' }}
-            transition={{ duration: 1.0, ease: [0.22, 1, 0.36, 1] }}
-            onAnimationComplete={() => {
-              // Vital for position: fixed/sticky to work
-              document.body.style.overflowX = 'hidden';
-              const element = document.getElementById('page-transition-wrapper');
-              if (element) {
-                element.style.transform = "none";
-              }
-            }}
-            id="page-transition-wrapper"
-          >
-            {/* ScrollToTop removed */}
-            {currentPage === Page.HOME && (
-              <>
-                <Hero />
-                <StickySection onNavigate={navigateTo} />
-                <StatsSection />
-                <ManifestoSection />
-                <ProcessScroll />
-                <GalleryTeaser onNavigate={() => navigateTo(Page.ART)} />
-                <MenuPreview onAddToCart={addToCart} onGoToMenu={() => navigateTo(Page.MENU)} />
-                <Reviews />
-              </>
-            )}
+      <AnimatePresence mode="wait" onExitComplete={handleExitComplete}>
+        <motion.div
+          key={currentPage}
+          initial={{ opacity: 0, y: 20, filter: 'blur(10px)' }}
+          animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+          exit={{ opacity: 0, y: -20, filter: 'blur(10px)' }}
+          transition={{ duration: 1.0, ease: [0.22, 1, 0.36, 1] }}
+          onAnimationComplete={() => {
+            // Vital for position: fixed/sticky to work
+            document.body.style.overflowX = 'hidden';
+            const element = document.getElementById('page-transition-wrapper');
+            if (element) {
+              element.style.transform = "none";
+            }
+          }}
+          id="page-transition-wrapper"
+        >
+          {/* ScrollToTop removed */}
+          {currentPage === Page.HOME && (
+            <>
+              <Hero />
+              <StickySection onNavigate={navigateTo} />
+              <StatsSection />
+              <ManifestoSection />
+              <ProcessScroll />
+              <GalleryTeaser onNavigate={() => navigateTo(Page.ART)} />
+              <MenuPreview onAddToCart={addToCart} onGoToMenu={() => navigateTo(Page.MENU)} />
+              <Reviews />
+            </>
+          )}
 
-            {currentPage === Page.MENU && (
-              <MenuPage onAddToCart={addToCart} />
-            )}
+          {currentPage === Page.MENU && (
+            <MenuPage onAddToCart={addToCart} />
+          )}
 
-            {currentPage === Page.CART && (
-              <CartPage
-                cart={cart}
-                onRemove={removeFromCart}
-                onUpdateQuantity={updateQuantity}
-                onBackToMenu={() => navigateTo(Page.MENU)}
-                onClearCart={() => setCart([])}
-                onBackToHome={() => navigateTo(Page.HOME)}
-                onPaymentFailure={() => navigateTo(Page.PAYMENT_FAILURE)}
-              />
-            )}
+          {currentPage === Page.CART && (
+            <CartPage
+              cart={cart}
+              onRemove={removeFromCart}
+              onUpdateQuantity={updateQuantity}
+              onBackToMenu={() => navigateTo(Page.MENU)}
+              onClearCart={() => setCart([])}
+              onBackToHome={() => navigateTo(Page.HOME)}
+              onPaymentFailure={() => navigateTo(Page.PAYMENT_FAILURE)}
+            />
+          )}
 
-            {currentPage === Page.WORKSHOPS && (
-              <WorkshopPage />
-            )}
+          {currentPage === Page.WORKSHOPS && (
+            <WorkshopPage />
+          )}
 
-            {currentPage === Page.ART && (
-              <ArtPage onAddToCart={addToCart} />
-            )}
+          {currentPage === Page.ART && (
+            <ArtPage onAddToCart={addToCart} />
+          )}
 
-            {currentPage === Page.AWARENESS && (
-              <AwarenessPage onNavigate={navigateTo} />
-            )}
+          {currentPage === Page.AWARENESS && (
+            <AwarenessPage onNavigate={navigateTo} />
+          )}
 
-            {currentPage === Page.FIND_STORE && (
-              <FindStorePage />
-            )}
+          {currentPage === Page.FIND_STORE && (
+            <FindStorePage />
+          )}
 
-            {currentPage === Page.ROBUSTA_STORY && (
-              <RobustaStory onBack={() => navigateTo(Page.AWARENESS)} />
-            )}
+          {currentPage === Page.ROBUSTA_STORY && (
+            <RobustaStory onBack={() => navigateTo(Page.AWARENESS)} />
+          )}
 
-            {currentPage === Page.FAQ && (
-              <FAQPage />
-            )}
+          {currentPage === Page.FAQ && (
+            <FAQPage />
+          )}
 
-            {currentPage === Page.FRANCHISE && (
-              <FranchisePage />
-            )}
+          {currentPage === Page.FRANCHISE && (
+            <FranchisePage />
+          )}
 
-            {currentPage === Page.TRACK_ORDER && (
-              <TrackOrderPage onNavigate={navigateTo} />
-            )}
+          {currentPage === Page.TRACK_ORDER && (
+            <TrackOrderPage onNavigate={navigateTo} />
+          )}
 
-            {currentPage === Page.EMPLOYEE && (
-              <EmployeeDashboard onNavigate={navigateTo} onBack={() => navigateTo(Page.HOME)} />
-            )}
+          {currentPage === Page.EMPLOYEE && (
+            <EmployeeDashboard onNavigate={navigateTo} onBack={() => navigateTo(Page.HOME)} />
+          )}
 
-            {currentPage === Page.ADMIN && (
-              <AdminRoute onBack={() => navigateTo(Page.HOME)}>
-                {handleLogout => (
-                  <AdminDashboard onBack={() => navigateTo(Page.HOME)} onLogout={handleLogout} />
-                )}
-              </AdminRoute>
-            )}
-          </motion.div>
-        </AnimatePresence>
+          {currentPage === Page.ADMIN && (
+            <AdminRoute onBack={() => navigateTo(Page.HOME)}>
+              {handleLogout => (
+                <AdminDashboard onBack={() => navigateTo(Page.HOME)} onLogout={handleLogout} />
+              )}
+            </AdminRoute>
+          )}
+        </motion.div>
+      </AnimatePresence>
 
-        {currentPage !== Page.ADMIN && currentPage !== Page.EMPLOYEE && <Footer onNavigate={navigateTo} />}
+      {currentPage !== Page.ADMIN && currentPage !== Page.EMPLOYEE && <Footer onNavigate={navigateTo} />}
 
-        {/* --- ADDED CHAT WIDGET HERE --- */}
-        {currentPage !== Page.EMPLOYEE && <ChatWidget />}
-      </div>
+      {/* --- ADDED CHAT WIDGET HERE --- */}
+      {currentPage !== Page.EMPLOYEE && <ChatWidget />}
+    </div>
   );
 };
 
