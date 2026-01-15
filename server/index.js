@@ -3,14 +3,20 @@ import express from 'express';
 import cors from 'cors';
 import multer from 'multer';
 import Razorpay from 'razorpay';
-import { db } from './db.js';
-import { rebuildKnowledgeIndex } from './data/knowledgeManager.js';
+import { db, initDb } from './db.js';
+import { rebuildKnowledgeIndex, initializeKnowledge } from './data/knowledgeManager.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import crypto from 'crypto';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Helper to get IST time string
+const getISTTime = () => {
+    return new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" });
+};
 
 // -----------------------------------------------------
 // CONFIGURATION & SETUP
@@ -53,8 +59,10 @@ app.use(express.static(path.join(__dirname, '../public')));
 const RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY_ID?.trim().replace(/^["']|["']$/g, '');
 const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET?.trim().replace(/^["']|["']$/g, '');
 
+let razorpayInstance = null;
+
 if (RAZORPAY_KEY_ID && RAZORPAY_KEY_SECRET) {
-    const razorpayInstance = new Razorpay({ key_id: RAZORPAY_KEY_ID, key_secret: RAZORPAY_KEY_SECRET });
+    razorpayInstance = new Razorpay({ key_id: RAZORPAY_KEY_ID, key_secret: RAZORPAY_KEY_SECRET });
     console.log('✅ Razorpay initialized');
 } else {
     console.warn('⚠️ Razorpay keys missing');
@@ -99,15 +107,25 @@ function generateLocalResponse(message, menuItems, workshops, artItems) {
         .replace(/does (the )?have/g, "")
         .replace(/is (the )?/g, "")
         .replace(/tell me about/g, "")
-        .replace(/\b(please|kindly|hey|hi|hello)\b/g, "")
+        .replace(/\b(please|kindly|hey|hi|hello|tell me)\b/g, "")
+        .replace(/take me to/g, "navigate to") // normalization
         .trim();
 
     // 1. Navigation Commands
-    if (lowerMsg.includes("go to") || lowerMsg.includes("show me") || lowerMsg.includes("navigate") || lowerMsg.includes("open")) {
+    if (lowerMsg.includes("go to") || lowerMsg.includes("show me") || lowerMsg.includes("navigate") || lowerMsg.includes("open") || lowerMsg.includes("take me")) {
         if (lowerMsg.includes("menu") && !lowerMsg.includes("item")) return { action: "navigate", parameters: { route: "/menu" } };
-        if (lowerMsg.includes("art")) return { action: "navigate", parameters: { route: "/art" } };
+        if (lowerMsg.includes("art") && !lowerMsg.includes("what")) return { action: "navigate", parameters: { route: "/art" } }; // Avoid navigating if asking "what art?"
         if (lowerMsg.includes("workshop") || lowerMsg.includes("event")) return { action: "navigate", parameters: { route: "/workshops" } };
         if (lowerMsg.includes("home")) return { action: "navigate", parameters: { route: "/" } };
+
+        // Extended Routes
+        if (lowerMsg.includes("cart") || lowerMsg.includes("basket") || lowerMsg.includes("checkout")) return { action: "navigate", parameters: { route: "/cart" } };
+        if (lowerMsg.includes("philosophy") || lowerMsg.includes("value") || lowerMsg.includes("mission")) return { action: "navigate", parameters: { route: "/philosophy" } };
+        if (lowerMsg.includes("store") || lowerMsg.includes("find") || lowerMsg.includes("visit")) return { action: "navigate", parameters: { route: "/find-store" } };
+        if (lowerMsg.includes("story") || lowerMsg.includes("history") || lowerMsg.includes("origin")) return { action: "navigate", parameters: { route: "/robusta-story" } };
+        if (lowerMsg.includes("faq") || lowerMsg.includes("question") || lowerMsg.includes("help")) return { action: "navigate", parameters: { route: "/faq" } };
+        if (lowerMsg.includes("franchise") || lowerMsg.includes("business") || lowerMsg.includes("partner")) return { action: "navigate", parameters: { route: "/franchise" } };
+        if (lowerMsg.includes("track") || lowerMsg.includes("order status")) return { action: "navigate", parameters: { route: "/track-order" } };
     }
 
     // 2. Greetings
@@ -186,7 +204,7 @@ function generateLocalResponse(message, menuItems, workshops, artItems) {
 
         let menuString = "📜 **OUR MENU**\n";
         for (const [cat, items] of Object.entries(grouped)) {
-            menuString += `\n**${cat.toUpperCase()}**\n` + items.slice(0, 4).join(', ') + (items.length > 4 ? ` +${items.length - 4} more` : '');
+            menuString += `\n**${cat.toUpperCase()}**\n` + items.join(', ');
         }
 
         menuString += "\n\nTip: Ask for a specific item like 'Price of Latte' for details!";
@@ -270,8 +288,15 @@ app.post('/api/chat', async (req, res) => {
     console.log(`[Chatbot] Received: "${message}"`);
 
     try {
-        // Fetch fresh data
-        const { data: menuItems, error } = await db.from('menu_items').select('*');
+        // Fetch fresh data with joins
+        const { data: menuItemsData, error } = await db.from('menu_items')
+            .select(`*, categories (name)`);
+
+        const menuItems = (menuItemsData || []).map(item => ({
+            ...item,
+            category: item.categories?.name || item.category_legacy || 'Other'
+        }));
+
         const { data: workshops } = await db.from('workshops').select('*');
         const { data: artItems } = await db.from('art_items').select('*');
 
@@ -314,9 +339,25 @@ app.post('/api/chat', async (req, res) => {
 // -----------------------------------------------------
 
 app.get('/api/menu', async (req, res) => {
-    const { data, error } = await db.from('menu_items').select('*');
+    // Join with categories and sub_categories
+    const { data, error } = await db.from('menu_items')
+        .select(`
+            *,
+            categories (name),
+            sub_categories (name)
+        `);
+
     if (error) return res.status(500).json({ error: error.message });
-    res.json(data || []);
+
+    // Flatten for frontend compatibility
+    const flatData = (data || []).map(item => ({
+        ...item,
+        category: item.categories?.name || item.category_legacy, // Frontend expects fallback
+        category_name: item.categories?.name || item.category_legacy, // Explicit new field
+        sub_category_name: item.sub_categories?.name || null
+    }));
+
+    res.json(flatData);
 });
 
 app.post('/api/menu', async (req, res) => {
@@ -362,7 +403,7 @@ app.put('/api/art/:id', async (req, res) => {
 app.post('/api/art/:id/decrement-stock', async (req, res) => {
     try {
         const artId = req.params.id;
-        
+
         // Get current stock
         const { data: artItem, error: fetchError } = await db
             .from('art_items')
@@ -375,7 +416,7 @@ app.post('/api/art/:id/decrement-stock', async (req, res) => {
         }
 
         const currentStock = parseInt(String(artItem.stock)) || 0;
-        
+
         if (currentStock <= 0) {
             return res.status(400).json({ error: 'Item is out of stock' });
         }
@@ -386,7 +427,7 @@ app.post('/api/art/:id/decrement-stock', async (req, res) => {
         // Update stock and status
         const { data: updatedItem, error: updateError } = await db
             .from('art_items')
-            .update({ 
+            .update({
                 stock: newStock,
                 status: newStatus
             })
@@ -408,7 +449,7 @@ app.post('/api/art/:id/decrement-stock', async (req, res) => {
 app.post('/api/art/:id/increment-stock', async (req, res) => {
     try {
         const artId = req.params.id;
-        
+
         // Get current stock
         const { data: artItem, error: fetchError } = await db
             .from('art_items')
@@ -427,7 +468,7 @@ app.post('/api/art/:id/increment-stock', async (req, res) => {
         // Update stock and status
         const { data: updatedItem, error: updateError } = await db
             .from('art_items')
-            .update({ 
+            .update({
                 stock: newStock,
                 status: newStatus
             })
@@ -1208,7 +1249,14 @@ app.post('/api/chat', async (req, res) => {
         const { message, sessionId } = req.body;
 
         // 1. Fetch Dynamic Data for Context
-        const { data: menuItems } = await db.from('menu_items').select('*');
+        const { data: menuItemsData } = await db.from('menu_items')
+            .select(`*, categories (name)`);
+
+        const menuItems = (menuItemsData || []).map(item => ({
+            ...item,
+            category: item.categories?.name || item.category_legacy || 'Other'
+        }));
+
         const { data: workshops } = await db.from('workshops').select('*');
         const { data: artItems } = await db.from('art_items').select('*').eq('status', 'Available');
 
@@ -1249,10 +1297,15 @@ app.post('/api/chat', async (req, res) => {
         context += `
         \nNAVIGATION ROUTES (Use EXACTLY these paths):
         - Menu: /menu
+        - Cart: /cart
         - Workshops: /workshops
         - Gallery: /art
-        - About: /about
+        - About/Philosophy: /philosophy
+        - Robusta Story: /robusta-story
         - Find Us: /find-store
+        - FAQ: /faq
+        - Franchise: /franchise
+        - Track Order: /track-order
         `;
 
         // 3. System Prompt
@@ -1326,7 +1379,30 @@ app.post('/api/chat', async (req, res) => {
 });
 
 initDb().then(async () => {
-    // Initialize knowledge index after database is ready
-    await initializeKnowledge(db);
-    app.listen(PORT, () => { console.log(`🚀 Intelligent Server running on http://localhost:${PORT}`); });
+    try {
+        // Initialize knowledge index after database is ready
+        await initializeKnowledge(db);
+        app.listen(PORT, () => { console.log(`🚀 Intelligent Server running on http://localhost:${PORT}`); });
+
+        // Prevent exit
+        process.stdin.resume();
+    } catch (err) {
+        console.error('❌ Error starting server:', err);
+        process.exit(1);
+    }
+}).catch(err => {
+    console.error('❌ Failed to initialize database:', err);
+    process.exit(1);
+});
+
+process.on('exit', (code) => {
+    console.log(`[DEBUG] Process exiting with code: ${code}`);
+});
+process.on('SIGINT', () => {
+    console.log('[DEBUG] Received SIGINT');
+    process.exit(0);
+});
+process.on('SIGTERM', () => {
+    console.log('[DEBUG] Received SIGTERM');
+    process.exit(0);
 });
