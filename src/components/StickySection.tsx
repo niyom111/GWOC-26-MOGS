@@ -13,14 +13,6 @@ interface StickySectionProps {
 
 const StickySection: React.FC<StickySectionProps> = ({ onNavigate }) => {
   const containerRef = React.useRef(null);
-  const { scrollYProgress } = useScroll({
-    target: containerRef,
-    offset: ["start start", "end end"]
-  });
-
-  const img1Y = useTransform(scrollYProgress, [0, 1], [0, -200]);
-  const img2Y = useTransform(scrollYProgress, [0, 1], [100, -400]);
-
   const [shouldAnimate, setShouldAnimate] = React.useState(true);
 
   React.useEffect(() => {
@@ -121,6 +113,7 @@ const StickySection: React.FC<StickySectionProps> = ({ onNavigate }) => {
         {/* Right Scrolling Parallax Images */}
         <div className="lg:w-[54%] lg:pl-24 xl:pl-32 pt-10 lg:pt-32 grid grid-cols-2 gap-4 lg:flex lg:flex-col lg:gap-16 items-start lg:items-end justify-center">
           <motion.div
+            style={{ willChange: 'transform, opacity' }}
             initial={shouldAnimate ? { opacity: 0, x: -50 } : { opacity: 1, x: 0 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
@@ -135,6 +128,7 @@ const StickySection: React.FC<StickySectionProps> = ({ onNavigate }) => {
           </motion.div>
 
           <motion.div
+            style={{ willChange: 'transform, opacity' }}
             initial={shouldAnimate ? { opacity: 0, x: 50 } : { opacity: 1, x: 0 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
@@ -149,6 +143,7 @@ const StickySection: React.FC<StickySectionProps> = ({ onNavigate }) => {
           </motion.div>
 
           <motion.div
+            style={{ willChange: 'transform, opacity' }}
             initial={shouldAnimate ? { opacity: 0, y: 50 } : { opacity: 1, y: 0 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}

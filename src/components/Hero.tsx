@@ -13,7 +13,7 @@ const Hero: React.FC = () => {
     <section className="relative h-screen w-full overflow-hidden flex items-center justify-center bg-black">
       {/* Background Video */}
       <motion.div
-        style={{ scale }}
+        style={{ scale, willChange: 'transform' }}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 1.5, ease: "easeInOut" }}

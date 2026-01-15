@@ -270,17 +270,13 @@ const AppContent: React.FC = () => {
         <AnimatePresence mode="wait" onExitComplete={handleExitComplete}>
           <motion.div
             key={currentPage}
-            initial={{ opacity: 0, y: 20, filter: 'blur(10px)' }}
-            animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-            exit={{ opacity: 0, y: -20, filter: 'blur(10px)' }}
-            transition={{ duration: 1.0, ease: [0.22, 1, 0.36, 1] }}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
             onAnimationComplete={() => {
               // Vital for position: fixed/sticky to work
               document.body.style.overflowX = 'hidden';
-              const element = document.getElementById('page-transition-wrapper');
-              if (element) {
-                element.style.transform = "none";
-              }
             }}
             id="page-transition-wrapper"
           >
