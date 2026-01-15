@@ -77,7 +77,7 @@ const StatBlock: React.FC<{
             {/* Top Label */}
             <div className="flex items-center gap-3 mb-12">
                 <div className="w-2 h-2 rounded-full bg-zinc-300 group-hover:bg-[#CE2029] transition-colors duration-300 ring-2 ring-transparent group-hover:ring-red-100" />
-                <span className="text-xs font-sans uppercase tracking-[0.2em] text-zinc-900 group-hover:text-black transition-colors duration-300 font-medium">
+                <span className="text-sm font-sans uppercase tracking-[0.2em] text-zinc-900 group-hover:text-black transition-colors duration-300 font-medium">
                     {label}
                 </span>
             </div>
@@ -104,7 +104,7 @@ const StatBlock: React.FC<{
 
 const StatsSection: React.FC = () => {
     return (
-        <section className="bg-[#F3EFE0] text-black border-y border-black/10 overflow-hidden">
+        <section className="bg-[#F3EFE0] text-black border-y border-black/10 overflow-hidden text-[10px]">
             <div className="grid grid-cols-1 md:grid-cols-3">
                 <StatBlock
                     index={0}

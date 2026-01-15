@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Lock } from 'lucide-react';
 import { Page, CoffeeItem, CartItem } from './types';
 import Header from './components/Header';
 import Hero from './components/Hero';
@@ -37,12 +38,7 @@ const motion = motionBase as any;
 
 // ScrollToTop component to reset scroll only when new page mounts
 // Moved outside App to prevent re-mounting on state changes (like cart updates)
-const ScrollToTop = () => {
-  React.useLayoutEffect(() => {
-    window.scrollTo(0, 0);
-  }, []);
-  return null;
-};
+// ScrollToTop component removed in favor of manual restoration logic in App
 
 const App: React.FC = () => {
   const pathToPage = (path: string): Page => {
@@ -143,10 +139,20 @@ const App: React.FC = () => {
 
   const navigateTo = (page: Page) => {
     const newPath = pageToPath(page);
+
+    // If navigating to the same page (e.g. clicking Home logo while on Home), just scroll to top
+    if (window.location.pathname === newPath) {
+      window.scrollTo(0, 0);
+      return;
+    }
+
     if (window.location.pathname !== newPath) {
+      // Save scroll position of current page before leaving
+      const currentState = window.history.state || {};
+      window.history.replaceState({ ...currentState, scrollY: window.scrollY }, '');
+
       window.history.pushState({ page }, '', newPath);
     }
-    // Scroll is now handled by ScrollToTop component on mount
     setCurrentPage(page);
   };
 
@@ -171,21 +177,70 @@ const App: React.FC = () => {
 
   const cartCount = cart.reduce((acc, item) => acc + item.quantity, 0);
 
-  // ScrollToTop component to reset scroll only when new page mounts
-  // Moved outside App to prevent re-mounting on state changes (like cart updates)
+  // Track first mount for reload detection
+  const isFirstMount = React.useRef(true);
+
+  // Manual Scroll Restoration
+  React.useLayoutEffect(() => {
+    if ('scrollRestoration' in window.history) {
+      window.history.scrollRestoration = 'manual';
+    }
+
+    // On page reload (F5), force scroll to top
+    if (isFirstMount.current) {
+      isFirstMount.current = false;
+      const navEntries = performance.getEntriesByType("navigation");
+      if (navEntries.length > 0) {
+        const navEntry = navEntries[0] as PerformanceNavigationTiming;
+        if (navEntry.type === 'reload') {
+          // Clear any saved scroll from history state so it doesn't persist
+          const currentState = window.history.state || {};
+          if (currentState.scrollY) {
+            const newState = { ...currentState };
+            delete newState.scrollY;
+            window.history.replaceState(newState, '');
+          }
+
+          window.scrollTo(0, 0);
+          return;
+        }
+      }
+    }
+
+    // Restore scroll or reset to top
+    // REMOVED: Auto-scroll logic moved to onExitComplete to prevent jumps
+    const state = window.history.state;
+    // if (state && typeof state.scrollY === 'number') {
+    //   window.scrollTo(0, state.scrollY);
+    // } else {
+    //   window.scrollTo(0, 0);
+    // }
+  }, [currentPage]);
+
+  const handleExitComplete = () => {
+    // Restore scroll or reset to top AFTER exit animation finishes
+    const state = window.history.state;
+    if (state && typeof state.scrollY === 'number') {
+      window.scrollTo(0, state.scrollY);
+    } else {
+      window.scrollTo({ top: 0, behavior: "instant" });
+    }
+  };
 
   return (
     <DataProvider>
       <div className="min-h-screen font-sans bg-[#F3EFE0] text-[#1A1A1A]">
-        <Header onNavigate={navigateTo} currentPage={currentPage} cartCount={cartCount} />
+        {currentPage !== Page.ADMIN && currentPage !== Page.EMPLOYEE && (
+          <Header onNavigate={navigateTo} currentPage={currentPage} cartCount={cartCount} />
+        )}
 
-        <AnimatePresence mode="wait">
+        <AnimatePresence mode="wait" onExitComplete={handleExitComplete}>
           <motion.div
             key={currentPage}
             initial={{ opacity: 0, y: 20, filter: 'blur(10px)' }}
             animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
             exit={{ opacity: 0, y: -20, filter: 'blur(10px)' }}
-            transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ duration: 1.0, ease: [0.22, 1, 0.36, 1] }}
             onAnimationComplete={() => {
               // Vital for position: fixed/sticky to work
               document.body.style.overflowX = 'hidden';
@@ -196,7 +251,7 @@ const App: React.FC = () => {
             }}
             id="page-transition-wrapper"
           >
-            <ScrollToTop />
+            {/* ScrollToTop removed */}
             {currentPage === Page.HOME && (
               <>
                 <Hero />
@@ -263,7 +318,7 @@ const App: React.FC = () => {
             )}
 
             {currentPage === Page.ADMIN && (
-              <AdminRoute>
+              <AdminRoute onBack={() => navigateTo(Page.HOME)}>
                 {handleLogout => (
                   <AdminDashboard onBack={() => navigateTo(Page.HOME)} onLogout={handleLogout} />
                 )}
@@ -282,7 +337,7 @@ const App: React.FC = () => {
 };
 
 // Simple hardcoded admin login gate with loading overlay
-const AdminRoute: React.FC<{ children: (logout: () => void) => React.ReactNode }> = ({ children }) => {
+const AdminRoute: React.FC<{ children: (logout: () => void) => React.ReactNode, onBack: () => void }> = ({ children, onBack }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -349,8 +404,13 @@ const AdminRoute: React.FC<{ children: (logout: () => void) => React.ReactNode }
   }
 
   return (
-    <div className="min-h-screen bg-[#F9F8F4] flex items-center justify-center px-4 relative overflow-hidden">
+    <div className="min-h-screen bg-[#F3EFE0] flex items-center justify-center px-4 relative overflow-hidden">
       <div className="w-full max-w-sm bg-white border border-black/10 rounded-xl shadow-sm p-8 z-10">
+        <div className="flex items-center justify-center mb-6">
+          <div className="p-3 bg-black/5 rounded-full">
+            <Lock className="w-8 h-8 text-[#0a0a0a]" />
+          </div>
+        </div>
         <h1 className="text-2xl font-serif mb-2 text-center">Admin Login</h1>
         <p className="text-xs text-zinc-500 font-sans mb-4 text-center uppercase tracking-[0.25em]">
           Rabuste Coffee
@@ -369,6 +429,7 @@ const AdminRoute: React.FC<{ children: (logout: () => void) => React.ReactNode }
               value={username}
               onChange={e => setUsername(e.target.value)}
               className="w-full bg-transparent border border-black/20 rounded-md px-3 py-2 outline-none focus:border-black"
+              placeholder="Enter Username"
               required
             />
           </div>
@@ -379,6 +440,7 @@ const AdminRoute: React.FC<{ children: (logout: () => void) => React.ReactNode }
               value={password}
               onChange={e => setPassword(e.target.value)}
               className="w-full bg-transparent border border-black/20 rounded-md px-3 py-2 outline-none focus:border-black"
+              placeholder="Enter Password"
               required
             />
           </div>
@@ -391,6 +453,12 @@ const AdminRoute: React.FC<{ children: (logout: () => void) => React.ReactNode }
             {isLoading ? 'Signing In...' : 'Sign In'}
           </button>
         </form>
+        <button
+          onClick={onBack}
+          className="w-full mt-4 py-2 text-zinc-500 text-[10px] uppercase tracking-[0.3em] font-sans hover:text-[#0a0a0a] transition-colors"
+        >
+          Back
+        </button>
       </div>
 
       <AnimatePresence>

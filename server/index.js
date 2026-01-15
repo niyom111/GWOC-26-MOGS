@@ -52,24 +52,24 @@ const PORT = process.env.PORT || 5000;
 
 // CORS configuration - allow frontend domains
 app.use(cors({
-  origin: function (origin, callback) {
-    // Allow requests with no origin (mobile apps, Postman, etc.)
-    if (!origin) return callback(null, true);
-    
-    // Allow localhost for development
-    if (origin.startsWith('http://localhost')) return callback(null, true);
-    
-    // Allow all Vercel domains
-    if (origin.includes('.vercel.app')) return callback(null, true);
-    
-    // Allow custom domain if set
-    if (process.env.FRONTEND_URL && origin === process.env.FRONTEND_URL) {
-      return callback(null, true);
-    }
-    
-    callback(null, true); // Allow all origins for now
-  },
-  credentials: true
+    origin: function (origin, callback) {
+        // Allow requests with no origin (mobile apps, Postman, etc.)
+        if (!origin) return callback(null, true);
+
+        // Allow localhost for development
+        if (origin.startsWith('http://localhost')) return callback(null, true);
+
+        // Allow all Vercel domains
+        if (origin.includes('.vercel.app')) return callback(null, true);
+
+        // Allow custom domain if set
+        if (process.env.FRONTEND_URL && origin === process.env.FRONTEND_URL) {
+            return callback(null, true);
+        }
+
+        callback(null, true); // Allow all origins for now
+    },
+    credentials: true
 }));
 app.use(express.json());
 
@@ -797,10 +797,10 @@ app.post('/api/orders', async (req, res) => {
         const { id, customer, items, total, date, pickupTime, paymentMethod } = req.body;
 
         // Validation
-        if (!id || !customer || !items || total === undefined || !pickupTime) {
+        if (!id || !customer || !items || total === undefined) {
             return res.status(400).json({
                 error: 'Missing required fields',
-                details: 'Required: id, customer, items, total, pickupTime'
+                details: 'Required: id, customer, items, total'
             });
         }
 

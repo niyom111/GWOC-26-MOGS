@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { createPortal } from 'react-dom';
 import { Send, X, CheckCircle2, Loader2 } from 'lucide-react';
 import emailjs from '@emailjs/browser';
 
@@ -322,61 +323,64 @@ const WorkshopPage: React.FC = () => {
       </div>
 
       {/* DYNAMIC MODAL */}
-      <AnimatePresence>
-        {modalContent && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setModalContent(null)}
-              className="absolute inset-0 bg-black/80 backdrop-blur-sm"
-            />
-
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              transition={{ type: "spring", duration: 0.5 }}
-              className="relative bg-[#F9F8F4] w-full max-w-lg p-12 shadow-2xl border border-white/10 text-center"
-            >
-              <button
+      {typeof document !== 'undefined' && createPortal(
+        <AnimatePresence>
+          {modalContent && (
+            <div className="fixed inset-0 z-[9999] flex items-center justify-center px-4 font-sans">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
                 onClick={() => setModalContent(null)}
-                className="absolute top-6 right-6 text-zinc-400 hover:text-black transition-colors"
-              >
-                <X className="w-6 h-6" />
-              </button>
+                className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+              />
 
-              <div className="flex justify-center mb-8">
-                <motion.div
-                  initial={{ scale: 0, rotate: -45 }}
-                  animate={{ scale: 1, rotate: 0 }}
-                  transition={{ delay: 0.2, type: "spring" }}
-                  className="w-16 h-16 bg-black text-white rounded-full flex items-center justify-center"
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                transition={{ type: "spring", duration: 0.6, bounce: 0.3 }}
+                className="relative bg-[#F9F8F4] w-full max-w-lg p-10 shadow-2xl border border-white/10 text-center m-4"
+              >
+                <button
+                  onClick={() => setModalContent(null)}
+                  className="absolute top-6 right-6 text-zinc-400 hover:text-black transition-colors"
                 >
-                  <CheckCircle2 className="w-8 h-8" />
-                </motion.div>
-              </div>
+                  <X className="w-6 h-6" />
+                </button>
 
-              <h3 className="text-3xl md:text-4xl font-serif italic mb-4 text-[#1A1A1A]">{modalContent.title}</h3>
-              <p className="text-xs md:text-sm font-sans text-zinc-600 uppercase tracking-widest leading-relaxed mb-8">
-                {modalContent.body}
-              </p>
+                <div className="flex justify-center mb-8">
+                  <motion.div
+                    initial={{ scale: 0, rotate: -45 }}
+                    animate={{ scale: 1, rotate: 0 }}
+                    transition={{ delay: 0.2, type: "spring" }}
+                    className="w-16 h-16 bg-black text-white rounded-full flex items-center justify-center"
+                  >
+                    <CheckCircle2 className="w-8 h-8" />
+                  </motion.div>
+                </div>
 
-              <div className="text-[10px] text-zinc-400 font-mono uppercase tracking-widest">
-                Ref ID: {Math.random().toString(36).substr(2, 9).toUpperCase()}
-              </div>
+                <h3 className="text-3xl md:text-4xl font-serif italic mb-4 text-[#1A1A1A]">{modalContent.title}</h3>
+                <p className="text-xs md:text-sm font-sans text-zinc-600 uppercase tracking-widest leading-relaxed mb-8">
+                  {modalContent.body}
+                </p>
 
-              <button
-                onClick={() => setModalContent(null)}
-                className="mt-10 w-full py-4 bg-[#1A1A1A] text-white text-[10px] uppercase tracking-[0.3em] font-bold hover:bg-black transition-all"
-              >
-                Close Confirmation
-              </button>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+                <div className="text-[10px] text-zinc-400 font-mono uppercase tracking-widest">
+                  Ref ID: {Math.random().toString(36).substr(2, 9).toUpperCase()}
+                </div>
+
+                <button
+                  onClick={() => setModalContent(null)}
+                  className="mt-10 w-full py-4 bg-[#1A1A1A] text-white text-[10px] uppercase tracking-[0.3em] font-bold hover:bg-black transition-all"
+                >
+                  Close Confirmation
+                </button>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
 
       <Toast message={toastMessage} />
     </div>

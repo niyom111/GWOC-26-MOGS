@@ -1,7 +1,7 @@
 
 import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { motion as motionBase } from 'framer-motion';
+import { motion as motionBase, AnimatePresence } from 'framer-motion';
 import { Search, Filter, X } from 'lucide-react';
 import { CoffeeItem } from '../types';
 import { useDataContext } from '../DataContext';
@@ -476,62 +476,62 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
   const fuzzyMatch = (text: string, query: string): boolean => {
     const textLower = text.toLowerCase();
     const queryLower = query.toLowerCase();
-    
+
     // Exact substring match (highest priority)
     if (textLower.includes(queryLower)) return true;
-    
+
     // If query is too short, only do exact match
     if (queryLower.length < 3) return false;
-    
+
     // Normalize: remove special characters and spaces
     const normalizedText = textLower.replace(/[^a-z0-9]/g, '');
     const normalizedQuery = queryLower.replace(/[^a-z0-9]/g, '');
-    
+
     // Check if normalized query is a substring of normalized text
     if (normalizedText.includes(normalizedQuery)) return true;
-    
+
     // Only do fuzzy matching for queries 4+ characters to avoid false matches
     if (normalizedQuery.length < 4) return false;
-    
+
     // Split into words for word-by-word matching (prevents "tea" matching "coffee")
     const textWords = textLower.split(/[\s\-_]+/).filter(w => w.length > 0);
     const queryWords = queryLower.split(/[\s\-_]+/).filter(w => w.length > 0);
-    
+
     // Check if any query word matches any text word
     for (const queryWord of queryWords) {
       if (queryWord.length < 3) continue; // Skip very short words
-      
+
       for (const textWord of textWords) {
         // Exact match in word
         if (textWord.includes(queryWord)) return true;
-        
+
         // Only do fuzzy matching if words are similar length (within 2 chars)
         if (Math.abs(textWord.length - queryWord.length) > 2) continue;
-        
+
         // Check if words share the same first 2-3 characters (prefix match)
         // This prevents "tea" from matching "coffee" (different prefixes)
         const minPrefix = Math.min(3, Math.min(textWord.length, queryWord.length));
         if (textWord.substring(0, minPrefix) !== queryWord.substring(0, minPrefix)) {
           continue; // Different words, skip fuzzy matching
         }
-        
+
         // For words that share a prefix, allow common typos
         const normalizedTextWord = textWord.replace(/[^a-z0-9]/g, '');
         const normalizedQueryWord = queryWord.replace(/[^a-z0-9]/g, '');
-        
+
         // Common character swaps only for similar words
         const commonSwaps: [string, string][] = [
           ['ee', 'e'], ['e', 'ee'], // coffee/cofee
           ['a', 'e'], ['e', 'a'], // bagel/begel
         ];
-        
+
         for (const [from, to] of commonSwaps) {
           const swappedQuery = normalizedQueryWord.replace(new RegExp(from, 'g'), to);
           if (normalizedTextWord.includes(swappedQuery) || swappedQuery.includes(normalizedTextWord)) {
             return true;
           }
         }
-        
+
         // For longer words (5+ chars), allow 1 character difference if they're very similar
         if (normalizedQueryWord.length >= 5 && normalizedTextWord.length >= 5) {
           // Count matching characters in order
@@ -541,8 +541,8 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
             if (normalizedTextWord[textIndex] === normalizedQueryWord[i]) {
               matchingChars++;
               textIndex++;
-            } else if (textIndex + 1 < normalizedTextWord.length && 
-                       normalizedTextWord[textIndex + 1] === normalizedQueryWord[i]) {
+            } else if (textIndex + 1 < normalizedTextWord.length &&
+              normalizedTextWord[textIndex + 1] === normalizedQueryWord[i]) {
               // Allow skipping one character
               textIndex += 2;
               matchingChars++;
@@ -554,7 +554,7 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
         }
       }
     }
-    
+
     return false;
   };
 
@@ -567,11 +567,11 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
     menuItems.forEach(item => {
       // Skip items without required fields
       if (!item.category || !item.name || item.price == null || !item.id) return;
-      
+
       // Use safe defaults to ensure trim() is always called on a string
       const categoryStr = (item.category ?? '').trim();
       if (!categoryStr) return; // Skip if category is empty after trimming
-      
+
       const canonicalCategory = categoryStr.toUpperCase();
       const id = canonicalCategory
         .toLowerCase()
@@ -602,13 +602,13 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
       // 1. Item name
       const nameStr = (item.name ?? '').toLowerCase();
       const nameMatches = fuzzyMatch(nameStr, query);
-      
+
       // 2. Category name (so "coffee" finds items even if it's just a category heading)
       const categoryMatches = fuzzyMatch(categoryStr.toLowerCase(), query);
-      
+
       // 3. Group name (e.g., "Robusta Specialty", "Blend")
       const groupMatches = fuzzyMatch(group.toLowerCase(), query);
-      
+
       // Include item if any field matches
       if (nameMatches || categoryMatches || groupMatches) {
         categoryMap.get(canonicalCategory)!.items.push({
@@ -835,7 +835,7 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
                               setToastMessage(null);
                             }, 1500);
                           }}
-                          className="px-4 py-2 text-[10px] uppercase tracking-[0.3em] font-sans border border-black/40 rounded-full hover:bg-[#0a0a0a] hover:text-[#F9F8F4] transition-colors"
+                          className="px-4 py-2 text-[10px] uppercase tracking-[0.3em] font-sans border border-black/40 bg-white rounded-full hover:bg-[#0a0a0a] hover:text-[#F9F8F4] transition-colors"
                         >
                           Add to Cart
                         </button>
@@ -963,13 +963,29 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
         </main>
       </div>
 
-      {showBrewDesk && typeof document !== 'undefined' && createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 font-sans">
-          <div className="absolute inset-0" onClick={() => setShowBrewDesk(false)} />
-          <div className="relative z-[10000] w-full max-w-lg">
-            <BrewDeskPopup onClose={() => setShowBrewDesk(false)} onAddToCart={onAddToCart} />
-          </div>
-        </div>,
+      {typeof document !== 'undefined' && createPortal(
+        <AnimatePresence>
+          {showBrewDesk && (
+            <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 font-sans">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+                onClick={() => setShowBrewDesk(false)}
+              />
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                className="relative z-[10000] w-full max-w-lg"
+              >
+                <BrewDeskPopup onClose={() => setShowBrewDesk(false)} onAddToCart={onAddToCart} />
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>,
         document.body
       )}
 

@@ -112,6 +112,7 @@ const ProcessScroll: React.FC = () => {
 
     const { scrollYProgress } = useScroll({
         target: targetRef,
+        offset: ["start start", "end end"]
     });
 
     // Map vertical scroll (0 to 1) to horizontal translation (0 to -scrollRange in px)
@@ -119,8 +120,8 @@ const ProcessScroll: React.FC = () => {
     // Finishes 90% of the way through to give a moment of "pause" on the last slide
     const x = useTransform(scrollYProgress, [0, 0.9], [0, -scrollRange]);
 
-    // Smoother spring physics for the scroll
-    const springX = useSpring(x, { stiffness: 60, damping: 30, mass: 1 });
+    // Smoother spring physics removed to prevent lag on mobile
+    // const springX = useSpring(x, { stiffness: 60, damping: 30, mass: 1 });
 
     const steps = [
         {
@@ -151,11 +152,11 @@ const ProcessScroll: React.FC = () => {
 
     return (
         // Height controls the "speed" of the scroll. 300vh allows enough scroll distance to feel natural.
-        <section ref={targetRef} className="relative h-[200vh] md:h-[300vh] bg-[#F3EFE0]">
+        <section ref={targetRef} className="relative h-[500vh] md:h-[400vh] bg-[#F3EFE0]">
             <div className="sticky top-0 flex h-screen items-center overflow-hidden bg-[#F3EFE0] text-[#1A1A1A]">
 
                 {/* Horizontal Moving Container using ref for measurement */}
-                <motion.div ref={scrollContainerRef} style={{ x: springX }} className="flex">
+                <motion.div ref={scrollContainerRef} style={{ x }} className="flex">
                     <div className="flex-shrink-0 w-[80vw] md:w-[50vw] h-screen flex flex-col justify-center px-10 md:px-24 border-r border-black/10">
                         <motion.span
                             initial={{ opacity: 0 }}
@@ -184,7 +185,7 @@ const ProcessScroll: React.FC = () => {
                             key={step.id}
                             step={step}
                             index={index}
-                            x={springX}
+                            x={x}
                             // Pass raw scrollYProgress for parallax internal to card if needed
                             containerScroll={scrollYProgress}
                             onImageLoad={() => {

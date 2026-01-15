@@ -61,8 +61,8 @@ const Hero: React.FC = () => {
             visible: {
               opacity: 1,
               transition: {
-                staggerChildren: 0.3,
-                delayChildren: 1.5
+                staggerChildren: 0.1,
+                delayChildren: 1.0
               }
             }
           }}
@@ -82,7 +82,7 @@ const Hero: React.FC = () => {
                   y: 0,
                   filter: 'blur(0px)',
                   transition: {
-                    duration: 1.2,
+                    duration: 0.5,
                     ease: [0.22, 1, 0.36, 1]
                   }
                 }

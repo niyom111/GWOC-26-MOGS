@@ -53,6 +53,11 @@ const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage, cartCount }) =
   // --- SCROLL VISIBILITY LOGIC ---
   const { scrollY } = useScroll();
   const [isHovered, setIsHovered] = React.useState(false);
+  const [isScrolled, setIsScrolled] = React.useState(false);
+
+  useMotionValueEvent(scrollY, "change", (latest) => {
+    setIsScrolled(latest > 50);
+  });
 
   // Create a smooth opacity value based on scroll position
   const scrollOpacity = useTransform(scrollY, [0, 200], [1, 0.8]);
@@ -63,7 +68,7 @@ const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage, cartCount }) =
       <motion.header
         initial={{ y: -100 }}
         animate={{ y: 0 }}
-        className={`${isHome ? 'fixed' : 'relative'} top-0 left-0 w-full z-40 pointer-events-none`}
+        className={`fixed top-0 left-0 w-full z-40 pointer-events-none transition-all duration-700`}
       >
         <div
           className={`relative flex items-center justify-between px-6 ${isHome ? 'py-1' : 'pt-2 pb-3'
@@ -74,12 +79,14 @@ const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage, cartCount }) =
             {!isHome && currentPage !== Page.ADMIN && (
               <button
                 onClick={() => handleNavigate(Page.HOME)}
-                className="absolute top-6 left-8 z-50 flex items-center justify-center hover:opacity-80 transition-opacity"
+                className={`absolute top-6 left-8 z-50 flex items-center justify-center hover:opacity-80 transition-all duration-300 transform 
+                  ${isScrolled ? '-translate-y-20 opacity-0 pointer-events-none md:translate-y-0 md:opacity-100 md:pointer-events-auto' : 'translate-y-0 opacity-100 pointer-events-auto'}
+                `}
               >
                 <img
                   src="/media/logo.png"
                   alt="Rabuste Logo"
-                  className={`h-16 md:h-20 w-32 object-contain ${logoFilterClass}`}
+                  className={`h-16 md:h-20 w-32 object-contain transition-all duration-700 ${logoFilterClass}`}
                 />
               </button>
             )}
@@ -87,7 +94,7 @@ const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage, cartCount }) =
 
           {/* RIGHT SIDE ICONS */}
           {currentPage !== Page.ADMIN && (
-            <div className={`fixed top-5 right-5 md:top-9 md:right-12 z-50 flex items-center space-x-3 md:space-x-4 pointer-events-auto ${textColorClass}`}>
+            <div className={`fixed top-5 right-5 md:top-9 md:right-12 z-50 flex items-center space-x-3 md:space-x-4 pointer-events-auto transition-colors duration-700 ${textColorClass}`}>
               {/* Cart Button */}
               <button
                 onClick={() => handleNavigate(Page.CART)}

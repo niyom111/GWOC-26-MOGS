@@ -99,7 +99,7 @@ const MenuCard: React.FC<{ item: typeof items[0], index: number, onAddToCart: an
     <motion.div
       ref={ref}
       variants={cardVariants}
-      className="group relative w-full h-full overflow-hidden bg-[#0a0a0a] border-r border-white/10 last:border-r-0 min-h-[80vh] md:min-h-auto"
+      className="group relative w-full h-full overflow-hidden bg-[#0a0a0a] min-h-[80vh] md:min-h-auto"
     >
       {/* Vivid Background Image */}
       <div className="absolute inset-0 w-full h-full">
@@ -115,14 +115,14 @@ const MenuCard: React.FC<{ item: typeof items[0], index: number, onAddToCart: an
       <div className="absolute inset-0 z-20 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-80" />
 
       {/* Content Container */}
-      <div className="absolute inset-0 z-30 flex flex-col justify-end pb-12 md:pb-24 px-8 md:px-12">
+      <div className="absolute inset-0 z-30 flex flex-col justify-end pb-40 md:pb-24 px-8 md:px-12">
 
         {/* Always Visible Title */}
         <div className={`transform transition-all duration-700 relative z-40 md:group-hover:-translate-y-4 ${isInView ? '-translate-y-4' : 'translate-y-0'}`}>
           <span className="text-[10px] text-[#A35D36] uppercase tracking-[0.3em] font-bold block mb-4">
             {item.notes}
           </span>
-          <h3 className="text-4xl md:text-6xl font-serif italic leading-none mb-4 text-white">
+          <h3 className="text-4xl md:text-6xl font-sans leading-none mb-4 text-white">
             {item.name}
           </h3>
         </div>
@@ -131,18 +131,18 @@ const MenuCard: React.FC<{ item: typeof items[0], index: number, onAddToCart: an
         <div className="relative min-h-[140px]">
 
           {/* Tagline: Visible by default on Desktop. On Mobile, visible ONLY when NOT in view. */}
-          <div className={`absolute top-0 left-0 w-full transition-all duration-500 delay-100 transform pointer-events-none
+          <div className={`absolute top-0 left-0 w-full transition-all duration-300 transform pointer-events-none
               md:opacity-100 md:translate-y-0 md:group-hover:opacity-0 md:group-hover:translate-y-4
               ${isInView ? 'opacity-0 translate-y-4' : 'opacity-100 translate-y-0'}
             `}>
-            <p className="text-2xl font-serif italic text-zinc-300 tracking-wide">
+            <p className="text-2xl font-sans text-zinc-300 tracking-wide">
               {item.tagline}
             </p>
             <div className="mt-8 w-12 h-[1px] bg-white/30" />
           </div>
 
           {/* Description & Button: Hidden by default on Desktop. On Mobile, visible ONLY when IN VIEW. */}
-          <div className={`absolute top-0 left-0 w-full transition-all duration-500 transform
+          <div className={`absolute top-0 left-0 w-full transition-all duration-300 transform
               md:opacity-0 md:translate-y-8 md:group-hover:opacity-100 md:group-hover:translate-y-0
               ${isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}
             `}>
@@ -189,7 +189,7 @@ const MenuPreview: React.FC<MenuPreviewProps> = ({ onAddToCart, onGoToMenu }) =>
       <motion.div
         initial="hidden"
         whileInView="visible"
-        viewport={{ once: true, amount: 0.1 }}
+        viewport={{ once: true, amount: 0.8 }}
         variants={{
           visible: {
             transition: {
@@ -197,7 +197,7 @@ const MenuPreview: React.FC<MenuPreviewProps> = ({ onAddToCart, onGoToMenu }) =>
             }
           }
         }}
-        className="w-full h-full grid grid-cols-1 md:grid-cols-4 border-t border-b border-white/10"
+        className="w-full h-full grid grid-cols-1 md:grid-cols-4"
       >
         {items.map((item, idx) => (
           <MenuCard key={idx} item={item} index={idx} onAddToCart={onAddToCart} onToast={showToast} />

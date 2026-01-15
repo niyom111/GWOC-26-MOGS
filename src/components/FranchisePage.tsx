@@ -125,6 +125,13 @@ const FranchisePage: React.FC = () => {
         }
     };
 
+    const fadeInUp = {
+        initial: { opacity: 0, y: 30 },
+        whileInView: { opacity: 1, y: 0 },
+        viewport: { once: true },
+        transition: { duration: 0.8 }
+    };
+
     return (
         <div className="min-h-screen bg-[#F3EFE0] overflow-hidden">
 
@@ -533,11 +540,20 @@ const FranchisePage: React.FC = () => {
 
             {/* MODAL (Same as before, preserved) */}
             {isModalOpen && typeof document !== 'undefined' && createPortal(
-                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-6 font-sans">
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center px-4">
                     <motion.div
-                        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        onClick={() => setIsModalOpen(false)}
+                        className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+                    />
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.9, y: 20 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
-                        className="bg-[#F3EFE0] w-full max-w-lg rounded-2xl shadow-xl overflow-hidden relative z-[10000]"
+                        exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                        transition={{ type: "spring", duration: 0.6, bounce: 0.3 }}
+                        className="relative bg-[#F3EFE0] w-full max-w-lg rounded-2xl shadow-xl overflow-hidden"
                     >
                         <div className="bg-[#1A1A1A] text-[#F9F8F4] px-8 py-8 flex justify-between items-center">
                             <div>

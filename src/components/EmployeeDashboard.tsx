@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion as motionBase } from 'framer-motion';
-import { Lock, Package, ChefHat, Clock } from 'lucide-react';
+import { Lock, Package, ChefHat, Clock, LogOut } from 'lucide-react';
 import { Page } from '../types';
 import { API_BASE_URL } from '../config';
 
@@ -49,20 +49,20 @@ const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate, onBac
       setIsAuthenticated(true);
       fetchActiveOrders();
     }
-    
+
     // Scroll to top on mount - use multiple methods to ensure it works
     const scrollToTop = () => {
       window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
       document.documentElement.scrollTop = 0;
       document.body.scrollTop = 0;
     };
-    
+
     // Run immediately
     scrollToTop();
-    
+
     // Also run after a short delay to ensure DOM is ready
     const timeout = setTimeout(scrollToTop, 100);
-    
+
     return () => clearTimeout(timeout);
   }, []);
 
@@ -173,8 +173,8 @@ const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate, onBac
                 });
                 if (response.ok) {
                   // Update local state
-                  setOrders(prevOrders => 
-                    prevOrders.map(order => 
+                  setOrders(prevOrders =>
+                    prevOrders.map(order =>
                       order.id === orderId ? { ...order, status: 'preparing' } : order
                     )
                   );
@@ -219,6 +219,7 @@ const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate, onBac
     setIsAuthenticated(false);
     sessionStorage.removeItem('rabuste_employee_auth');
     setOrders([]);
+    onBack();
   };
 
   const getStatusIcon = (status: string) => {
@@ -237,7 +238,7 @@ const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate, onBac
 
   if (!isAuthenticated) {
     return (
-      <div className="bg-[#F9F8F4] text-[#0a0a0a] min-h-screen flex items-center justify-center px-4 w-full overflow-x-hidden">
+      <div className="bg-[#F3EFE0] text-[#0a0a0a] min-h-screen flex items-center justify-center px-4 w-full overflow-x-hidden">
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -285,7 +286,7 @@ const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate, onBac
   }
 
   return (
-    <div className="bg-[#F9F8F4] text-[#0a0a0a] pt-16 md:pt-32 pb-20 md:pb-40 px-4 md:px-10 min-h-screen w-full overflow-x-hidden" style={{ WebkitOverflowScrolling: 'touch' }}>
+    <div className="bg-[#F3EFE0] text-[#0a0a0a] pt-16 md:pt-32 pb-20 md:pb-40 px-4 md:px-10 min-h-screen w-full overflow-x-hidden" style={{ WebkitOverflowScrolling: 'touch' }}>
       <div className="max-w-6xl mx-auto w-full">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
@@ -305,13 +306,22 @@ const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate, onBac
               Active Orders
             </motion.h1>
           </div>
-          <button
-            onClick={fetchActiveOrders}
-            disabled={loading}
-            className="px-4 py-2 text-[10px] uppercase tracking-[0.3em] font-sans border border-black/20 rounded-lg hover:bg-black/5 transition-colors disabled:opacity-60"
-          >
-            {loading ? 'Loading...' : 'Refresh'}
-          </button>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-2 px-4 py-2 text-[10px] uppercase tracking-[0.3em] font-sans border border-black/20 rounded-lg hover:bg-black hover:text-white transition-colors"
+            >
+              <LogOut className="w-3 h-3" />
+              <span className="hidden md:inline">Exit</span>
+            </button>
+            <button
+              onClick={fetchActiveOrders}
+              disabled={loading}
+              className="px-4 py-2 text-[10px] uppercase tracking-[0.3em] font-sans border border-black/20 rounded-lg hover:bg-black/5 transition-colors disabled:opacity-60"
+            >
+              {loading ? 'Loading...' : 'Refresh'}
+            </button>
+          </div>
         </div>
 
         {error && (
@@ -377,15 +387,15 @@ const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate, onBac
                     {order.items
                       .filter(item => item.id && item.name && item.price != null && item.quantity != null)
                       .map((item, idx) => (
-                      <div key={item.id || idx} className="flex justify-between text-sm font-sans">
-                        <span>
-                          {item.name || 'Unknown Item'} × {item.quantity ?? 0}
-                        </span>
-                        <span className="text-zinc-600">
-                          ₹{((item.price ?? 0) * (item.quantity ?? 0)).toFixed(0)}
-                        </span>
-                      </div>
-                    ))}
+                        <div key={item.id || idx} className="flex justify-between text-sm font-sans">
+                          <span>
+                            {item.name || 'Unknown Item'} × {item.quantity ?? 0}
+                          </span>
+                          <span className="text-zinc-600">
+                            ₹{((item.price ?? 0) * (item.quantity ?? 0)).toFixed(0)}
+                          </span>
+                        </div>
+                      ))}
                   </div>
                 </div>
 

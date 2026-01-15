@@ -86,15 +86,15 @@ const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-8 py-10 flex flex-col md:row-reverse md:flex-row justify-between items-center border-t border-white/10 text-xs font-sans tracking-[0.2em] text-zinc-400 uppercase space-y-4 md:space-y-0">
+      <div className="max-w-7xl mx-auto px-8 py-10 pb-24 md:pb-10 flex flex-col md:grid md:grid-cols-3 items-center border-t border-white/10 text-xs font-sans tracking-[0.2em] text-zinc-400 uppercase space-y-4 md:space-y-0">
         <button
           onClick={scrollToTop}
-          className="flex items-center space-x-3 mb-6 md:mb-0 hover:text-white transition-colors duration-700 ease-out font-bold group"
+          className="flex items-center space-x-3 mb-6 md:mb-0 hover:text-white transition-colors duration-700 ease-out font-bold group md:col-start-3 md:justify-self-end md:row-start-1"
         >
           <span>Return to Origin</span>
           <ArrowUp className="w-4 h-4 transition-transform duration-700 ease-[0.22,1,0.36,1] group-hover:-translate-y-1" />
         </button>
-        <div>© 2024 RABUSTE COFFEE CO. — BUILT FOR INTENTIONALITY</div>
+        <div className="md:col-start-2 md:justify-self-center md:row-start-1 text-center w-full whitespace-normal md:whitespace-nowrap">© 2024 RABUSTE COFFEE CO. — BUILT FOR INTENTIONALITY</div>
       </div>
     </footer>
   );

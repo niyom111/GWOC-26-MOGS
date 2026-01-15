@@ -81,13 +81,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
         }
       });
     };
-    
+
     // Run immediately
     scrollToTop();
-    
+
     // Also run after a short delay to ensure DOM is ready
     const timeout = setTimeout(scrollToTop, 100);
-    
+
     return () => clearTimeout(timeout);
   }, []);
 
@@ -720,7 +720,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
   const enquiryCount = enquiries.length;
 
   return (
-    <div className="flex min-h-screen md:h-screen bg-[#F9F8F4] pt-0 md:pt-10 text-[#0a0a0a] relative" style={{ minHeight: '100vh' }}>
+    <div className="flex min-h-screen md:h-screen bg-[#F3EFE0] pt-0 md:pt-10 text-[#0a0a0a] relative" style={{ minHeight: '100vh' }}>
       {/* Mobile Hamburger Button - Only show when menu is closed */}
       {!isMobileMenuOpen && (
         <button
