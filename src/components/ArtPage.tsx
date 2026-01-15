@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion as motionBase, AnimatePresence } from 'framer-motion';
-import { CoffeeItem } from '../types';
+import { CoffeeItem, CartItem } from '../types';
 import { useDataContext, ArtAdminItem } from '../DataContext';
 import ArtworkCard from './ArtworkCard';
 import Toast from './Toast';
@@ -12,10 +12,12 @@ const motion = motionBase as any;
 // Define props for ArtPage
 interface ArtPageProps {
   onAddToCart: (item: CoffeeItem) => void;
+  cart: CartItem[];
+  artItems: ArtAdminItem[];
 }
 
-const ArtPage: React.FC<ArtPageProps> = ({ onAddToCart }) => {
-  const { artItems, refreshArtItems } = useDataContext();
+const ArtPage: React.FC<ArtPageProps> = ({ onAddToCart, cart, artItems }) => {
+  const { refreshArtItems } = useDataContext();
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const toastTimeoutRef = useRef<number | null>(null);
   const [processingIds, setProcessingIds] = useState<Set<string>>(new Set());
@@ -45,6 +47,23 @@ const ArtPage: React.FC<ArtPageProps> = ({ onAddToCart }) => {
       return;
     }
 
+    // Check current quantity in cart
+    const existingCartItem = cart.find(i => i.id === art.id);
+    const currentCartQuantity = existingCartItem?.quantity || 0;
+    const requestedQuantity = currentCartQuantity + 1;
+
+    // Validate stock limit
+    if (requestedQuantity > art.stock) {
+      setToastMessage(`Only ${art.stock} piece${art.stock > 1 ? 's' : ''} available. You already have ${currentCartQuantity} in your cart.`);
+      if (toastTimeoutRef.current) {
+        window.clearTimeout(toastTimeoutRef.current);
+      }
+      toastTimeoutRef.current = window.setTimeout(() => {
+        setToastMessage(null);
+      }, 3000);
+      return;
+    }
+
     // Prevent multiple clicks
     if (processingIds.has(art.id)) {
       return;
@@ -53,21 +72,7 @@ const ArtPage: React.FC<ArtPageProps> = ({ onAddToCart }) => {
     setProcessingIds(prev => new Set(prev).add(art.id));
 
     try {
-      // Decrement stock first
-      const response = await fetch(`${API_BASE_URL}/api/art/${art.id}/decrement-stock`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Failed to update stock');
-      }
-
-      // Refresh art items to get updated stock
-      await refreshArtItems();
-
-      // Add to cart
+      // Add to cart (stock will be decremented when order is placed)
       const artistName = art.artist_name || art.artist || 'Unknown Artist';
       onAddToCart({
         id: art.id,

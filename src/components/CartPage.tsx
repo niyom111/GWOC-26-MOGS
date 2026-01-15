@@ -4,7 +4,7 @@ import { createPortal } from 'react-dom';
 import { CartItem } from '../types';
 import { Trash2, Minus, Plus, ArrowLeft, CheckCircle2, X } from 'lucide-react';
 import emailjs from '@emailjs/browser';
-import { useDataContext } from '../DataContext';
+import { useDataContext, ArtAdminItem } from '../DataContext';
 import { API_BASE_URL } from '../config';
 
 const motion = motionBase as any;
@@ -17,6 +17,7 @@ interface CartPageProps {
   onClearCart: () => void;
   onBackToHome: () => void;
   onPaymentFailure: () => void;
+  artItems?: ArtAdminItem[];
 }
 
 const CartPage: React.FC<CartPageProps> = ({
@@ -27,6 +28,7 @@ const CartPage: React.FC<CartPageProps> = ({
   onClearCart,
   onBackToHome,
   onPaymentFailure,
+  artItems = [],
 }) => {
   const { placeOrder, refreshArtItems } = useDataContext();
 
@@ -497,7 +499,15 @@ const CartPage: React.FC<CartPageProps> = ({
                           <span className="text-sm font-sans w-5 text-center">{item.quantity}</span>
                           <button
                             onClick={() => onUpdateQuantity(item.id, item.quantity + 1)}
-                            className="text-zinc-600 hover:text-[#0a0a0a]"
+                            disabled={(() => {
+                              // Check if this is an art item and if stock limit is reached
+                              const artItem = artItems.find(art => art.id === item.id);
+                              if (artItem) {
+                                return item.quantity >= artItem.stock;
+                              }
+                              return false;
+                            })()}
+                            className="text-zinc-600 hover:text-[#0a0a0a] disabled:opacity-40 disabled:cursor-not-allowed"
                           >
                             <Plus className="w-3 h-3" />
                           </button>

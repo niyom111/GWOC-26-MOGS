@@ -160,6 +160,23 @@ const AppContent: React.FC = () => {
   };
 
   const addToCart = (item: CoffeeItem) => {
+    // Check if this is an art item and validate stock
+    const isArtItem = artItems.some(art => art.id === item.id);
+
+    if (isArtItem) {
+      const artItem = artItems.find(art => art.id === item.id);
+      if (artItem) {
+        const existing = cart.find(i => i.id === item.id);
+        const currentCartQuantity = existing?.quantity || 0;
+        const requestedQuantity = currentCartQuantity + 1;
+
+        if (requestedQuantity > artItem.stock) {
+          alert(`Only ${artItem.stock} piece${artItem.stock > 1 ? 's' : ''} available. You already have ${currentCartQuantity} in your cart.`);
+          return;
+        }
+      }
+    }
+
     setCart(prev => {
       const existing = prev.find(i => i.id === item.id);
       if (existing) {
@@ -170,32 +187,24 @@ const AppContent: React.FC = () => {
   };
 
   const removeFromCart = async (id: string) => {
-    // Check if this is an art item (ID starts with 'a' or exists in artItems)
-    const isArtItem = id.startsWith('a') || artItems.some(item => item.id === id);
-
-    if (isArtItem) {
-      try {
-        // Increment stock when art item is removed from cart
-        const response = await fetch(`${API_BASE_URL}/api/art/${id}/increment-stock`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' }
-        });
-
-        if (response.ok) {
-          // Refresh art items to get updated stock
-          await refreshArtItems();
-        }
-      } catch (error) {
-        console.error('Error restoring art item stock:', error);
-        // Continue with cart removal even if stock update fails
-      }
-    }
-
+    // Remove from cart (stock is only decremented when order is placed, not when adding/removing from cart)
     setCart(prev => prev.filter(i => i.id !== id));
   };
 
   const updateQuantity = (id: string, quantity: number) => {
     if (quantity < 1) return;
+
+    // Check if this is an art item and validate stock
+    const isArtItem = artItems.some(art => art.id === id);
+
+    if (isArtItem) {
+      const artItem = artItems.find(art => art.id === id);
+      if (artItem && quantity > artItem.stock) {
+        alert(`Only ${artItem.stock} piece${artItem.stock > 1 ? 's' : ''} available.`);
+        return;
+      }
+    }
+
     setCart(prev => prev.map(i => i.id === id ? { ...i, quantity } : i));
   };
 
@@ -302,6 +311,7 @@ const AppContent: React.FC = () => {
                 onClearCart={() => setCart([])}
                 onBackToHome={() => navigateTo(Page.HOME)}
                 onPaymentFailure={() => navigateTo(Page.PAYMENT_FAILURE)}
+                artItems={artItems}
               />
             )}
 
@@ -310,7 +320,7 @@ const AppContent: React.FC = () => {
             )}
 
             {currentPage === Page.ART && (
-              <ArtPage onAddToCart={addToCart} />
+              <ArtPage onAddToCart={addToCart} cart={cart} artItems={artItems} />
             )}
 
             {currentPage === Page.PHILOSOPHY && (

@@ -73,14 +73,23 @@ const ArtworkCard: React.FC<ArtworkCardProps> = ({ art, index, onAddToCart, isPr
             <div className="w-full h-full overflow-hidden relative bg-zinc-100">
               <img
                 src={art.image || ''}
-                className={`w-full h-full object-cover transition-all duration-1000 ${isAvailable ? 'grayscale-0' : 'grayscale'}`}
+                className={`w-full h-full object-cover transition-all duration-1000 ${!isAvailable ? 'grayscale' : ''}`}
                 alt={art.title || 'Art piece'}
               />
-              <div className="absolute top-4 left-4 flex space-x-2">
-                <div className={`px-3 py-1 text-[8px] font-sans uppercase tracking-[0.2em] font-bold backdrop-blur-md ${isAvailable ? 'bg-white/90 text-black border border-black/5' : 'bg-red-500/90 text-white'}`}>
-                  {isAvailable ? 'Available' : 'Sold Out'}
+              {!isAvailable && (
+                <div className="absolute top-0 right-0 w-40 h-40 overflow-hidden pointer-events-none z-10">
+                  <div className="absolute top-6 -right-8 w-48 h-10 bg-red-600 text-white flex items-center justify-center transform rotate-45 shadow-xl">
+                    <span className="text-sm font-bold uppercase tracking-widest">Sold Out</span>
+                  </div>
                 </div>
-              </div>
+              )}
+              {isAvailable && (
+                <div className="absolute top-4 left-4">
+                  <div className="px-3 py-1 text-[8px] font-sans uppercase tracking-[0.2em] font-bold backdrop-blur-md bg-white/90 text-black border border-black/5">
+                    Available
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -94,13 +103,33 @@ const ArtworkCard: React.FC<ArtworkCardProps> = ({ art, index, onAddToCart, isPr
             }}
           >
             <div 
-              className="w-full h-full flex flex-col justify-between"
+              className="w-full h-full flex flex-col justify-between relative overflow-hidden"
               style={{ 
-                backgroundColor: '#222222',
                 padding: '2.25rem 2rem',
               }}
             >
-              <div className="flex-1 flex flex-col justify-start" style={{ maxWidth: '100%' }}>
+              {/* Blurred background image */}
+              <div
+                className="absolute inset-0 w-full h-full"
+                style={{
+                  backgroundImage: `url(${art.image || ''})`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                  filter: 'blur(8px)',
+                  transform: 'scale(1.1)',
+                }}
+              />
+              
+              {/* Dark overlay for text readability */}
+              <div
+                className="absolute inset-0 w-full h-full"
+                style={{
+                  backgroundColor: 'rgba(34, 34, 34, 0.75)',
+                }}
+              />
+              
+              {/* Content layer */}
+              <div className="flex-1 flex flex-col justify-start relative z-10" style={{ maxWidth: '100%' }}>
                 {/* Title - Large Serif, Italic */}
                 <h2 className="text-4xl md:text-5xl font-serif italic mb-5 leading-tight" style={{ color: '#f2f2f2' }}>
                   {art.title || 'Untitled Art'}
