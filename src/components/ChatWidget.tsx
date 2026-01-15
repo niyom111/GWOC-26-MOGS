@@ -16,19 +16,34 @@ const useIsMobile = () => {
   return isMobile;
 };
 
-interface ApiResponse {
-  action?: 'navigate' | 'respond';
-  parameters?: {
-    route?: string;
-    message?: string;
-  };
-  reply?: string;
-  error?: string;
-}
+// Helper to render text with Bold formatting and Line Breaks
+const FormatMessage = ({ text }: { text: string }) => {
+  if (!text) return null;
+
+  const lines = text.split('\n');
+
+  return (
+    <div className="text-[15px] leading-relaxed tracking-wide font-sans text-inherit">
+      {lines.map((line, i) => {
+        const parts = line.split(/(\*\*.*?\*\*)/g);
+
+        return (
+          <p key={i} className="min-h-[1em] mb-1 last:mb-0">
+            {parts.map((part, j) => {
+              if (part.startsWith('**') && part.endsWith('**')) {
+                return <strong key={j} className="font-semibold">{part.slice(2, -2)}</strong>;
+              }
+              return <span key={j}>{part}</span>;
+            })}
+          </p>
+        );
+      })}
+    </div>
+  );
+};
 
 export default function ChatWidget() {
   const [isOpen, setIsOpen] = useState(false);
-  const [isMinimized, setIsMinimized] = useState(false);
   const [messages, setMessages] = useState<{ text: string; isUser: boolean }[]>([
     { text: "Hi! I'm Labubu AI. Ask me about our menu, calories, or for a recommendation!", isUser: false }
   ]);
@@ -41,33 +56,32 @@ export default function ChatWidget() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isOpen, isLoading]);
 
-  // --- HELPER TO CLEAN TEXT ON FRONTEND ---
-  const cleanText = (text: string) => {
-    if (!text) return "";
-    return text
-      .replace(/\*\*/g, "") // Remove bold markers
-      .replace(/__/g, "")   // Remove italics markers
-      .replace(/^\*/gm, "•"); // Turn list stars into bullets
-  };
-
   const handleSend = async () => {
     if (!(input ?? '').trim()) return;
 
-    const userMessage = input;
-    setMessages(prev => [...prev, { text: userMessage, isUser: true }]);
+    const userMsg = input;
+    const currentHistory = [...messages, { text: userMsg, isUser: true }];
+    setMessages(prev => [...prev, { text: userMsg, isUser: true }]);
     setInput('');
     setIsLoading(true);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/chat`, {
+      const contextHistory = currentHistory.slice(-6).map(m => ({
+        role: m.isUser ? 'user' : 'model',
+        text: m.text
+      }));
+
+      const res = await fetch('http://localhost:5000/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: userMessage }),
+        body: JSON.stringify({
+          message: userMsg,
+          context: { history: contextHistory }
+        })
       });
+      const data = await res.json();
 
-      if (!response.ok) {
-        throw new Error(`Server Error: ${response.status}`);
-      }
+      let botReply = "I'm not sure how to respond to that.";
 
       const data: ApiResponse = await response.json();
 
@@ -79,17 +93,13 @@ export default function ChatWidget() {
       } else if (data.action === 'respond' && data.parameters?.message) {
         botResponse = data.parameters.message;
       } else if (data.reply) {
-        botResponse = data.reply;
-      } else if (data.error) {
-        botResponse = `Server Error: ${data.error}`;
+        botReply = data.reply;
       }
 
-      // Clean the text before setting it
-      setMessages(prev => [...prev, { text: cleanText(botResponse), isUser: false }]);
-
-    } catch (error: any) {
-      console.error("Chat Error:", error);
-      setMessages(prev => [...prev, { text: "⚠️ Connection Error. Is the server running?", isUser: false }]);
+      setMessages(prev => [...prev, { text: botReply, isUser: false }]);
+    } catch (error) {
+      console.error("Chat error:", error);
+      setMessages(prev => [...prev, { text: "Connection error.", isUser: false }]);
     } finally {
       setIsLoading(false);
     }
@@ -177,6 +187,36 @@ export default function ChatWidget() {
                 </button>
               </div>
             </div>
+            <button onClick={() => setIsOpen(false)} className="text-white/60 hover:text-white transition-colors">
+              <X size={20} />
+            </button>
+          </div>
+
+          {!isMinimized && (
+            <>
+              <div className="chat-messages flex-1 overflow-y-auto p-4 flex flex-col gap-3 bg-[#FAF9F6]">
+                {messages.map((msg, index) => (
+                  <div key={index}
+                    className={`message p-3 rounded-lg max-w-[85%] text-sm ${msg.isUser ? 'self-end' : 'self-start'}`}
+                    style={{
+                      whiteSpace: 'pre-wrap', // Essential for lists!
+                      backgroundColor: msg.isUser ? '#2C1810' : '#EFEBE9',
+                      color: msg.isUser ? '#F3E5AB' : '#2C1810',
+                      border: msg.isUser ? 'none' : '1px solid #D7CCC8',
+                      borderRadius: '8px'
+                    }}>
+                    {msg.text}
+                  </div>
+                ))}
+
+                {isLoading && (
+                  <div className="bg-[#EFEBE9] p-3 rounded-lg flex items-center gap-2 text-[#2C1810] text-sm w-fit border border-[#D7CCC8]">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Brewing answer...</span>
+                  </div>
+                )}
+                <div ref={messagesEndRef} />
+              </div>
 
             {/* Chat Messages */}
             <div className={`chat-messages flex-1 overflow-y-auto flex flex-col gap-4 bg-[#F3EFE0] ${isMobile ? 'p-3' : 'p-5'}`}>
@@ -194,19 +234,22 @@ export default function ChatWidget() {
                   }}>
                   {msg.text}
                 </div>
-              ))}
-
-              {isLoading && (
-                <div className={`bg-[#EFEBE9] rounded-xl flex items-center gap-3 text-[#2C1810] w-fit border border-[#D7CCC8] ${isMobile ? 'p-3 text-[14px]' : 'p-4 text-[15px]'}`}>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  <span>Brewing answer...</span>
+              </div>
+            ))}
+            {isLoading && (
+              <div className="flex justify-start">
+                <div className="bg-[#F3F0EB] p-3 rounded-2xl rounded-tl-none border border-[#E7E5E4] flex items-center gap-2 text-xs text-[#8B5E3C] font-medium tracking-wide">
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  BREWING...
                 </div>
-              )}
-              <div ref={messagesEndRef} />
-            </div>
+              </div>
+            )}
+            <div ref={messagesEndRef} />
+          </div>
 
-            {/* Input Area */}
-            <div className={`chat-input-area border-t border-gray-200 bg-white flex gap-3 ${isMobile ? 'p-3' : 'p-4'}`}>
+          {/* Input */}
+          <div className="p-4 bg-white border-t border-[#E7E5E4]">
+            <div className="flex gap-2 items-center bg-transparent">
               <input
                 type="text"
                 value={input}
@@ -222,12 +265,12 @@ export default function ChatWidget() {
                 className={`rounded-xl disabled:opacity-50 transition-all hover:brightness-110 shadow-sm ${isMobile ? 'p-3' : 'p-3.5'}`}
                 style={{ backgroundColor: '#A35D36', color: '#F9F8F4' }}
               >
-                <Send size={isMobile ? 18 : 22} />
+                <Send className="w-5 h-5 -ml-0.5 mt-0.5" />
               </button>
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

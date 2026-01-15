@@ -14,9 +14,10 @@ interface ArtPageProps {
 }
 
 const ArtPage: React.FC<ArtPageProps> = ({ onAddToCart }) => {
-  const { artItems } = useDataContext();
+  const { artItems, refreshArtItems } = useDataContext();
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const toastTimeoutRef = useRef<number | null>(null);
+  const [processingIds, setProcessingIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     return () => {
@@ -26,31 +27,82 @@ const ArtPage: React.FC<ArtPageProps> = ({ onAddToCart }) => {
     };
   }, []);
 
-  const handleAddToCart = (art: ArtAdminItem) => {
+  const handleAddToCart = async (art: ArtAdminItem) => {
     // Treat Art as a CoffeeItem for the cart (shared structure)
     // Note: In a real app, we might distinguish types more clearly
     if (!art.id || !art.title || art.price == null) return; // Skip invalid items
     
-    const artistName = art.artist_name || art.artist || 'Unknown Artist';
-    onAddToCart({
-      id: art.id,
-      name: art.title || 'Untitled Art',
-      notes: artistName,
-      caffeine: 'N/A',
-      intensity: 0,
-      image: art.image || '',
-      price: art.price || 0,
-      description: `Art piece by ${artistName}`
-    });
-
-    setToastMessage(`${art.title || 'Art'} added to collection`);
-
-    if (toastTimeoutRef.current) {
-      window.clearTimeout(toastTimeoutRef.current);
+    // Check stock availability
+    if (art.stock <= 0) {
+      setToastMessage(`${art.title || 'Art'} is out of stock`);
+      if (toastTimeoutRef.current) {
+        window.clearTimeout(toastTimeoutRef.current);
+      }
+      toastTimeoutRef.current = window.setTimeout(() => {
+        setToastMessage(null);
+      }, 2000);
+      return;
     }
-    toastTimeoutRef.current = window.setTimeout(() => {
-      setToastMessage(null);
-    }, 1500);
+
+    // Prevent multiple clicks
+    if (processingIds.has(art.id)) {
+      return;
+    }
+
+    setProcessingIds(prev => new Set(prev).add(art.id));
+
+    try {
+      // Decrement stock first
+      const response = await fetch(`${API_BASE_URL}/api/art/${art.id}/decrement-stock`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to update stock');
+      }
+
+      // Refresh art items to get updated stock
+      await refreshArtItems();
+
+      // Add to cart
+      const artistName = art.artist_name || art.artist || 'Unknown Artist';
+      onAddToCart({
+        id: art.id,
+        name: art.title || 'Untitled Art',
+        notes: artistName,
+        caffeine: 'N/A',
+        intensity: 0,
+        image: art.image || '',
+        price: art.price || 0,
+        description: `Art piece by ${artistName}`
+      });
+
+      setToastMessage(`${art.title || 'Art'} added to collection`);
+
+      if (toastTimeoutRef.current) {
+        window.clearTimeout(toastTimeoutRef.current);
+      }
+      toastTimeoutRef.current = window.setTimeout(() => {
+        setToastMessage(null);
+      }, 1500);
+    } catch (error: any) {
+      console.error('Error adding art to cart:', error);
+      setToastMessage(error.message || 'Failed to add to collection');
+      if (toastTimeoutRef.current) {
+        window.clearTimeout(toastTimeoutRef.current);
+      }
+      toastTimeoutRef.current = window.setTimeout(() => {
+        setToastMessage(null);
+      }, 2000);
+    } finally {
+      setProcessingIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(art.id);
+        return newSet;
+      });
+    }
   };
 
   return (
@@ -73,6 +125,7 @@ const ArtPage: React.FC<ArtPageProps> = ({ onAddToCart }) => {
               art={art}
               index={idx}
               onAddToCart={handleAddToCart}
+              isProcessing={processingIds.has(art.id)}
             />
           ))}
         </div>

@@ -147,7 +147,7 @@ const AwarenessPage: React.FC<AwarenessPageProps> = ({ onNavigate }) => {
               <motion.div
                 initial={{ opacity: 0, x: idx % 2 === 0 ? -50 : 50 }}
                 whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
+                viewport={{ once: false }}
                 className={`md:w-1/2 ${block.title === 'Why Only Robusta?' ? 'md:translate-x-16 lg:translate-x-24 xl:translate-x-32' : ''}`}
               >
                 <div className="aspect-[4/5] overflow-hidden transition-all duration-1000 group">
@@ -158,7 +158,7 @@ const AwarenessPage: React.FC<AwarenessPageProps> = ({ onNavigate }) => {
               <motion.div
                 initial={{ opacity: 0, x: idx % 2 === 0 ? 50 : -50 }}
                 whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
+                viewport={{ once: false }}
                 className="md:w-1/2 space-y-8"
               >
                 <span className="text-[10px] uppercase tracking-[0.5em] text-zinc-400 block italic">{block.subtitle}</span>

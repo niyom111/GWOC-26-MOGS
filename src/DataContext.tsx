@@ -282,6 +282,7 @@ interface DataContextValue {
   updateWorkshop: (id: string, updates: Partial<WorkshopAdminItem>) => void;
   deleteWorkshop: (id: string) => void;
   placeOrder: (customer: OrderCustomer, items: CartItem[], total: number, pickupTime: string, paymentMethod?: string) => Promise<Order>;
+  refreshArtItems: () => Promise<void>;
 }
 
 const DataContext = createContext<DataContextValue | undefined>(undefined);
@@ -329,10 +330,23 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // Helper to refresh menu
   const refreshMenu = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/menu');
+      const res = await fetch(`${API_BASE_URL}/api/menu`);
       if (res.ok) setMenuItems(await res.json());
     } catch (err) {
       console.error("Failed to refresh menu:", err);
+    }
+  };
+
+  // Helper to refresh art items
+  const refreshArtItems = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/art`);
+      if (res.ok) {
+        const artData = await res.json();
+        setArtItems(Array.isArray(artData) ? artData : []);
+      }
+    } catch (err) {
+      console.error("Failed to refresh art items:", err);
     }
   };
 
@@ -546,6 +560,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         updateWorkshop,
         deleteWorkshop,
         placeOrder,
+        refreshArtItems,
       }}
     >
       {children}

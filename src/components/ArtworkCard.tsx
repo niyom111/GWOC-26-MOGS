@@ -7,9 +7,10 @@ interface ArtworkCardProps {
   art: ArtAdminItem;
   index: number;
   onAddToCart?: (art: ArtAdminItem) => void;
+  isProcessing?: boolean;
 }
 
-const ArtworkCard: React.FC<ArtworkCardProps> = ({ art, index, onAddToCart }) => {
+const ArtworkCard: React.FC<ArtworkCardProps> = ({ art, index, onAddToCart, isProcessing = false }) => {
   const [isFlipped, setIsFlipped] = useState(false);
 
   const handleImageClick = () => {
@@ -189,10 +190,11 @@ const ArtworkCard: React.FC<ArtworkCardProps> = ({ art, index, onAddToCart }) =>
       {isAvailable && onAddToCart && (
         <button
           onClick={handleAddToCartClick}
-          className="w-full py-4 border border-black/10 group-hover:bg-black group-hover:text-white group-hover:border-black transition-all text-[10px] uppercase tracking-[0.3em] font-bold flex items-center justify-center space-x-3"
+          disabled={isProcessing || art.stock <= 0}
+          className="w-full py-4 border border-black/10 group-hover:bg-black group-hover:text-white group-hover:border-black active:scale-95 active:bg-black active:text-white transition-all duration-150 text-[10px] uppercase tracking-[0.3em] font-bold flex items-center justify-center space-x-3 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-inherit disabled:hover:border-black/10"
         >
           <ShoppingCart className="w-4 h-4" />
-          <span>Add to Collection</span>
+          <span>{isProcessing ? 'Adding...' : 'Add to Collection'}</span>
         </button>
       )}
     </motion.div>
