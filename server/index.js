@@ -326,9 +326,6 @@ app.post('/api/orders', async (req, res) => {
             payment_method: paymentMethod || 'Paid at Counter',
             status: 'placed'
         }).select().single();
-<<<<<<< HEAD
-        if (error) throw error;
-=======
 
         if (error) {
             console.error('Order save error:', error);
