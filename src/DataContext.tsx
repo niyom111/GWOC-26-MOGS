@@ -79,8 +79,10 @@ export interface WorkshopAdminItem {
   title: string;
   datetime: string;
   seats: number;
-  booked: number;
+  remaining: number;
   price: number;
+  description?: string;
+  image_url?: string;
 }
 
 export interface OrderCustomer {
@@ -231,7 +233,7 @@ export const defaultData: StoredData = {
       title: 'Latte Art Basics',
       datetime: 'Oct 24, 10:00 AM',
       seats: 8,
-      booked: 5,
+      remaining: 3,
       price: 0,
     },
     {
@@ -239,7 +241,7 @@ export const defaultData: StoredData = {
       title: 'The Robusta Brew Lab',
       datetime: 'Nov 02, 8:00 AM',
       seats: 10,
-      booked: 7,
+      remaining: 3,
       price: 799,
     },
   ],

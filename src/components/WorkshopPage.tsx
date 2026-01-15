@@ -1,15 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createPortal } from 'react-dom';
 import { Send, X, CheckCircle2, Loader2 } from 'lucide-react';
 import emailjs from '@emailjs/browser';
-
-// Initial Data
-const INITIAL_WORKSHOPS = [
-  { id: '1', name: "Latte Art Basics", desc: "Master the classic heart and rosetta using Robusta's thick crema.", date: "Oct 24", time: "10:00 AM", seats: 10, img: "https://images.unsplash.com/photo-1541167760496-162955ed8a9f?auto=format&fit=crop&q=80&w=1000" },
-  { id: '2', name: "Canvas & Coffee", desc: "A painting session using coffee-based pigments and watercolors.", date: "Oct 28", time: "6:00 PM", seats: 10, img: "https://images.unsplash.com/photo-1513364776144-60967b0f800f?auto=format&fit=crop&q=80&w=1000" },
-  { id: '3', name: "The Robusta Brew", desc: "Deep dive into temperature and pressure variables for high-caffeine extraction.", date: "Nov 02", time: "8:00 AM", seats: 4, img: "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&q=80&w=1000" },
-];
+import { useDataContext } from '../DataContext';
+import { API_BASE_URL } from '../config';
 
 // --- CONFIGURATION ---
 const EMAIL_CONFIG_RESERVATION = {
@@ -26,12 +21,13 @@ const EMAIL_CONFIG_HOSTING = {
   ADMIN_EMAIL: 'robustecafe@gmail.com'
 };
 
-
 import Toast from './Toast';
 
 const WorkshopPage: React.FC = () => {
+  const { workshops, setWorkshops } = useDataContext();
+  
   // Check for missing keys on mount
-  React.useEffect(() => {
+  useEffect(() => {
     const missingKeys: string[] = [];
     if (!EMAIL_CONFIG_RESERVATION.SERVICE_ID) missingKeys.push('VITE_EMAILJS_WORKSHOP_RESERVE_SERVICE_ID');
     if (!EMAIL_CONFIG_RESERVATION.PUBLIC_KEY) missingKeys.push('VITE_EMAILJS_WORKSHOP_RESERVE_PUBLIC_KEY');
@@ -49,7 +45,6 @@ const WorkshopPage: React.FC = () => {
     }
   }, []);
 
-  const [workshops, setWorkshops] = useState(INITIAL_WORKSHOPS);
   const [reservationEmails, setReservationEmails] = useState<{ [key: string]: string }>({});
   const [reservingId, setReservingId] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -93,7 +88,7 @@ const WorkshopPage: React.FC = () => {
     }
   };
 
-  // 1. RESERVE SPOT -> Sends Email to USER (Existing Logic)
+  // 1. RESERVE SPOT -> Sends Email to USER + Updates DB
   const handleReserveSubmit = (e: React.FormEvent, workshopId: string) => {
     e.preventDefault();
     const userEmail = reservationEmails[workshopId];
@@ -107,33 +102,41 @@ const WorkshopPage: React.FC = () => {
     // Params for User Email Template
     const templateParams = {
       to_email: userEmail,
-      workshop_name: workshop.name,
-      workshop_date: `${workshop.date} @ ${workshop.time}`,
+      workshop_name: workshop.title,
+      workshop_date: workshop.datetime,
       reply_to: EMAIL_CONFIG_RESERVATION.ADMIN_EMAIL
     };
 
     emailjs.send(EMAIL_CONFIG_RESERVATION.SERVICE_ID, EMAIL_CONFIG_RESERVATION.TEMPLATE_ID_USER, templateParams, EMAIL_CONFIG_RESERVATION.PUBLIC_KEY)
-      .then(() => {
-        // Success: Decrement Seat
-        setWorkshops(prev => prev.map(w => {
-          if (w.id === workshopId) {
-            return { ...w, seats: Math.max(0, w.seats - 1) };
+      .then(async () => {
+        // Success: Update DB and decrement remaining
+        try {
+          const response = await fetch(`${API_BASE_URL}/api/workshops/${workshopId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+          });
+
+          if (response.ok) {
+            const updatedWorkshop = await response.json();
+            // Update local state
+            setWorkshops(prev => prev.map(w => w.id === workshopId ? updatedWorkshop : w));
           }
-          return w;
-        }));
+        } catch (error) {
+          console.error('Failed to update workshop:', error);
+        }
 
         setReservingId(null);
         setReservationEmails(prev => ({ ...prev, [workshopId]: '' }));
 
         // Show Toast
-        setToastMessage(`Reservation Request Sent for ${workshop.name}`);
+        setToastMessage(`Reservation Request Sent for ${workshop.title}`);
         if (toastTimeoutRef.current) window.clearTimeout(toastTimeoutRef.current);
         toastTimeoutRef.current = window.setTimeout(() => setToastMessage(null), 2000);
 
         // Show Confirmation
         setModalContent({
           title: "Request Sent.",
-          body: `We have received your reservation request for "${workshop.name}". A confirmation email has been sent to ${userEmail}.`
+          body: `We have received your reservation request for "${workshop.title}". A confirmation email has been sent to ${userEmail}.`
         });
       })
       .catch((err) => {
@@ -189,7 +192,7 @@ const WorkshopPage: React.FC = () => {
         {/* WORKSHOPS GRID */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-40">
           {workshops.map((w, idx) => {
-            const isSoldOut = w.seats === 0;
+            const isSoldOut = w.remaining === 0;
             const isLoading = reservingId === w.id;
 
             return (
@@ -201,7 +204,7 @@ const WorkshopPage: React.FC = () => {
                 className={`group bg-white border ${isSoldOut ? 'border-red-100 bg-red-50/10' : 'border-black/5'} p-8 shadow-sm hover:shadow-xl transition-all duration-500`}
               >
                 <div className="aspect-square overflow-hidden mb-8 relative bg-zinc-100">
-                  <img src={w.img} className={`w-full h-full object-cover transition-all duration-700 ${isSoldOut ? 'grayscale opacity-50' : ''}`} alt={w.name} />
+                  <img src={w.image_url || "https://images.unsplash.com/photo-1541167760496-162955ed8a9f?auto=format&fit=crop&q=80&w=1000"} className={`w-full h-full object-cover transition-all duration-700 ${isSoldOut ? 'grayscale opacity-50' : ''}`} alt={w.title} />
                   {isSoldOut && (
                     <div className="absolute inset-0 flex items-center justify-center bg-black/20">
                       <span className="bg-red-500 text-white text-[10px] uppercase tracking-[0.3em] font-bold px-4 py-2">Sold Out</span>
@@ -209,17 +212,17 @@ const WorkshopPage: React.FC = () => {
                   )}
                 </div>
 
-                <h3 className="text-3xl font-serif italic mb-4 text-[#1A1A1A]">{w.name}</h3>
-                <p className="text-sm font-sans text-zinc-500 mb-8 leading-relaxed uppercase tracking-wider">{w.desc}</p>
+                <h3 className="text-3xl font-serif italic mb-4 text-[#1A1A1A]">{w.title}</h3>
+                <p className="text-sm font-sans text-zinc-500 mb-8 leading-relaxed uppercase tracking-wider">{w.description || "A unique coffee craft experience"}</p>
 
                 <div className="flex flex-col space-y-3 mb-10 text-[10px] font-sans uppercase tracking-[0.2em] font-bold text-[#1A1A1A]">
                   <div className="flex justify-between border-b border-black/5 pb-2">
                     <span className="text-zinc-400">Date & Time</span>
-                    <span>{w.date} @ {w.time}</span>
+                    <span>{w.datetime}</span>
                   </div>
                   <div className="flex justify-between border-b border-black/5 pb-2">
                     <span className="text-zinc-400">Available</span>
-                    <span className={w.seats <= 4 ? 'text-red-500' : 'text-emerald-600'}>{w.seats} spots left</span>
+                    <span className={w.remaining <= 4 ? 'text-red-500' : 'text-emerald-600'}>{w.remaining} spots left</span>
                   </div>
                 </div>
 

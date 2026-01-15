@@ -236,6 +236,38 @@ app.get('/api/workshops', async (req, res) => {
     res.json(data || []);
 });
 
+app.put('/api/workshops/:id', async (req, res) => {
+    try {
+        const workshopId = req.params.id;
+        
+        // Get current workshop
+        const { data: workshop, error: fetchError } = await db
+            .from('workshops')
+            .select('remaining')
+            .eq('id', workshopId)
+            .single();
+        
+        if (fetchError) return res.status(404).json({ error: 'Workshop not found' });
+        if (!workshop) return res.status(404).json({ error: 'Workshop not found' });
+        
+        // Decrement remaining by 1 (but not below 0)
+        const newRemaining = Math.max(0, (workshop.remaining || 0) - 1);
+        
+        // Update workshop
+        const { data: updated, error: updateError } = await db
+            .from('workshops')
+            .update({ remaining: newRemaining })
+            .eq('id', workshopId)
+            .select()
+            .single();
+        
+        if (updateError) return res.status(500).json({ error: updateError.message });
+        res.json(updated);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 app.get('/api/orders', async (req, res) => {
     const { data, error } = await db.from('orders').select('*');
     if (error) return res.status(500).json({ error: error.message });
