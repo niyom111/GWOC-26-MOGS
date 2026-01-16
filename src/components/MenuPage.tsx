@@ -805,10 +805,10 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
             {recommendedItems.length > 0 && (
               <section id="recommended-for-you" className="scroll-mt-28 mb-10">
                 <div className="mb-4">
-                  <p className="text-[10px] uppercase tracking-[0.4em] text-zinc-500 font-sans mb-1">
+                  <p className="text-[10px] uppercase tracking-[0.4em] text-black font-sans mb-1">
                     picked for you
                   </p>
-                  <h2 className="text-3xl md:text-4xl font-serif italic tracking-tight text-[#0a0a0a]">
+                  <h2 className="text-3xl md:text-4xl font-serif italic tracking-tight text-black">
                     Recommended
                   </h2>
                 </div>
@@ -822,7 +822,7 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
                         <span className="font-medium text-[15px] font-serif">
                           {item.name}
                         </span>
-                        <p className="text-[11px] text-zinc-500 mt-0.5 font-sans">
+                        <p className="text-[11px] text-black mt-0.5 font-sans">
                           {item.notes} • Based on your taste
                         </p>
                       </div>

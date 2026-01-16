@@ -139,9 +139,24 @@ const FranchisePage: React.FC = () => {
         <div className="min-h-screen bg-[#F3EFE0] overflow-hidden text-[#1A1A1A]" ref={targetRef}>
 
             {/* 1. HERO SECTION - Clean, No Image, Just Vibe */}
-            <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden pt-20">
-                {/* Background Noise/Gradient */}
-                <div className="absolute inset-0 z-0 opacity-[0.04] pointer-events-none mix-blend-multiply">
+            <section className="relative h-screen flex items-center justify-center overflow-hidden pt-20">
+                {/* Background Video */}
+                <div className="absolute inset-0 z-0 bg-black">
+                    <video
+                        autoPlay
+                        loop
+                        muted
+                        playsInline
+                        className="w-full h-full object-cover opacity-90"
+                    >
+                        <source src="/franchiseheropage3.mp4" type="video/mp4" />
+                    </video>
+                    {/* Unified Overlay for Text Readability */}
+                    <div className="absolute inset-0 bg-black/20 pointer-events-none" />
+                </div>
+
+                {/* Background Noise - Reduced opacity */}
+                <div className="absolute inset-0 z-0 opacity-[0.02] pointer-events-none mix-blend-multiply">
                     <svg width="100%" height="100%">
                         <filter id="noise">
                             <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3" stitchTiles="stitch" />
@@ -151,50 +166,53 @@ const FranchisePage: React.FC = () => {
                     </svg>
                 </div>
 
-                {/* Subtle Breathing Glow */}
+                {/* Subtle Breathing Glow - Adjusted for white text contrast */}
                 <motion.div
                     animate={{ scale: [1, 1.1, 1], opacity: [0.03, 0.05, 0.03] }}
                     transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-                    className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] md:w-[800px] md:h-[800px] bg-[#A35D36] rounded-full blur-[100px] pointer-events-none"
+                    className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] md:w-[800px] md:h-[800px] bg-white rounded-full blur-[100px] pointer-events-none"
                 />
 
                 <div className="relative z-10 max-w-7xl mx-auto px-6 text-center">
                     <motion.div
-                        initial="hidden"
-                        animate="visible"
-                        variants={containerVariants}
+                        initial={{ opacity: 0, y: 30 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
                     >
-                        <motion.div variants={itemVariants}>
-                            <h2 className="text-[10px] md:text-xs font-bold uppercase tracking-[0.4em] text-[#A35D36] mb-8 font-sans inline-block border-b border-[#A35D36]/30 pb-2">
-                                The Partnership
-                            </h2>
-                        </motion.div>
-
-                        <div className="overflow-hidden mb-6 md:mb-8">
-                            <motion.h1
-                                className="text-[13vw] md:text-[8vw] leading-[0.85] font-serif italic tracking-tighter text-[#1A1A1A]"
-                                initial={{ y: "100%" }}
-                                animate={{ y: 0 }}
-                                transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
-                            >
-                                Built for
-                            </motion.h1>
-                        </div>
-                        <div className="overflow-hidden mb-8 md:mb-12 pb-8 md:pb-2">
-                            <motion.h1
-                                className="text-[13vw] md:text-[8vw] leading-[0.85] font-serif italic tracking-tighter text-[#A35D36] py-4"
-                                initial={{ y: "100%" }}
-                                animate={{ y: 0 }}
-                                transition={{ duration: 1.2, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
-                            >
-                                Intentionality.
-                            </motion.h1>
-                        </div>
-
-                        <motion.p variants={itemVariants} className="text-lg md:text-2xl font-sans max-w-xl mx-auto leading-relaxed text-zinc-600 mb-0 md:mb-10">
-                            Own a sanctuary of bold Robusta and minimalist design. <br className="hidden md:block" />Join the movement.
-                        </motion.p>
+                        <h2 className="text-[10px] md:text-xs font-bold uppercase tracking-[0.4em] text-white mb-8 font-sans inline-block border-b border-white/30 pb-2">
+                            The Partnership
+                        </h2>
                     </motion.div>
+
+                    <div className="overflow-hidden mb-6 md:mb-8">
+                        <motion.h1
+                            className="text-[13vw] md:text-[8vw] leading-[0.85] font-serif italic tracking-tighter text-white"
+                            initial={{ opacity: 0, y: 40 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 1.2, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
+                        >
+                            Built for
+                        </motion.h1>
+                    </div>
+                    <div className="overflow-hidden mb-8 md:mb-12 pb-8 md:pb-2">
+                        <motion.h1
+                            className="text-[13vw] md:text-[8vw] leading-[0.85] font-serif italic tracking-tighter text-white py-4"
+                            initial={{ opacity: 0, y: 40 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 1.2, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                        >
+                            Intentionality.
+                        </motion.h1>
+                    </div>
+
+                    <motion.p
+                        initial={{ opacity: 0, y: 30 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 1, delay: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                        className="text-lg md:text-2xl font-sans max-w-xl mx-auto leading-relaxed text-white font-medium mb-0 md:mb-10"
+                    >
+                        Own a sanctuary of bold Robusta and minimalist design. <br className="hidden md:block" />Join the movement.
+                    </motion.p>
                 </div>
             </section>
 
@@ -208,7 +226,7 @@ const FranchisePage: React.FC = () => {
                 >
                     <motion.h2 variants={itemVariants} className="text-[10px] font-bold uppercase tracking-[0.4em] text-[#A35D36] mb-6 font-sans">Our Mission</motion.h2>
                     <motion.h3 variants={itemVariants} className="text-4xl md:text-5xl lg:text-6xl font-serif italic mb-8 text-[#1A1A1A] leading-tight">
-                        We are reclaiming <br /><span className="text-zinc-400">the narrative of Robusta.</span>
+                        We are reclaiming <br /><span className="text-baige">the narrative of Robusta.</span>
                     </motion.h3>
                     <motion.div variants={itemVariants} className="h-px w-24 bg-[#A35D36] mb-8" />
                     <motion.p variants={itemVariants} className="font-sans text-lg text-zinc-600 mb-6 leading-relaxed">
@@ -503,8 +521,16 @@ const FranchisePage: React.FC = () => {
 
             {/* 9. FINAL CTA */}
             <section className="py-32 px-6 text-center bg-[#1A1A1A] text-white relative overflow-hidden">
-                <div className="absolute inset-0 opacity-20">
-                    <img src="/media/franchise_community_event.png" className="w-full h-full object-cover grayscale" alt="Community" />
+                <div className="absolute inset-0 opacity-60">
+                    <video
+                        autoPlay
+                        loop
+                        muted
+                        playsInline
+                        className="w-full h-full object-cover"
+                    >
+                        <source src="/forestaesthetic.mp4" type="video/mp4" />
+                    </video>
                 </div>
                 <div className="absolute inset-0 bg-gradient-to-t from-[#1A1A1A] to-transparent" />
 
@@ -516,7 +542,7 @@ const FranchisePage: React.FC = () => {
                         transition={{ duration: 0.8 }}
                     >
                         <h2 className="text-5xl md:text-8xl font-serif italic mb-8">Ready to Start?</h2>
-                        <p className="font-sans text-white/70 max-w-xl mx-auto mb-12 text-lg">
+                        <p className="font-sans text-white max-w-xl mx-auto mb-12 text-xl md:text-2xl">
                             Let's build something beautiful together.
                         </p>
                         <div className="flex flex-col md:flex-row gap-6 justify-center items-center">
@@ -524,11 +550,11 @@ const FranchisePage: React.FC = () => {
                                 onClick={() => {
                                     setIsModalOpen(true);
                                 }}
-                                className="w-full md:w-60 px-12 py-5 bg-white text-black font-bold uppercase tracking-[0.2em] rounded-full hover:bg-[#A35D36] hover:text-white transition-all duration-300 text-xs shadow-xl hover:shadow-2xl hover:-translate-y-1 border border-transparent"
+                                className="w-full md:w-64 px-12 py-6 bg-white text-black font-bold uppercase tracking-[0.2em] rounded-full hover:bg-[#A35D36] hover:text-white transition-all duration-300 text-sm shadow-xl hover:shadow-2xl hover:-translate-y-1 border border-transparent"
                             >
                                 Apply Now
                             </button>
-                            <a href={`tel:${contactNumber.replace(/[^0-9+]/g, '')}`} className="w-full md:w-60 px-12 py-5 border border-white/20 text-white font-bold uppercase tracking-[0.2em] rounded-full hover:bg-white/10 transition-all duration-300 text-xs inline-flex justify-center items-center">
+                            <a href={`tel:${contactNumber.replace(/[^0-9+]/g, '')}`} className="w-full md:w-64 px-12 py-6 border border-white/20 text-white font-bold uppercase tracking-[0.2em] rounded-full hover:bg-white/10 transition-all duration-300 text-sm inline-flex justify-center items-center">
                                 Call Us
                             </a>
                         </div>

@@ -15,6 +15,7 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage, cartCount }) => {
   const navLinks = [
+    { label: 'Home', page: Page.HOME },
     { label: 'Menu', page: Page.MENU },
     { label: 'Workshops', page: Page.WORKSHOPS },
     { label: 'Art Gallery', page: Page.ART },
@@ -32,20 +33,19 @@ const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage, cartCount }) =
   };
 
   const isHome = currentPage === Page.HOME;
+  const isFranchise = currentPage === Page.FRANCHISE;
+  const isDarkBg = currentPage === Page.HOME || currentPage === Page.TRACK_ORDER;
 
   // --- EXPLICIT COLOR MODES ---
-  // HOME (Dark Video): Text is White.
-  // INNER (Light Cream): Text is Black.
-  const textColorClass = isHome ? 'text-white' : 'text-[#0a0a0a]';
+  // FRANCHISE: Beige Text, but entire header gets mix-blend-difference (handled in return)
+  // HOME / TRACK ORDER: Fixed Beige
+  // OTHERS: Fixed Black
+  const isBeigeText = isDarkBg || isFranchise;
+  const textColorClass = isBeigeText ? 'text-[#F3EFE0]' : 'text-[#0a0a0a]';
 
   // LOGO FILTER:
-  // Home: brightness-100 (Keeps it White/Original)
-  // Inner: brightness-0 (Forces it to SOLID BLACK)
-  const logoFilterClass = isHome ? 'brightness-100' : 'brightness-0';
+  const logoFilterClass = isBeigeText ? 'brightness-100' : 'brightness-0';
 
-  // MENU BUTTON BACKGROUND:
-  // Home: Dark glass effect.
-  // Inner: Subtle dark ring for contrast against cream.
   // MENU BUTTON BACKGROUND:
   // Brand brown for mobile visibility (as requested)
   const menuButtonBg = 'bg-[#A35D36] border-[#A35D36] text-white';
@@ -68,15 +68,15 @@ const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage, cartCount }) =
       <motion.header
         initial={{ y: -100 }}
         animate={{ y: 0 }}
-        className={`fixed top-0 left-0 w-full z-40 pointer-events-none transition-all duration-700`}
+        className={`fixed top-0 left-0 w-full z-40 pointer-events-none transition-all duration-700 ${isFranchise ? 'mix-blend-difference' : ''}`}
       >
         <div
           className={`relative flex items-center justify-between px-6 ${isHome ? 'py-1' : 'pt-2 pb-3'
             }`}
         >
           {/* LOGO (Inner Pages Only - or Conditional) */}
-          {/* We show logo on inner pages to navigate home, but hide it on Admin. */}
-          {!isHome && currentPage !== Page.ADMIN && (
+          {/* We show logo on inner pages to navigate home, but hide it on Admin AND Find Store (as requested). */}
+          {!isHome && currentPage !== Page.ADMIN && currentPage !== Page.FIND_STORE && (
             <button
               onClick={() => handleNavigate(Page.HOME)}
               className="absolute top-6 left-8 z-50 flex items-center justify-center hover:opacity-80 transition-opacity pointer-events-auto"
@@ -103,7 +103,7 @@ const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage, cartCount }) =
                     initial={{ scale: 0, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     // Badge Colors Flipped for Contrast
-                    className={`absolute -top-2 -right-2 text-[9px] w-4 h-4 flex items-center justify-center rounded-full font-black ${isHome ? 'bg-white text-black' : 'bg-black text-white'}`}
+                    className={`absolute -top-2 -right-2 text-[9px] w-4 h-4 flex items-center justify-center rounded-full font-black ${(isDarkBg || isFranchise) ? 'bg-[#F3EFE0] text-black' : 'bg-black text-[#F3EFE0]'}`}
                   >
                     {cartCount}
                   </motion.span>

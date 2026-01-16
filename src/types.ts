@@ -34,6 +34,26 @@ export interface Workshop {
   image: string;
 }
 
+export interface Order {
+  id: string;
+  customer: {
+    name: string;
+    phone: string;
+    email: string;
+  };
+  items: {
+    id: string;
+    name: string;
+    price: number;
+    quantity: number;
+  }[];
+  total: number;
+  date: string;
+  pickupTime: string;
+  status: string;
+  payment_method?: string;
+}
+
 export enum Page {
   HOME = 'home',
   MENU = 'menu',

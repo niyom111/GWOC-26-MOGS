@@ -357,7 +357,7 @@ const AppContent: React.FC = () => {
           </motion.div>
         </AnimatePresence>
 
-        {currentPage !== Page.ADMIN && currentPage !== Page.EMPLOYEE && <Footer onNavigate={navigateTo} />}
+        {currentPage !== Page.ADMIN && currentPage !== Page.EMPLOYEE && currentPage !== Page.TRACK_ORDER && <Footer onNavigate={navigateTo} />}
 
         {/* --- ADDED CHAT WIDGET HERE --- */}
         {currentPage !== Page.ADMIN && currentPage !== Page.EMPLOYEE && currentPage !== Page.CART && <ChatWidget />}

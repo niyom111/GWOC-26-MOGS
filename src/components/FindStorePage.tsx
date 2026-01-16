@@ -11,68 +11,72 @@ const FindStorePage: React.FC = () => {
   };
 
   return (
-    <section className="bg-[#F3EFE0] text-[#1A1A1A] pt-32 md:pt-48 pb-40 px-6 md:px-8 min-h-screen">
-      <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 md:gap-16 items-start">
-        <div>
+    <section className="relative h-screen w-full overflow-hidden font-sans">
+      {/* Full Screen Map Background */}
+      <div className="absolute inset-0 z-0">
+        <iframe
+          title="Rabuste Surat Location"
+          src="https://maps.google.com/maps?q=Rabuste+Coffee,+Surat&t=&z=15&ie=UTF8&output=embed"
+          className="w-full h-full border-0"
+          loading="lazy"
+          referrerPolicy="no-referrer-when-downgrade"
+          allowFullScreen
+        />
+        {/* Subtle overlay to harmonize with overlay card if needed, or rely on map filters */}
+      </div>
+
+      {/* Floating Info Card */}
+      <div className="absolute z-10 top-1/2 -translate-y-1/2 left-4 md:left-24 max-w-md pointer-events-none">
+        <motion.div
+          initial={{ opacity: 0, x: -50, filter: 'blur(10px)' }}
+          whileInView={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
+          transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+          className="bg-[#F3EFE0]/90 backdrop-blur-xl border border-black/5 shadow-2xl p-8 md:p-12 rounded-none md:rounded-xl pointer-events-auto"
+        >
           <motion.p
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-[9px] md:text-[13px] uppercase tracking-[0.4em] md:tracking-[0.5em] text-black mb-6 font-sans"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3 }}
+            className="text-[13px] uppercase tracking-[0.3em] text-[#1A1A1A] mb-8 font-sans"
           >
             Visit Us
           </motion.p>
+
           <motion.h1
-            initial={{ opacity: 0, y: 30 }}
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-5xl md:text-7xl font-serif italic tracking-tight leading-tight mb-8 md:mb-10 text-[#1A1A1A]"
+            transition={{ delay: 0.4 }}
+            className="text-6xl md:text-7xl lg:text-8xl font-serif italic tracking-tight leading-[0.9] mb-8 text-[#1A1A1A]"
           >
             Find the<br /> Rabuste Bar.
           </motion.h1>
 
-          <div className="space-y-8 font-sans text-sm tracking-widest uppercase text-[#1A1A1A]">
-            <div className="flex items-start space-x-4">
-              <MapPin className="w-5 h-5 mt-1 text-zinc-500" />
-              <div>
-                <p className="text-black text-[12px] mb-2">Physical Storefront</p>
-                <p className="text-[12px] text-[#1A1A1A] leading-relaxed">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+            className="space-y-6"
+          >
+            <div className="flex items-start gap-4">
+              <MapPin className="w-5 h-5 mt-0.5 text-[#1A1A1A]" strokeWidth={1.5} />
+              <div className="space-y-1">
+                <p className="text-[11px] uppercase tracking-[0.2em] text-black font-bold">Physical Storefront</p>
+                <p className="text-sm text-[#1A1A1A] leading-relaxed font-sans">
                   Dimpal Row House, 15, Gymkhana Rd,<br />
                   Piplod, Surat, Gujarat 395007, India
                 </p>
               </div>
             </div>
 
-            <p className="text-[12px] text-black max-w-sm leading-relaxed">
-              A focused bar built around the Robusta standard. Expect limited seating, elevated caffeine
-              payloads, and a rotating calendar of workshops and gallery nights.
-            </p>
-          </div>
-
-          <button
-            onClick={handleDirections}
-            className="mt-10 inline-flex items-center space-x-4 px-8 py-4 border border-black/10 text-[10px] uppercase tracking-[0.4em] font-bold hover:bg-black hover:text-[#F9F8F4] transition-all"
-          >
-            <span>Get Directions</span>
-            <ArrowRight className="w-4 h-4" />
-          </button>
-        </div>
-
-        <div className="space-y-6">
-          <motion.div
-            initial={{ opacity: 0, y: 40 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2, duration: 0.8 }}
-            className="relative w-full border border-black/10 bg-white overflow-hidden aspect-[4/3]"
-          >
-            <iframe
-              title="Rabuste Surat Location"
-              src="https://maps.google.com/maps?q=Rabuste+Coffee,+Surat&t=&z=15&ie=UTF8&iwloc=&output=embed"
-              className="w-full h-full border-0"
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
-              allowFullScreen
-            />
+            <button
+              onClick={handleDirections}
+              className="group w-full md:w-auto mt-4 px-8 py-4 bg-[#1A1A1A] text-[#F9F8F4] text-[10px] uppercase tracking-[0.3em] font-sans hover:bg-black transition-all flex items-center justify-center gap-3"
+            >
+              <span>Get Directions</span>
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            </button>
           </motion.div>
-        </div>
+        </motion.div>
       </div>
     </section>
   );
