@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { MessageCircle, X, Send, Loader2, Coffee } from 'lucide-react';
-import { motion, AnimatePresence, useDragControls } from 'framer-motion';
+import { motion, AnimatePresence, useDragControls, useAnimation } from 'framer-motion';
 import './ChatWidget.css';
 import { API_BASE_URL } from '../config';
+import { Page } from '../types';
 
 // Simple hook for mobile detection
 const useIsMobile = () => {
@@ -42,7 +43,11 @@ const FormatMessage = ({ text }: { text: string }) => {
   );
 };
 
-export default function ChatWidget() {
+interface ChatWidgetProps {
+  currentPage?: Page;
+}
+
+export default function ChatWidget({ currentPage }: ChatWidgetProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<{ text: string; isUser: boolean }[]>([
     { text: "Hi! I'm Labubu AI. Ask me about our menu, calories, or for a recommendation!", isUser: false }
@@ -102,19 +107,35 @@ export default function ChatWidget() {
   };
 
   const isMobile = useIsMobile();
+  const controls = useAnimation();
+
+  useEffect(() => {
+    if (currentPage === Page.FRANCHISE) {
+      controls.set({ opacity: 0 });
+      controls.start({
+        opacity: 1,
+        transition: { delay: 1.5, duration: 1, ease: 'easeOut' }
+      });
+    } else {
+      controls.start({ opacity: 1, transition: { duration: 0.5 } });
+    }
+  }, [currentPage, controls]);
 
   return (
-    <div className="chat-widget-container" style={{
-      position: 'fixed',
-      bottom: isMobile ? '16px' : '20px',
-      right: isMobile ? '16px' : '20px',
-      zIndex: 9999,
-      width: isMobile ? 'calc(100vw - 32px)' : '350px',
-      maxWidth: '350px',
-      height: isMobile ? '50vh' : '500px',
-      maxHeight: isMobile ? '80vh' : '500px',
-      pointerEvents: 'none'
-    }}>
+    <motion.div
+      className="chat-widget-container"
+      animate={controls}
+      style={{
+        position: 'fixed',
+        bottom: isMobile ? '16px' : '20px',
+        right: isMobile ? '16px' : '20px',
+        zIndex: 9999,
+        width: isMobile ? 'calc(100vw - 32px)' : '350px',
+        maxWidth: '350px',
+        height: isMobile ? '50vh' : '500px',
+        maxHeight: isMobile ? '80vh' : '500px',
+        pointerEvents: 'none'
+      }}>
       {/* Container is fixed size to prevent layout shifts, but pointer-events-none so it doesn't block clicks when closed/small.
           We re-enable pointer-events on the actual children.
       */}
@@ -235,7 +256,7 @@ export default function ChatWidget() {
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
+    </motion.div>
   );
 }
 

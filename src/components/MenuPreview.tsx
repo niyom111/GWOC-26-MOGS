@@ -106,7 +106,7 @@ const MenuCard: React.FC<{ item: typeof items[0], index: number, onAddToCart: an
         <div className={`absolute inset-0 bg-black/40 transition-colors duration-700 z-10 md:group-hover:bg-black/70 ${isInView ? 'bg-black/70' : ''}`} />
         <img
           src={item.image}
-          className={`w-full h-full object-cover transition-transform duration-[1.5s] ease-out md:group-hover:scale-110 ${isInView ? 'scale-110' : 'scale-100'}`}
+          className={`block w-full h-full object-cover transition-transform duration-[2s] ease-out md:group-hover:scale-105 ${isInView ? 'scale-105' : 'scale-100'}`}
           alt={item.name}
         />
       </div>

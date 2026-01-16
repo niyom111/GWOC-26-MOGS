@@ -211,7 +211,7 @@ const CartPage: React.FC<CartPageProps> = ({
 
         // Refresh art items to update stock
         refreshArtItems();
-        
+
         onClearCart();
         setCheckoutOpen(false);
         setSuccessOpen(true);
@@ -369,7 +369,7 @@ const CartPage: React.FC<CartPageProps> = ({
 
             // Refresh art items to update stock
             refreshArtItems();
-            
+
             // Success: clear cart and show success UI
             onClearCart();
             setCheckoutOpen(false);
@@ -465,7 +465,7 @@ const CartPage: React.FC<CartPageProps> = ({
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-10 mt-8">
             {/* Cart Items */}
-            <div className="md:col-span-2 bg-white/60 border border-black/5 rounded-2xl p-6 md:p-8">
+            <div className="md:col-span-2 bg-white/60 border border-black/5 rounded-none p-6 md:p-8">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-serif">Items</h2>
                 <span className="text-xs font-sans text-zinc-500 uppercase tracking-[0.25em]">
@@ -488,7 +488,7 @@ const CartPage: React.FC<CartPageProps> = ({
                       </div>
 
                       <div className="flex items-center gap-4">
-                        <div className="flex items-center border border-black/15 rounded-full px-3 py-1.5 gap-3">
+                        <div className="flex items-center border border-black/15 rounded-none px-3 py-1.5 gap-3">
                           <button
                             onClick={() => onUpdateQuantity(item.id, item.quantity - 1)}
                             disabled={item.quantity <= 1}
@@ -533,7 +533,7 @@ const CartPage: React.FC<CartPageProps> = ({
             </div>
 
             {/* Order Summary */}
-            <div className="md:col-span-1 h-fit bg-white/80 border border-black/5 rounded-2xl p-6 md:p-8 flex flex-col gap-6">
+            <div className="md:col-span-1 h-fit bg-white/80 border border-black/5 rounded-none p-6 md:p-8 flex flex-col gap-6">
               <div>
                 <p className="text-[10px] uppercase tracking-[0.4em] text-zinc-500 font-sans mb-2">
                   Summary
@@ -554,7 +554,7 @@ const CartPage: React.FC<CartPageProps> = ({
 
               <button
                 onClick={() => setCheckoutOpen(true)}
-                className="w-full mt-4 py-3 bg-[#0a0a0a] text-[#F9F8F4] text-[10px] uppercase tracking-[0.3em] font-sans rounded-full hover:bg-black transition-colors"
+                className="w-full mt-4 py-3 bg-[#0a0a0a] text-[#F9F8F4] text-[10px] uppercase tracking-[0.3em] font-sans rounded-none hover:bg-black transition-colors"
               >
                 Checkout
               </button>
@@ -583,7 +583,7 @@ const CartPage: React.FC<CartPageProps> = ({
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.9, y: 20 }}
                   transition={{ type: "spring", duration: 0.5, bounce: 0.3 }}
-                  className="relative bg-[#F3EFE0] w-full max-w-2xl rounded-[20px] shadow-2xl p-6 md:p-10 max-h-[90vh] overflow-y-auto"
+                  className="relative bg-[#F3EFE0] w-full max-w-2xl rounded-none shadow-2xl p-6 md:p-10 max-h-[90vh] overflow-y-auto"
                 >
                   <div className="flex items-center justify-between mb-6 md:mb-8">
                     <h2 className="text-2xl md:text-3xl font-serif">Checkout</h2>
@@ -603,127 +603,145 @@ const CartPage: React.FC<CartPageProps> = ({
                     </button>
                   </div>
 
-                  {!orderType && (
-                    <div className="mb-6 md:mb-8 grid grid-cols-2 gap-4">
-                      {/* Instant Order Button */}
-                      <button
-                        type="button"
-                        onClick={() => setOrderType('order-from-store')}
-                        className={`group w-full px-4 md:px-6 py-4 md:py-6 rounded-xl border transition-all duration-200 flex flex-col items-start justify-center text-left relative overflow-hidden bg-white text-black border-black/40 hover:border-black/60 hover:bg-zinc-50`}
+                  <AnimatePresence mode="wait">
+                    {!orderType && (
+                      <motion.div
+                        key="order-type-selection"
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -20 }}
+                        transition={{ duration: 0.3 }}
+                        className="mb-6 md:mb-8 grid grid-cols-2 gap-4"
                       >
-                        <span className="relative z-10 font-sans text-sm uppercase tracking-[0.25em] font-semibold">Instance Order</span>
-                        <span className="text-[12px] mt-1 font-sans normal-case tracking-normal text-black opacity-60 group-hover:opacity-100 transition-opacity duration-200">
-                          Dine-in / Eat here
-                        </span>
-                      </button>
-
-                      {/* Grab-and-go Button */}
-                      <button
-                        type="button"
-                        onClick={() => setOrderType('grab-and-go')}
-                        className={`group w-full px-4 md:px-6 py-4 md:py-6 rounded-xl border transition-all duration-200 flex flex-col items-start justify-center text-left relative overflow-hidden bg-white text-black border-black/40 hover:border-black/60 hover:bg-zinc-50`}
-                      >
-                        <span className="relative z-10 font-sans text-sm uppercase tracking-[0.25em] font-semibold">Grab-and-go</span>
-                        <span className="text-[12px] mt-1 font-sans normal-case tracking-normal text-black opacity-60 group-hover:opacity-100 transition-opacity duration-200">
-                          Takeaway / Pickup
-                        </span>
-                      </button>
-                    </div>
-                  )}
-
-                  {orderType && (
-                    <form onSubmit={handleCheckoutSubmit} className="space-y-5 md:space-y-6 font-sans text-sm md:text-base">
-                      <div>
-                        <label className="block text-[11px] uppercase tracking-[0.25em] mb-1">Name</label>
-                        <input
-                          required
-                          value={customer.name}
-                          onChange={(e) => setCustomer((prev) => ({ ...prev, name: e.target.value }))}
-                          className="w-full bg-transparent border border-black/20 rounded-md px-3 md:px-4 py-2.5 md:py-3 outline-none focus:border-black text-sm md:text-base"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-[11px] uppercase tracking-[0.25em] mb-1">Phone</label>
-                        <input
-                          required
-                          type="tel"
-                          value={customer.phone}
-                          onChange={(e) => handlePhoneChange(e.target.value)}
-                          placeholder="10-digit phone number"
-                          maxLength={10}
-                          className="w-full bg-transparent border border-black/20 rounded-md px-3 md:px-4 py-2.5 md:py-3 outline-none focus:border-black text-sm md:text-base"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-[11px] uppercase tracking-[0.25em] mb-1">Email</label>
-                        <input
-                          required
-                          type="email"
-                          value={customer.email}
-                          onChange={(e) => setCustomer((prev) => ({ ...prev, email: e.target.value }))}
-                          className="w-full bg-transparent border border-black/20 rounded-md px-3 md:px-4 py-2.5 md:py-3 outline-none focus:border-black text-sm md:text-base"
-                        />
-                      </div>
-
-                      {orderType === 'grab-and-go' && (
-                        <div>
-                          <label className="block text-[11px] uppercase tracking-[0.25em] mb-1">Pickup Time</label>
-                          <input
-                            required
-                            type="time"
-                            value={pickupTime}
-                            onChange={(e) => setPickupTime(e.target.value)}
-                            className="w-full bg-transparent border border-black/20 rounded-md px-3 md:px-4 py-2.5 md:py-3 outline-none focus:border-black text-sm md:text-base"
-                          />
-                        </div>
-                      )}
-
-                      <div>
-                        <label className="block text-[11px] uppercase tracking-[0.25em] mb-1">Payment Method</label>
-                        <select
-                          value={paymentMethod}
-                          onChange={(e) => setPaymentMethod(e.target.value as 'counter' | 'upi')}
-                          className="w-full bg-transparent border border-black/20 rounded-md px-3 md:px-4 py-2.5 md:py-3 outline-none focus:border-black font-sans text-sm md:text-base"
-                          disabled={paymentMethod === 'upi' && !RAZORPAY_KEY_ID}
-                        >
-                          <option value="counter">Pay by cash</option>
-                          <option value="upi" disabled={!RAZORPAY_KEY_ID}>
-                            Pay Online{!RAZORPAY_KEY_ID && ' (Unavailable)'}
-                          </option>
-                        </select>
-                      </div>
-
-                      {error && <p className="text-xs text-red-600">{error}</p>}
-
-                      <div className="flex justify-end gap-3 pt-4 md:pt-6 text-[11px] md:text-xs uppercase tracking-[0.25em]">
+                        {/* Instant Order Button */}
                         <button
                           type="button"
-                          onClick={() => {
-                            setError(null);
-                            setPaymentMethod('counter');
-                            setOrderType(null);
-                            setPickupTime('');
-                            setCustomer({ name: '', phone: '', email: '' });
-                          }}
-                          disabled={submitting}
-                          className="px-4 md:px-6 py-2.5 md:py-3 text-zinc-500 hover:text-black transition-colors"
+                          onClick={() => setOrderType('order-from-store')}
+                          className={`group w-full px-4 md:px-6 py-4 md:py-6 rounded-none border transition-all duration-200 flex flex-col items-start justify-center text-left relative overflow-hidden bg-white text-black border-black/40 hover:border-black/60 hover:bg-zinc-50`}
                         >
-                          Back
+                          <span className="relative z-10 font-sans text-sm md:text-base uppercase tracking-[0.25em] font-semibold">Instance Order</span>
+                          <span className="text-[12px] mt-1 font-sans normal-case tracking-normal text-black opacity-60 group-hover:opacity-100 transition-opacity duration-200">
+                            Dine-in / Eat here
+                          </span>
                         </button>
+
+                        {/* Grab-and-go Button */}
                         <button
-                          type="submit"
-                          disabled={submitting}
-                          className="px-6 md:px-8 py-2.5 md:py-3 bg-[#0a0a0a] text-[#F9F8F4] rounded-full hover:bg-black disabled:opacity-60 transition-colors text-sm md:text-base"
+                          type="button"
+                          onClick={() => setOrderType('grab-and-go')}
+                          className={`group w-full px-4 md:px-6 py-4 md:py-6 rounded-none border transition-all duration-200 flex flex-col items-start justify-center text-left relative overflow-hidden bg-white text-black border-black/40 hover:border-black/60 hover:bg-zinc-50`}
                         >
-                          {submitting
-                            ? (paymentMethod === 'upi' ? 'Processing Payment...' : 'Placing Order...')
-                            : (paymentMethod === 'upi' ? 'Pay Online' : 'Confirm Order')}
+                          <span className="relative z-10 font-sans text-sm md:text-base uppercase tracking-[0.25em] font-semibold">Grab-and-go</span>
+                          <span className="text-[12px] mt-1 font-sans normal-case tracking-normal text-black opacity-60 group-hover:opacity-100 transition-opacity duration-200">
+                            Takeaway / Pickup
+                          </span>
                         </button>
-                      </div>
-                    </form>
-                  )}
+                      </motion.div>
+                    )}
+
+                    {orderType && (
+                      <motion.div
+                        key="checkout-form"
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: 20 }}
+                        transition={{ duration: 0.3 }}
+                      >
+                        <form onSubmit={handleCheckoutSubmit} className="space-y-5 md:space-y-6 font-sans text-sm md:text-base">
+                          {/* ... existing form fields ... */}
+                          <div>
+                            <label className="block text-[11px] uppercase tracking-[0.25em] mb-1">Name</label>
+                            <input
+                              required
+                              value={customer.name}
+                              onChange={(e) => setCustomer((prev) => ({ ...prev, name: e.target.value }))}
+                              className="w-full bg-white border border-black/20 rounded-none px-3 md:px-4 py-2.5 md:py-3 outline-none focus:border-black text-sm md:text-base"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-[11px] uppercase tracking-[0.25em] mb-1">Phone</label>
+                            <input
+                              required
+                              type="tel"
+                              value={customer.phone}
+                              onChange={(e) => handlePhoneChange(e.target.value)}
+                              placeholder="10-digit phone number"
+                              maxLength={10}
+                              className="w-full bg-white border border-black/20 rounded-none px-3 md:px-4 py-2.5 md:py-3 outline-none focus:border-black text-sm md:text-base"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-[11px] uppercase tracking-[0.25em] mb-1">Email</label>
+                            <input
+                              required
+                              type="email"
+                              value={customer.email}
+                              onChange={(e) => setCustomer((prev) => ({ ...prev, email: e.target.value }))}
+                              className="w-full bg-white border border-black/20 rounded-none px-3 md:px-4 py-2.5 md:py-3 outline-none focus:border-black text-sm md:text-base"
+                            />
+                          </div>
+
+                          {orderType === 'grab-and-go' && (
+                            <div>
+                              <label className="block text-[11px] uppercase tracking-[0.25em] mb-1">Pickup Time</label>
+                              <input
+                                required
+                                type="time"
+                                value={pickupTime}
+                                onChange={(e) => setPickupTime(e.target.value)}
+                                className="w-full bg-white border border-black/20 rounded-none px-3 md:px-4 py-2.5 md:py-3 outline-none focus:border-black text-sm md:text-base"
+                              />
+                            </div>
+                          )}
+
+                          <div>
+                            <label className="block text-[11px] uppercase tracking-[0.25em] mb-1">Payment Method</label>
+                            <select
+                              value={paymentMethod}
+                              onChange={(e) => setPaymentMethod(e.target.value as 'counter' | 'upi')}
+                              className="w-full bg-white border border-black/20 rounded-none px-3 md:px-4 py-2.5 md:py-3 outline-none focus:border-black font-sans text-sm md:text-base"
+                              disabled={paymentMethod === 'upi' && !RAZORPAY_KEY_ID}
+                            >
+                              <option value="counter">Pay by cash</option>
+                              <option value="upi" disabled={!RAZORPAY_KEY_ID}>
+                                Pay Online{!RAZORPAY_KEY_ID && ' (Unavailable)'}
+                              </option>
+                            </select>
+                          </div>
+
+                          {error && <p className="text-xs text-red-600">{error}</p>}
+
+                          <div className="flex justify-end gap-3 pt-4 md:pt-6 text-[11px] md:text-xs uppercase tracking-[0.25em]">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setError(null);
+                                setPaymentMethod('counter');
+                                setOrderType(null);
+                                setPickupTime('');
+                                setCustomer({ name: '', phone: '', email: '' });
+                              }}
+                              disabled={submitting}
+                              className="px-4 md:px-6 py-2.5 md:py-3 text-zinc-500 hover:text-black transition-colors"
+                            >
+                              Back
+                            </button>
+                            <button
+                              type="submit"
+                              disabled={submitting}
+                              className="px-6 md:px-8 py-2.5 md:py-3 bg-[#0a0a0a] text-[#F9F8F4] rounded-none hover:bg-black disabled:opacity-60 transition-colors text-sm md:text-base"
+                            >
+                              {submitting
+                                ? (paymentMethod === 'upi' ? 'Processing Payment...' : 'Placing Order...')
+                                : (paymentMethod === 'upi' ? 'Pay Online' : 'Confirm Order')}
+                            </button>
+                          </div>
+                        </form>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </motion.div>
               </div>
             )}

@@ -31,7 +31,7 @@ const FindStorePage: React.FC = () => {
           initial={{ opacity: 0, x: -50, filter: 'blur(10px)' }}
           whileInView={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
           transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-          className="bg-[#F3EFE0]/90 backdrop-blur-xl border border-black/5 shadow-2xl p-8 md:p-12 rounded-none md:rounded-xl pointer-events-auto"
+          className="bg-[#F3EFE0]/90 backdrop-blur-xl border border-black/5 shadow-2xl p-8 md:p-12 rounded-none pointer-events-auto"
         >
           <motion.p
             initial={{ opacity: 0 }}
@@ -60,8 +60,8 @@ const FindStorePage: React.FC = () => {
             <div className="flex items-start gap-4">
               <MapPin className="w-5 h-5 mt-0.5 text-[#1A1A1A]" strokeWidth={1.5} />
               <div className="space-y-1">
-                <p className="text-[11px] uppercase tracking-[0.2em] text-black font-bold">Physical Storefront</p>
-                <p className="text-sm text-[#1A1A1A] leading-relaxed font-sans">
+                <p className="text-xs uppercase tracking-[0.2em] text-black font-bold">Physical Storefront</p>
+                <p className="text-base text-[#1A1A1A] leading-relaxed font-sans">
                   Dimpal Row House, 15, Gymkhana Rd,<br />
                   Piplod, Surat, Gujarat 395007, India
                 </p>
@@ -70,7 +70,7 @@ const FindStorePage: React.FC = () => {
 
             <button
               onClick={handleDirections}
-              className="group w-full md:w-auto mt-4 px-8 py-4 bg-[#1A1A1A] text-[#F9F8F4] text-[10px] uppercase tracking-[0.3em] font-sans hover:bg-black transition-all flex items-center justify-center gap-3"
+              className="group w-full md:w-auto mt-4 px-10 py-5 bg-[#1A1A1A] text-[#F9F8F4] text-xs uppercase tracking-[0.3em] font-sans hover:bg-black transition-all flex items-center justify-center gap-3"
             >
               <span>Get Directions</span>
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />

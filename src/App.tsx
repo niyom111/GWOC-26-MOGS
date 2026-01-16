@@ -360,7 +360,7 @@ const AppContent: React.FC = () => {
         {currentPage !== Page.ADMIN && currentPage !== Page.EMPLOYEE && currentPage !== Page.TRACK_ORDER && <Footer onNavigate={navigateTo} />}
 
         {/* --- ADDED CHAT WIDGET HERE --- */}
-        {currentPage !== Page.ADMIN && currentPage !== Page.EMPLOYEE && currentPage !== Page.CART && <ChatWidget />}
+        {currentPage !== Page.ADMIN && currentPage !== Page.EMPLOYEE && currentPage !== Page.CART && <ChatWidget currentPage={pathToPage(window.location.pathname)} />}
       </div>
     </DataProvider>
   );
@@ -434,14 +434,11 @@ const AdminRoute: React.FC<{ children: (logout: () => void) => React.ReactNode, 
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 relative overflow-hidden">
-      {/* Background Image */}
-      <div className="absolute inset-0 z-0">
-        <img src="/media/login.png" alt="Login Background" className="w-full h-full object-cover" />
-      </div>
+    <div className="min-h-screen flex items-center justify-center px-4 relative overflow-hidden bg-[#F3EFE0]">
+      {/* Background Image Removed */}
 
-      <div className="w-full max-w-sm bg-white/95 backdrop-blur-md border border-white/20 rounded-xl shadow-2xl p-8 z-10 relative">
-        <h1 className="text-2xl font-serif mb-2 text-center">Admin Login</h1>
+      <div className="w-full max-w-sm bg-white/95 backdrop-blur-md border border-black/10 shadow-2xl p-8 z-10 relative">
+        <h1 className="text-2xl font-serif mb-2 text-center text-black">Admin Login</h1>
         <p className="text-xs text-zinc-500 font-sans mb-4 text-center uppercase tracking-[0.25em]">
           Rabuste Coffee
         </p>
@@ -453,23 +450,23 @@ const AdminRoute: React.FC<{ children: (logout: () => void) => React.ReactNode, 
         )}
         <form onSubmit={handleSubmit} className="space-y-4 font-sans text-sm">
           <div>
-            <label className="block text-[11px] uppercase tracking-[0.25em] mb-1">Username</label>
+            <label className="block text-[11px] uppercase tracking-[0.25em] mb-1 text-zinc-600">Username</label>
             <input
               type="text"
               value={username}
               onChange={e => setUsername(e.target.value)}
-              className="w-full bg-transparent border border-black/20 rounded-md px-3 py-2 outline-none focus:border-black"
+              className="w-full bg-white border border-black/20 px-3 py-2 outline-none focus:border-black transition-colors"
               placeholder="Enter Username"
               required
             />
           </div>
           <div>
-            <label className="block text-[11px] uppercase tracking-[0.25em] mb-1">Password</label>
+            <label className="block text-[11px] uppercase tracking-[0.25em] mb-1 text-zinc-600">Password</label>
             <input
               type="password"
               value={password}
               onChange={e => setPassword(e.target.value)}
-              className="w-full bg-transparent border border-black/20 rounded-md px-3 py-2 outline-none focus:border-black"
+              className="w-full bg-white border border-black/20 px-3 py-2 outline-none focus:border-black transition-colors"
               placeholder="Enter Password"
               required
             />
@@ -477,7 +474,7 @@ const AdminRoute: React.FC<{ children: (logout: () => void) => React.ReactNode, 
           {error && <p className="text-xs text-red-600 mt-1">{error}</p>}
           <button
             type="submit"
-            className="w-full mt-4 py-2.5 bg-[#0a0a0a] text-[#F9F8F4] text-[10px] uppercase tracking-[0.3em] rounded-full hover:bg-black transition-colors disabled:opacity-60"
+            className="w-full mt-4 py-2.5 bg-[#0a0a0a] text-[#F9F8F4] text-[10px] uppercase tracking-[0.3em] hover:bg-black transition-colors disabled:opacity-60"
             disabled={isLoading}
           >
             {isLoading ? 'Signing In...' : 'Sign In'}

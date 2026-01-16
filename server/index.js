@@ -392,7 +392,7 @@ async function decrementArtItemStock(artId, quantity = 1) {
             console.log(`[STOCK] Successfully decremented stock for art item ${artIdStr}: ${currentStock} -> ${newStock}`);
             return { success: true, oldStock: currentStock, newStock };
         } else {
-            console.error(`[STOCK] Stock update verification failed for ${artIdStr}. Expected: ${newStock}, Got: ${verifiedItem?.stock}`);
+            console.error(`[STOCK] Stock verification mismatch for ${artIdStr}. Expected: ${newStock}, Got: ${verifiedItem?.stock}`);
             return { success: false, message: 'Stock update verification failed' };
         }
     } catch (error) {

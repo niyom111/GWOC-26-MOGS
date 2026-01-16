@@ -24,7 +24,7 @@ const EMAIL_CONFIG_HOSTING = {
 import Toast from './Toast';
 
 const WorkshopPage: React.FC = () => {
-  const { workshops, setWorkshops } = useDataContext();
+  const { workshops, updateWorkshop } = useDataContext();
 
   // Check for missing keys on mount
   useEffect(() => {
@@ -118,8 +118,8 @@ const WorkshopPage: React.FC = () => {
 
           if (response.ok) {
             const updatedWorkshop = await response.json();
-            // Update local state
-            setWorkshops(prev => prev.map(w => w.id === workshopId ? updatedWorkshop : w));
+            // Update local state by calling the context method
+            updateWorkshop(workshopId, updatedWorkshop);
           }
         } catch (error) {
           console.error('Failed to update workshop:', error);
@@ -210,7 +210,7 @@ const WorkshopPage: React.FC = () => {
               >
                 {/* Full-bleed image at top */}
                 <div className="relative overflow-hidden">
-                  <div className="aspect-[16/11] overflow-hidden bg-zinc-100">
+                  <div className="aspect-square overflow-hidden bg-zinc-100">
                     <img
                       src={w.image_url || "https://images.unsplash.com/photo-1541167760496-162955ed8a9f?auto=format&fit=crop&q=80&w=1000"}
                       className={`w-full h-full object-cover transition-all duration-700 ${isSoldOut ? 'grayscale opacity-50' : 'group-hover:scale-[1.02]'}`}
@@ -342,7 +342,7 @@ const WorkshopPage: React.FC = () => {
               </button>
             </form>
           </div>
-          <div className="absolute top-20 right-20 text-[10rem] md:text-[20rem] font-serif opacity-[0.03] select-none pointer-events-none text-white">HOST</div>
+
         </section>
       </div>
 

@@ -1045,7 +1045,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
         {!['sales_trends', 'tag_performance', 'item_affinity'].includes(activeTab) && (
           <div className="flex flex-col md:flex-row items-center md:items-end justify-center md:justify-between mb-6">
             <div className="text-center md:text-left">
-              <h1 className="text-4xl md:text-5xl font-serif italic tracking-tight mb-3">
+              <h1 className="text-5xl md:text-7xl font-serif mb-4 italic tracking-tight">
                 {activeTabLabel}
               </h1>
               <p className="text-xs md:text-sm uppercase tracking-[0.3em] text-zinc-500 font-sans">
@@ -1302,14 +1302,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="w-[600px] bg-white rounded-[20px] shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)] overflow-hidden max-h-[90vh] flex flex-col"
+              className="w-[600px] bg-white shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)] overflow-hidden max-h-[90vh] flex flex-col"
             >
               {/* Header */}
               <div className="px-8 py-6 border-b border-[#EBEBEB] flex items-center justify-between">
                 <h2 className="text-[18px] font-semibold text-[#111]">{editingCoffee ? 'Edit Item' : 'Add New Item'}</h2>
                 <button
                   onClick={closeCoffeeModal}
-                  className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-[#F5F5F5] transition-colors"
+                  className="w-8 h-8 flex items-center justify-center hover:bg-[#F5F5F5] transition-colors"
                 >
                   <X className="w-4 h-4 text-[#999]" />
                 </button>
@@ -1321,11 +1321,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
                 {/* Item Type - Segmented Control */}
                 <div>
                   <label className="block text-[12px] font-semibold text-[#333] uppercase tracking-[0.05em] mb-3">Item Type</label>
-                  <div className="flex p-1 bg-[#F5F5F5] rounded-[12px]">
+                  <div className="flex p-1 bg-[#F5F5F5]">
                     <button
                       type="button"
                       onClick={() => setItemKind('beverage')}
-                      className={`flex-1 h-[40px] text-[14px] font-medium rounded-[10px] transition-all ${itemKind === 'beverage'
+                      className={`flex-1 h-[40px] text-[14px] font-medium transition-all ${itemKind === 'beverage'
                         ? 'bg-white text-[#111] shadow-sm'
                         : 'text-[#666] hover:text-[#333]'
                         }`}
@@ -1335,7 +1335,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
                     <button
                       type="button"
                       onClick={() => setItemKind('food')}
-                      className={`flex-1 h-[40px] text-[14px] font-medium rounded-[10px] transition-all ${itemKind === 'food'
+                      className={`flex-1 h-[40px] text-[14px] font-medium transition-all ${itemKind === 'food'
                         ? 'bg-white text-[#111] shadow-sm'
                         : 'text-[#666] hover:text-[#333]'
                         }`}
@@ -1348,11 +1348,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
                 {/* Status Toggle */}
                 <div>
                   <label className="block text-[12px] font-semibold text-[#333] uppercase tracking-[0.05em] mb-3">Status</label>
-                  <div className="flex p-1 bg-[#F5F5F5] rounded-[12px]">
+                  <div className="flex p-1 bg-[#F5F5F5]">
                     <button
                       type="button"
                       onClick={() => handleCoffeeDraftChange('status', 'LIVE')}
-                      className={`flex-1 h-[40px] text-[14px] font-medium rounded-[10px] transition-all border ${coffeeDraft.status === 'LIVE'
+                      className={`flex-1 h-[40px] text-[14px] font-medium transition-all border ${coffeeDraft.status === 'LIVE'
                         ? 'bg-emerald-50 text-emerald-600 border-emerald-200 shadow-sm'
                         : 'bg-transparent text-[#666] border-transparent hover:text-[#333]'
                         }`}
@@ -1362,7 +1362,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
                     <button
                       type="button"
                       onClick={() => handleCoffeeDraftChange('status', 'DRAFT')}
-                      className={`flex-1 h-[40px] text-[14px] font-medium rounded-[10px] transition-all border ${(coffeeDraft.status || 'DRAFT') === 'DRAFT'
+                      className={`flex-1 h-[40px] text-[14px] font-medium transition-all border ${(coffeeDraft.status || 'DRAFT') === 'DRAFT'
                         ? 'bg-white text-zinc-600 border-black/5 shadow-sm'
                         : 'bg-transparent text-[#666] border-transparent hover:text-[#333]'
                         }`}
@@ -1383,7 +1383,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
                     value={coffeeDraft.name || ''}
                     onChange={e => handleCoffeeDraftChange('name', e.target.value)}
                     placeholder="e.g. Robusta Espresso"
-                    className="w-full h-[46px] px-4 text-[14px] text-[#111] placeholder-[#AAA] border border-[#DDD] rounded-[12px] outline-none focus:border-[#111] transition-colors"
+                    className="w-full h-[46px] px-4 text-[14px] text-[#111] placeholder-[#AAA] border border-[#DDD] outline-none focus:border-[#111] transition-colors bg-white"
                   />
                 </div>
 
@@ -1396,7 +1396,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
                       value={coffeeDraft.price ?? ''}
                       onChange={e => handleCoffeeDraftChange('price', Number(e.target.value))}
                       placeholder="0"
-                      className="w-full h-[46px] px-4 text-[14px] text-[#111] placeholder-[#AAA] border border-[#DDD] rounded-[12px] outline-none focus:border-[#111] transition-colors"
+                      className="w-full h-[46px] px-4 text-[14px] text-[#111] placeholder-[#AAA] border border-[#DDD] outline-none focus:border-[#111] transition-colors bg-white"
                     />
                   </div>
 
@@ -1408,7 +1408,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
                         value={coffeeDraft.caffeine_mg ?? ''}
                         onChange={e => handleCoffeeDraftChange('caffeine_mg', e.target.value ? Number(e.target.value) : null)}
                         placeholder="e.g. 150"
-                        className="w-full h-[46px] px-4 text-[14px] text-[#111] placeholder-[#AAA] border border-[#DDD] rounded-[12px] outline-none focus:border-[#111] transition-colors"
+                        className="w-full h-[46px] px-4 text-[14px] text-[#111] placeholder-[#AAA] border border-[#DDD] outline-none focus:border-[#111] transition-colors bg-white"
                       />
                     </div>
                   ) : (
@@ -1420,7 +1420,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
                           value={coffeeDraft.calories ?? ''}
                           onChange={e => handleCoffeeDraftChange('calories', e.target.value ? Number(e.target.value) : null)}
                           placeholder="e.g. 250"
-                          className="w-full h-[46px] px-4 text-[14px] text-[#111] placeholder-[#AAA] border border-[#DDD] rounded-[12px] outline-none focus:border-[#111] transition-colors"
+                          className="w-full h-[46px] px-4 text-[14px] text-[#111] placeholder-[#AAA] border border-[#DDD] outline-none focus:border-[#111] transition-colors bg-white"
                         />
                       </div>
                       <div className="flex items-end pb-3">
@@ -1429,7 +1429,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
                             type="checkbox"
                             checked={!!coffeeDraft.shareable}
                             onChange={e => handleCoffeeDraftChange('shareable', e.target.checked ? 1 : 0)}
-                            className="w-[18px] h-[18px] rounded border-[#DDD] cursor-pointer accent-black"
+                            className="w-[18px] h-[18px] border-[#DDD] cursor-pointer accent-black"
                           />
                           <span className="text-[13px] text-[#555]">Shareable</span>
                         </label>
@@ -1449,7 +1449,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
                     <select
                       value={coffeeDraft.category_id || ''}
                       onChange={e => handleCoffeeDraftChange('category_id', e.target.value)}
-                      className="w-full h-[46px] px-4 text-[14px] text-[#111] border border-[#DDD] rounded-[12px] outline-none focus:border-[#111] bg-white cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2012%2012%22%3E%3Cpath%20fill%3D%22%23666%22%20d%3D%22M2%204l4%204%204-4%22%2F%3E%3C%2Fsvg%3E')] bg-[length:12px] bg-[right_16px_center] bg-no-repeat transition-colors"
+                      className="w-full h-[46px] px-4 text-[14px] text-[#111] border border-[#DDD] outline-none focus:border-[#111] bg-white cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2012%2012%22%3E%3Cpath%20fill%3D%22%23666%22%20d%3D%22M2%204l4%204%204-4%22%2F%3E%3C%2Fsvg%3E')] bg-[length:12px] bg-[right_16px_center] bg-no-repeat transition-colors"
                     >
                       <option value="">Select category</option>
                       {categories.map(cat => (
@@ -1463,7 +1463,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
                         value={newCategoryName}
                         onChange={e => setNewCategoryName(e.target.value)}
                         placeholder="New category name"
-                        className="mt-2 w-full h-[46px] px-4 text-[14px] text-[#111] placeholder-[#AAA] border border-[#DDD] rounded-[12px] outline-none focus:border-[#111] transition-colors"
+                        className="mt-2 w-full h-[46px] px-4 text-[14px] text-[#111] placeholder-[#AAA] border border-[#DDD] outline-none focus:border-[#111] transition-colors bg-white"
                       />
                     )}
                   </div>
@@ -1474,7 +1474,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
                       value={coffeeDraft.sub_category_id || ''}
                       onChange={e => handleCoffeeDraftChange('sub_category_id', e.target.value)}
                       disabled={!coffeeDraft.category_id}
-                      className="w-full h-[46px] px-4 text-[14px] text-[#111] border border-[#DDD] rounded-[12px] outline-none focus:border-[#111] bg-white cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2012%2012%22%3E%3Cpath%20fill%3D%22%23666%22%20d%3D%22M2%204l4%204%204-4%22%2F%3E%3C%2Fsvg%3E')] bg-[length:12px] bg-[right_16px_center] bg-no-repeat disabled:bg-[#F5F5F5] disabled:text-[#999] disabled:cursor-not-allowed transition-colors"
+                      className="w-full h-[46px] px-4 text-[14px] text-[#111] border border-[#DDD] outline-none focus:border-[#111] bg-white cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2012%2012%22%3E%3Cpath%20fill%3D%22%23666%22%20d%3D%22M2%204l4%204%204-4%22%2F%3E%3C%2Fsvg%3E')] bg-[length:12px] bg-[right_16px_center] bg-no-repeat disabled:bg-[#F5F5F5] disabled:text-[#999] disabled:cursor-not-allowed transition-colors"
                     >
                       <option value="">Select sub-category</option>
                       {subCategories.map(sub => (
@@ -1488,7 +1488,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
                         value={newSubCategoryName}
                         onChange={e => setNewSubCategoryName(e.target.value)}
                         placeholder="New sub-category name"
-                        className="mt-2 w-full h-[46px] px-4 text-[14px] text-[#111] placeholder-[#AAA] border border-[#DDD] rounded-[12px] outline-none focus:border-[#111] transition-colors"
+                        className="mt-2 w-full h-[46px] px-4 text-[14px] text-[#111] placeholder-[#AAA] border border-[#DDD] outline-none focus:border-[#111] transition-colors bg-white"
                       />
                     )}
                   </div>
@@ -1505,7 +1505,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
                     onChange={e => handleCoffeeDraftChange('description', e.target.value)}
                     placeholder="Brief description for staff and customers..."
                     rows={3}
-                    className="w-full px-4 py-3 text-[14px] text-[#111] placeholder-[#AAA] border border-[#DDD] rounded-[12px] outline-none focus:border-[#111] resize-none transition-colors"
+                    className="w-full px-4 py-3 text-[14px] text-[#111] placeholder-[#AAA] border border-[#DDD] outline-none focus:border-[#111] resize-none transition-colors bg-white"
                   />
                 </div>
 
@@ -1520,7 +1520,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
                       {selectedTags.map(tag => (
                         <span
                           key={tag.id}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#F5F5F5] rounded-[8px] text-[13px] text-[#333]"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#F5F5F5] text-[13px] text-[#333]"
                         >
                           {tag.name}
                           <button
@@ -1545,12 +1545,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
                     }}
                     onFocus={() => setShowTagDropdown(true)}
                     placeholder="Search or create tags..."
-                    className="w-full h-[46px] px-4 text-[14px] text-[#111] placeholder-[#AAA] border border-[#DDD] rounded-[12px] outline-none focus:border-[#111] transition-colors"
+                    className="w-full h-[46px] px-4 text-[14px] text-[#111] placeholder-[#AAA] border border-[#DDD] outline-none focus:border-[#111] transition-colors bg-white"
                   />
 
                   {/* Tag Dropdown */}
                   {showTagDropdown && (
-                    <div className="absolute z-20 w-full mt-2 bg-white border border-black/10 rounded-[8px] shadow-lg max-h-[200px] overflow-y-auto">
+                    <div className="absolute z-20 w-full mt-2 bg-white border border-black/10 shadow-lg max-h-[200px] overflow-y-auto">
                       {allTags
                         .filter(tag =>
                           tag.name.toLowerCase().includes(tagSearchQuery.toLowerCase()) &&
@@ -1618,13 +1618,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
               <div className="px-8 py-5 bg-[#FAFAFA] border-t border-[#EBEBEB] flex justify-end gap-3">
                 <button
                   onClick={closeCoffeeModal}
-                  className="h-[42px] px-5 text-[14px] font-medium text-[#555] hover:text-[#111] hover:bg-[#F0F0F0] rounded-[10px] transition-colors"
+                  className="h-[42px] px-5 text-[14px] font-medium text-[#555] hover:text-[#111] hover:bg-[#F0F0F0] transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={saveCoffeeItem}
-                  className="h-[42px] px-6 text-[14px] font-medium text-white bg-[#111] hover:bg-black rounded-[10px] transition-colors"
+                  className="h-[42px] px-6 text-[14px] font-medium text-white bg-[#111] hover:bg-black transition-colors"
                 >
                   {editingCoffee ? 'Save Changes' : 'Add Item'}
                 </button>
@@ -1640,7 +1640,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="w-full max-w-xl bg-[#F9F8F4] border border-black/10 rounded-xl shadow-2xl p-8"
+              className="w-full max-w-xl bg-[#F9F8F4] border border-black/10 shadow-2xl p-8"
             >
               <div className="flex items-center justify-between mb-8">
                 <h2 className="text-3xl font-serif italic text-black">{editingArt ? 'Edit Art Piece' : 'Upload Art'}</h2>
@@ -1653,7 +1653,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
                   <input
                     value={artDraft.title || ''}
                     onChange={e => handleArtDraftChange('title', e.target.value)}
-                    className="w-full bg-transparent border-b border-black/10 py-3 text-lg outline-none focus:border-black transition-colors placeholder-zinc-300"
+                    className="w-full bg-white border-b border-black/10 py-3 text-lg outline-none focus:border-black transition-colors placeholder-zinc-300"
                     placeholder="e.g. Midnight Bloom"
                   />
                 </div>
@@ -1663,7 +1663,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
                   <input
                     value={artDraft.artist_name || ''}
                     onChange={e => handleArtDraftChange('artist_name', e.target.value)}
-                    className="w-full bg-transparent border-b border-black/10 py-3 text-lg outline-none focus:border-black transition-colors placeholder-zinc-300"
+                    className="w-full bg-white border-b border-black/10 py-3 text-lg outline-none focus:border-black transition-colors placeholder-zinc-300"
                     placeholder="e.g. Mithesh Reddy"
                   />
                 </div>
@@ -1673,7 +1673,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
                   <textarea
                     value={artDraft.artist_bio || ''}
                     onChange={e => handleArtDraftChange('artist_bio', e.target.value)}
-                    className="w-full bg-white/50 border border-black/10 rounded-lg p-3 outline-none focus:border-black resize-none placeholder-zinc-300"
+                    className="w-full bg-white border border-black/10 p-3 outline-none focus:border-black resize-none placeholder-zinc-300"
                     rows={2}
                     placeholder="Brief biography of the artist..."
                   />
@@ -1684,7 +1684,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
                   <textarea
                     value={artDraft.description || ''}
                     onChange={e => handleArtDraftChange('description', e.target.value)}
-                    className="w-full bg-white/50 border border-black/10 rounded-lg p-3 outline-none focus:border-black resize-none placeholder-zinc-300"
+                    className="w-full bg-white border border-black/10 p-3 outline-none focus:border-black resize-none placeholder-zinc-300"
                     rows={3}
                     placeholder="Describe the artwork..."
                   />
@@ -1697,7 +1697,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
                       type="number"
                       value={artDraft.price ?? ''}
                       onChange={e => handleArtDraftChange('price', Number(e.target.value))}
-                      className="w-full bg-transparent border-b border-black/10 py-2 outline-none focus:border-black font-semibold"
+                      className="w-full bg-white border-b border-black/10 py-2 outline-none focus:border-black font-semibold"
                     />
                   </div>
                   <div>
@@ -1706,7 +1706,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
                       type="number"
                       value={artDraft.stock ?? ''}
                       onChange={e => handleArtDraftChange('stock', Number(e.target.value))}
-                      className="w-full bg-transparent border-b border-black/10 py-2 outline-none focus:border-black"
+                      className="w-full bg-white border-b border-black/10 py-2 outline-none focus:border-black"
                     />
                   </div>
                 </div>
@@ -1716,7 +1716,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
 
                   <div className="flex items-start gap-4">
                     {/* Preview */}
-                    <div className="w-24 h-24 bg-zinc-100 rounded-lg overflow-hidden border border-black/5 flex-shrink-0">
+                    <div className="w-24 h-24 bg-zinc-100 overflow-hidden border border-black/5 flex-shrink-0">
                       <img
                         src={selectedFile ? URL.createObjectURL(selectedFile) : artDraft.image || '/media/pic1.jpeg'}
                         alt="Preview"
@@ -1764,7 +1764,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="w-full max-w-xl bg-[#F9F8F4] border border-black/10 rounded-xl shadow-2xl p-8 max-h-[90vh] overflow-y-auto"
+              className="w-full max-w-xl bg-[#F9F8F4] border border-black/10 shadow-2xl p-8 max-h-[90vh] overflow-y-auto"
             >
               <div className="flex items-center justify-between mb-8">
                 <h2 className="text-3xl font-serif italic text-black">{editingWorkshop ? 'Edit Workshop' : 'Create Workshop'}</h2>
@@ -1777,7 +1777,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
                   <input
                     value={workshopDraft.title || ''}
                     onChange={e => handleWorkshopDraftChange('title', e.target.value)}
-                    className="w-full bg-transparent border-b border-black/10 py-3 text-lg outline-none focus:border-black transition-colors placeholder-zinc-300"
+                    className="w-full bg-white border-b border-black/10 py-3 text-lg outline-none focus:border-black transition-colors placeholder-zinc-300"
                     placeholder="e.g. Latte Art Basics"
                   />
                 </div>
@@ -1789,7 +1789,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
                       type="text"
                       value={workshopDraft.datetime || ''}
                       onChange={e => handleWorkshopDraftChange('datetime', e.target.value)}
-                      className="w-full bg-transparent border-b border-black/10 py-2 outline-none focus:border-black"
+                      className="w-full bg-white border-b border-black/10 py-2 outline-none focus:border-black"
                       placeholder="e.g. Oct 24, 10:00 AM"
                     />
                   </div>
@@ -1799,7 +1799,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
                       type="number"
                       value={workshopDraft.price ?? ''}
                       onChange={e => handleWorkshopDraftChange('price', Number(e.target.value))}
-                      className="w-full bg-transparent border-b border-black/10 py-2 outline-none focus:border-black font-semibold"
+                      className="w-full bg-white border-b border-black/10 py-2 outline-none focus:border-black font-semibold"
                     />
                   </div>
                 </div>
@@ -1811,7 +1811,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
                       type="number"
                       value={workshopDraft.seats ?? ''}
                       onChange={e => handleWorkshopDraftChange('seats', Number(e.target.value))}
-                      className="w-full bg-transparent border-b border-black/10 py-2 outline-none focus:border-black"
+                      className="w-full bg-white border-b border-black/10 py-2 outline-none focus:border-black"
                     />
                   </div>
                   <div>
@@ -1820,7 +1820,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
                       type="number"
                       value={workshopDraft.remaining ?? ''}
                       onChange={e => handleWorkshopDraftChange('remaining', Number(e.target.value))}
-                      className="w-full bg-transparent border-b border-black/10 py-2 outline-none focus:border-black"
+                      className="w-full bg-white border-b border-black/10 py-2 outline-none focus:border-black"
                     />
                   </div>
                 </div>
@@ -1830,7 +1830,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
                   <textarea
                     value={workshopDraft.description || ''}
                     onChange={e => handleWorkshopDraftChange('description', e.target.value)}
-                    className="w-full bg-white/50 border border-black/10 rounded-lg p-3 outline-none focus:border-black resize-none"
+                    className="w-full bg-white border border-black/10 p-3 outline-none focus:border-black resize-none"
                     rows={3}
                     placeholder="Describe the event..."
                   />
@@ -1839,7 +1839,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
                 <div>
                   <label className="block text-[10px] uppercase tracking-[0.25em] text-zinc-500 mb-3">Cover Image</label>
                   <div className="flex items-start gap-4">
-                    <div className="w-24 h-24 bg-zinc-100 rounded-lg overflow-hidden border border-black/5 flex-shrink-0">
+                    <div className="w-24 h-24 bg-zinc-100 overflow-hidden border border-black/5 flex-shrink-0">
                       <img
                         src={selectedFile ? URL.createObjectURL(selectedFile) : workshopDraft.image_url || '/media/pic1.jpeg'}
                         alt="Preview"
@@ -1855,7 +1855,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
                             setSelectedFile(e.target.files[0]);
                           }
                         }}
-                        className="block w-full text-xs text-zinc-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-[10px] file:uppercase file:tracking-[0.1em] file:bg-black file:text-white hover:file:bg-zinc-800 cursor-pointer"
+                        className="block w-full text-xs text-zinc-500 file:mr-4 file:py-2 file:px-4 file:border-0 file:text-[10px] file:uppercase file:tracking-[0.1em] file:bg-black file:text-white hover:file:bg-zinc-800 cursor-pointer"
                       />
                     </div>
                   </div>
@@ -1880,7 +1880,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
             <motion.div
               initial={{ opacity: 0, y: 20, scale: 0.97 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              className="w-full max-w-sm bg-white rounded-xl shadow-xl p-6"
+              className="w-full max-w-sm bg-white shadow-xl p-6"
             >
               <h2 className="text-2xl font-serif mb-2">Delete Item?</h2>
               <p className="text-sm text-zinc-500 font-sans mb-4">
@@ -1898,7 +1898,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
                 </button>
                 <button
                   onClick={confirmDelete}
-                  className="px-5 py-2 bg-[#0a0a0a] text-[#F9F8F4] rounded-full transform transition-transform hover:scale-105"
+                  className="px-5 py-2 bg-[#0a0a0a] text-[#F9F8F4] transform transition-transform hover:scale-105"
                 >
                   Delete
                 </button>
@@ -1915,10 +1915,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
             initial={{ opacity: 0, y: -20, x: '-50%' }}
             animate={{ opacity: 1, y: 0, x: '-50%' }}
             exit={{ opacity: 0, y: -20, x: '-50%' }}
-            className={`fixed top-8 left-1/2 z-[100] flex items-center gap-4 px-8 py-4 bg-[#F9F8F4] border border-black/10 rounded-2xl shadow-2xl backdrop-blur-md ${toast.type === 'success' ? 'border-l-4 border-l-emerald-500' : 'border-l-4 border-l-red-500'
+            className={`fixed top-8 left-1/2 z-[100] flex items-center gap-4 px-8 py-4 bg-[#F9F8F4] border border-black/10 shadow-2xl backdrop-blur-md ${toast.type === 'success' ? 'border-l-4 border-l-emerald-500' : 'border-l-4 border-l-red-500'
               }`}
           >
-            <div className={`p-2 rounded-full ${toast.type === 'success' ? 'bg-emerald-100/50 text-emerald-600' : 'bg-red-100/50 text-red-600'}`}>
+            <div className={`p-2 ${toast.type === 'success' ? 'bg-emerald-100/50 text-emerald-600' : 'bg-red-100/50 text-red-600'}`}>
               {toast.type === 'success' ? <CheckCircle2 className="w-5 h-5" /> : <AlertTriangle className="w-5 h-5" />}
             </div>
             <div className="flex flex-col">
@@ -1936,7 +1936,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
 
 // Overview card
 const OverviewCard: React.FC<{ label: string; value: number }> = ({ label, value }) => (
-  <div className="bg-white border border-black/5 rounded-xl p-6 flex flex-col justify-between min-h-[140px]">
+  <div className="bg-white border border-black/5 p-6 flex flex-col justify-between min-h-[140px]">
     <p className="text-[11px] uppercase tracking-[0.25em] text-zinc-500 font-sans mb-2">
       {label}
     </p>
@@ -1951,7 +1951,7 @@ const CoffeeTable: React.FC<{
   onDelete: (id: string) => void;
   onToggleStatus: (item: CoffeeAdminItem) => void;
 }> = ({ items, onEdit, onDelete, onToggleStatus }) => (
-  <div className="bg-white border border-black/5 rounded-xl overflow-hidden">
+  <div className="bg-white border border-black/5 overflow-hidden">
     <table className="w-full text-left font-sans text-sm">
       <thead className="bg-[#F9F8F4] text-[10px] uppercase tracking-[0.25em] text-zinc-500">
         <tr>
@@ -1978,7 +1978,7 @@ const CoffeeTable: React.FC<{
             <td className="px-6 py-4">
               <button
                 onClick={() => onToggleStatus(item)}
-                className={`px-3 py-1 text-[9px] uppercase tracking-[0.2em] font-bold rounded-full border transition-all ${(item.status || 'LIVE') === 'LIVE'
+                className={`px-3 py-1 text-[9px] uppercase tracking-[0.2em] font-bold border transition-all ${(item.status || 'LIVE') === 'LIVE'
                   ? 'bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100'
                   : 'bg-zinc-100 text-zinc-500 border-zinc-200 hover:bg-zinc-200'
                   }`}
@@ -2024,21 +2024,21 @@ const OrderDetailsModal: React.FC<{
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95 }}
-        className="bg-white w-full max-w-4xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+        className="bg-white w-full max-w-4xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
       >
         <div className="px-8 py-6 border-b border-black/5 flex justify-between items-center bg-[#F9F8F4]">
           <div>
             <h2 className="text-xl font-serif font-bold text-black">Order Details</h2>
             <p className="text-xs text-zinc-500 font-mono mt-1 uppercase tracking-wider">#{order.id.slice(-8)}</p>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-black/5 rounded-full text-zinc-500 hover:text-black transition-colors">
+          <button onClick={onClose} className="p-2 hover:bg-black/5 text-zinc-500 hover:text-black transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         <div className="flex-1 overflow-y-auto p-8 font-sans custom-scrollbar">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-            <div className="bg-zinc-50/50 p-6 rounded-xl border border-black/5">
+            <div className="bg-zinc-50/50 p-6 border border-black/5">
               <h3 className="text-xs uppercase tracking-[0.2em] text-zinc-400 font-bold mb-4">Customer Info</h3>
               <div className="space-y-3 text-sm">
                 <div className="flex justify-between border-b border-dashed border-black/10 pb-2">
@@ -2056,7 +2056,7 @@ const OrderDetailsModal: React.FC<{
               </div>
             </div>
 
-            <div className="bg-zinc-50/50 p-6 rounded-xl border border-black/5">
+            <div className="bg-zinc-50/50 p-6 border border-black/5">
               <h3 className="text-xs uppercase tracking-[0.2em] text-zinc-400 font-bold mb-4">Order Info</h3>
               <div className="space-y-3 text-sm">
                 <div className="flex justify-between border-b border-dashed border-black/10 pb-2">
@@ -2082,7 +2082,7 @@ const OrderDetailsModal: React.FC<{
                       setStatus(newStatus);
                       onUpdateStatus(order.id, newStatus);
                     }}
-                    className="px-3 py-1.5 text-xs font-bold uppercase tracking-wider bg-white border border-black/10 rounded-lg outline-none focus:border-black cursor-pointer"
+                    className="px-3 py-1.5 text-xs font-bold uppercase tracking-wider bg-white border border-black/10 outline-none focus:border-black cursor-pointer"
                   >
                     {statusOptions.map(s => (
                       <option key={s} value={s}>{s}</option>
@@ -2093,7 +2093,7 @@ const OrderDetailsModal: React.FC<{
             </div>
           </div>
 
-          <div className="mb-8 border border-black/5 rounded-xl overflow-hidden shadow-sm">
+          <div className="mb-8 border border-black/5 overflow-hidden shadow-sm">
             <table className="w-full text-sm text-left">
               <thead className="bg-[#111] text-[#F9F8F4] text-[10px] uppercase tracking-[0.2em]">
                 <tr>
@@ -2139,7 +2139,7 @@ const OrderDetailsModal: React.FC<{
 
 // Orders table
 const OrdersTable: React.FC<{ items: Order[]; onRowClick: (order: Order) => void }> = ({ items, onRowClick }) => (
-  <div className="bg-white border border-black/5 rounded-xl overflow-hidden shadow-sm">
+  <div className="bg-white border border-black/5 overflow-hidden shadow-sm">
     <table className="w-full text-left font-sans text-sm">
       <thead className="bg-[#F9F8F4] text-[10px] uppercase tracking-[0.25em] text-zinc-500">
         <tr>
@@ -2165,13 +2165,13 @@ const OrdersTable: React.FC<{ items: Order[]; onRowClick: (order: Order) => void
             <td className="px-6 py-4 text-sm font-medium">{order.customer.name}</td>
             <td className="px-6 py-4 text-sm text-zinc-500 font-mono text-xs">{order.customer.phone}</td>
             <td className="px-6 py-4 text-sm text-zinc-700">
-              <span className="inline-flex items-center justify-center w-6 h-6 bg-zinc-100 rounded-full text-xs font-bold">
+              <span className="inline-flex items-center justify-center w-6 h-6 bg-zinc-100 text-xs font-bold">
                 {order.items.length}
               </span>
             </td>
             <td className="px-6 py-4 text-sm font-semibold">₹{order.total.toFixed(0)}</td>
             <td className="px-6 py-4">
-              <span className={`px-3 py-1 text-[9px] uppercase tracking-[0.2em] font-bold rounded-full border ${(order.status === 'completed') ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+              <span className={`px-3 py-1 text-[9px] uppercase tracking-[0.2em] font-bold border ${(order.status === 'completed') ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
                 (order.status === 'cancelled') ? 'bg-red-50 text-red-600 border-red-100' :
                   'bg-amber-50 text-amber-600 border-amber-100'
                 }`}>
@@ -2195,7 +2195,7 @@ const ArtTable: React.FC<{
   onEdit: (item: ArtAdminItem) => void;
   onDelete: (id: string) => void;
 }> = ({ items, onToggleStatus, onEdit, onDelete }) => (
-  <div className="bg-white border border-black/5 rounded-xl overflow-hidden">
+  <div className="bg-white border border-black/5 overflow-hidden">
     <table className="w-full text-left font-sans text-sm">
       <thead className="bg-[#F9F8F4] text-[10px] uppercase tracking-[0.25em] text-zinc-500">
         <tr>
@@ -2213,7 +2213,7 @@ const ArtTable: React.FC<{
           >
             <td className="px-6 py-4">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-md overflow-hidden bg-zinc-200">
+                <div className="w-12 h-12 overflow-hidden bg-zinc-200">
                   <img src={item.image} alt={item.title} className="w-full h-full object-cover" />
                 </div>
                 <div className="flex flex-col">
@@ -2256,7 +2256,7 @@ const WorkshopTable: React.FC<{
   onEdit: (item: WorkshopAdminItem) => void;
   onDelete: (id: string) => void;
 }> = ({ items, onEdit, onDelete }) => (
-  <div className="bg-white border border-black/5 rounded-xl overflow-hidden">
+  <div className="bg-white border border-black/5 overflow-hidden">
     <table className="w-full text-left font-sans text-sm">
       <thead className="bg-[#F9F8F4] text-[10px] uppercase tracking-[0.25em] text-zinc-500">
         <tr>
@@ -2315,7 +2315,7 @@ const FranchiseTable: React.FC<{
   const filteredItems = items.filter(i => (i.status || 'New') === statusFilter);
 
   return (
-    <div className="bg-white border border-black/5 rounded-xl overflow-hidden flex flex-col h-full min-h-[500px]">
+    <div className="bg-white border border-black/5 overflow-hidden flex flex-col h-full min-h-[500px]">
       {/* Status Tabs */}
       <div className="flex border-b border-black/5 overflow-x-auto">
         {tabs.map(tab => (
@@ -2361,7 +2361,7 @@ const FranchiseTable: React.FC<{
                 <div className="flex gap-3 text-xs uppercase tracking-[0.2em]">
                   <button
                     onClick={() => onDelete(item.id)}
-                    className="text-red-500 hover:text-red-600 px-3 py-1 border border-red-100 rounded hover:bg-red-50"
+                    className="text-red-500 hover:text-red-600 px-3 py-1 border border-red-100 hover:bg-red-50"
                   >
                     Delete
                   </button>
@@ -2391,13 +2391,13 @@ const EnquiryDetailModal: React.FC<{
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+      <div className="bg-white w-full max-w-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
         <div className="px-8 py-6 border-b border-black/5 flex justify-between items-center bg-[#F9F8F4]">
           <div>
             <h2 className="text-xl font-serif">Enquiry Details</h2>
             <p className="text-xs text-zinc-500 uppercase tracking-widest mt-1">ID: {enquiry.id}</p>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-black/5 rounded-full text-zinc-500 hover:text-black transition-colors">
+          <button onClick={onClose} className="p-2 hover:bg-black/5 text-zinc-500 hover:text-black transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -2423,8 +2423,8 @@ const EnquiryDetailModal: React.FC<{
           </div>
 
           <div>
-            <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-4 bg-zinc-50 p-2 inline-block rounded">Message</label>
-            <div className="text-base leading-relaxed text-zinc-800 whitespace-pre-wrap bg-zinc-50 p-6 rounded-xl border border-black/5">
+            <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-4 bg-zinc-50 p-2 inline-block">Message</label>
+            <div className="text-base leading-relaxed text-zinc-800 whitespace-pre-wrap bg-zinc-50 p-6 border border-black/5">
               {enquiry.enquiry}
             </div>
           </div>
@@ -2435,7 +2435,7 @@ const EnquiryDetailModal: React.FC<{
               <select
                 value={status}
                 onChange={(e) => setStatus(e.target.value)}
-                className="w-full bg-zinc-50 border border-black/10 px-4 py-3 rounded-lg appearance-none outline-none focus:border-black transition-colors font-sans text-sm"
+                className="w-full bg-zinc-50 border border-black/10 px-4 py-3 appearance-none outline-none focus:border-black transition-colors font-sans text-sm"
               >
                 {['New', 'Contacted', 'In Progress', 'Converted', 'Closed'].map(s => (
                   <option key={s} value={s}>{s}</option>
@@ -2452,7 +2452,7 @@ const EnquiryDetailModal: React.FC<{
           <button onClick={onClose} className="px-6 py-3 text-zinc-500 hover:text-black text-xs uppercase tracking-widest font-bold">Close</button>
           <button
             onClick={() => onUpdateStatus(enquiry.id, status)}
-            className="px-8 py-3 bg-black text-white text-xs uppercase tracking-widest font-bold rounded-lg hover:bg-zinc-800 shadow-lg"
+            className="px-8 py-3 bg-black text-white text-xs uppercase tracking-widest font-bold hover:bg-zinc-800 shadow-lg"
           >
             Save Changes
           </button>
