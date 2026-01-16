@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion as motionBase, AnimatePresence as AnimatePresenceBase, useScroll, useMotionValueEvent, useTransform } from 'framer-motion';
+import { motion as motionBase, AnimatePresence as AnimatePresenceBase, useScroll, useMotionValueEvent, useTransform, useAnimation } from 'framer-motion';
 import { ShoppingBag, Menu, X } from 'lucide-react';
 import { Page } from '../types';
 
@@ -62,12 +62,30 @@ const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage, cartCount }) =
   // Create a smooth opacity value based on scroll position
   const scrollOpacity = useTransform(scrollY, [0, 200], [1, 0.8]);
 
+  // Animation Controls for Franchise delay
+  const controls = useAnimation();
+
+  React.useEffect(() => {
+    if (currentPage === Page.FRANCHISE) {
+      // Franchise: Start hidden, then fade in after 1.5s
+      controls.set({ opacity: 0, y: 0 });
+      controls.start({
+        opacity: 1,
+        y: 0,
+        transition: { delay: 1.5, duration: 1, ease: 'easeOut' }
+      });
+    } else {
+      // Other pages: Ensure visible (slide down on first mount handled if y starts at -100)
+      controls.start({ opacity: 1, y: 0, transition: { duration: 0.5 } });
+    }
+  }, [currentPage, controls]);
+
   return (
     <>
       {/* HEADER CONTAINER (Logo & Cart Only) */}
       <motion.header
-        initial={{ y: -100 }}
-        animate={{ y: 0 }}
+        initial={{ y: -100, opacity: 0 }}
+        animate={controls}
         className={`fixed top-0 left-0 w-full z-40 pointer-events-none transition-all duration-700 ${isFranchise ? 'mix-blend-difference' : ''}`}
       >
         <div

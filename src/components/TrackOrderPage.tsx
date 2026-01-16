@@ -17,6 +17,17 @@ const TrackOrderPage: React.FC<TrackOrderPageProps> = ({ onNavigate }) => {
   const [searched, setSearched] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [videoLoaded, setVideoLoaded] = useState(false);
+  const [showContent, setShowContent] = useState(false);
+
+  // Trigger content animation after video loads
+  useEffect(() => {
+    if (videoLoaded) {
+      const timer = setTimeout(() => {
+        setShowContent(true);
+      }, 500); // Wait for video fade-in to establish
+      return () => clearTimeout(timer);
+    }
+  }, [videoLoaded]);
 
   // Periodically refresh status display
   useEffect(() => {
@@ -108,7 +119,7 @@ const TrackOrderPage: React.FC<TrackOrderPageProps> = ({ onNavigate }) => {
   return (
     <div className="relative w-full text-[#F3EFE0] overflow-x-hidden min-h-[200vh]">
       {/* Background Video - Fixed to viewport to prevent stretching */}
-      <div className={`fixed inset-0 z-0 overflow-hidden bg-black transition-opacity duration-700 ease-in-out ${videoLoaded ? 'opacity-100' : 'opacity-0'}`}>
+      <div className={`fixed inset-0 z-0 overflow-hidden bg-black transition-opacity duration-1000 ease-in-out ${videoLoaded ? 'opacity-100' : 'opacity-0'}`}>
         <video
           autoPlay
           loop
@@ -143,14 +154,16 @@ const TrackOrderPage: React.FC<TrackOrderPageProps> = ({ onNavigate }) => {
               <div>
                 <motion.p
                   initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
+                  animate={{ opacity: showContent ? 1 : 0 }}
+                  transition={{ duration: 0.8, delay: 0.2 }}
                   className="text-[9px] md:text-[13px] uppercase tracking-[0.4em] md:tracking-[0.5em] text-[#F3EFE0]/80 mb-3 md:mb-4 font-sans"
                 >
                   Order Tracking
                 </motion.p>
                 <motion.h1
                   initial={{ opacity: 0, y: 30 }}
-                  animate={{ opacity: 1, y: 0 }}
+                  animate={{ opacity: showContent ? 1 : 0, y: showContent ? 0 : 30 }}
+                  transition={{ duration: 0.8, delay: 0.4 }}
                   className="text-4xl md:text-7xl font-serif italic tracking-tight text-[#F3EFE0]"
                 >
                   Track Your Orders
@@ -166,7 +179,7 @@ const TrackOrderPage: React.FC<TrackOrderPageProps> = ({ onNavigate }) => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="Enter your email address"
-                  className="flex-1 bg-white/10 backdrop-blur-md border border-[#F3EFE0]/30 px-4 py-4 text-sm font-sans outline-none focus:border-[#F3EFE0]/80 text-[#F3EFE0] placeholder-[#F3EFE0]/50"
+                  className="flex-1 bg-white/10 backdrop-blur-md px-4 py-4 text-sm font-sans outline-none focus:ring-0 text-[#F3EFE0] placeholder-[#F3EFE0]/50"
                 />
                 <button
                   type="submit"

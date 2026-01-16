@@ -110,6 +110,18 @@ const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate, onBac
     }
   };
 
+  const handlePinInput = (num: string) => {
+    if (pin.length < 4) {
+      setPin(prev => prev + num);
+      setError(null);
+    }
+  };
+
+  const handleClear = () => {
+    setPin(prev => prev.slice(0, -1));
+    setError(null);
+  };
+
   const handlePinSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (pin === EMPLOYEE_PIN) {
@@ -238,34 +250,27 @@ const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate, onBac
 
   if (!isAuthenticated) {
     return (
-      <div className="text-[#0a0a0a] min-h-screen flex items-center justify-center px-4 relative overflow-hidden">
-        {/* Background Image */}
-        <div className="absolute inset-0 z-0">
-          <img src="/media/login.png" alt="Login Background" className="w-full h-full object-cover" />
-        </div>
+      <div className="min-h-screen flex items-center justify-center px-4 relative overflow-hidden bg-[#F3EFE0]">
 
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="w-full max-w-sm bg-white/95 backdrop-blur-md border border-white/20 rounded-xl shadow-2xl p-8 z-10 relative"
-        >
+        <div className="w-full max-w-sm bg-white/95 backdrop-blur-md border border-black/10 shadow-2xl p-8 z-10 relative">
           <div className="flex items-center justify-center mb-6">
             <div className="p-3 bg-black/5 rounded-full">
-              <Lock className="w-8 h-8 text-[#0a0a0a]" />
+              <Lock className="w-6 h-6 text-black" />
             </div>
           </div>
-          <h1 className="text-2xl font-serif mb-2 text-center">Employee Access</h1>
-          <p className="text-xs text-zinc-500 font-sans mb-6 text-center uppercase tracking-[0.25em]">
-            Enter PIN to continue
+          <h1 className="text-2xl font-serif mb-2 text-center text-black">Employee Access</h1>
+          <p className="text-xs text-zinc-500 font-sans mb-8 text-center uppercase tracking-[0.25em]">
+            Rabuste Coffee
           </p>
-          <form onSubmit={handlePinSubmit} className="space-y-4">
+
+          <form onSubmit={handlePinSubmit} className="space-y-4 font-sans">
             <div>
-              <label className="block text-[11px] uppercase tracking-[0.25em] mb-1 font-sans">PIN</label>
+              <label className="block text-[11px] uppercase tracking-[0.25em] mb-1 font-sans text-zinc-600">PIN</label>
               <input
                 type="password"
                 value={pin}
                 onChange={(e) => setPin(e.target.value)}
-                className="w-full bg-transparent border border-black/20 rounded-md px-3 py-2 outline-none focus:border-black font-sans"
+                className="w-full bg-white border border-black/20 px-3 py-2 outline-none focus:border-black transition-colors font-sans"
                 placeholder="Enter PIN"
                 required
                 maxLength={4}
@@ -274,18 +279,20 @@ const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ onNavigate, onBac
             {error && <p className="text-xs text-red-600 font-sans">{error}</p>}
             <button
               type="submit"
-              className="w-full mt-4 py-2.5 bg-[#0a0a0a] text-[#F9F8F4] text-[10px] uppercase tracking-[0.3em] rounded-full hover:bg-black transition-colors font-sans"
+              disabled={loading}
+              className="w-full mt-4 py-2.5 bg-[#0a0a0a] text-[#F9F8F4] text-[10px] uppercase tracking-[0.3em] hover:bg-black transition-colors font-sans disabled:opacity-50"
             >
-              Authenticate
+              {loading ? 'Authenticating...' : 'Authenticate'}
             </button>
           </form>
+
           <button
             onClick={onBack}
-            className="w-full mt-4 py-2 text-zinc-500 text-[10px] uppercase tracking-[0.3em] font-sans hover:text-[#0a0a0a] transition-colors"
+            className="w-full mt-8 py-2 text-zinc-400 text-[10px] uppercase tracking-[0.3em] font-sans hover:text-[#0a0a0a] transition-colors"
           >
-            Back
+            Back to Home
           </button>
-        </motion.div>
+        </div>
       </div>
     );
   }

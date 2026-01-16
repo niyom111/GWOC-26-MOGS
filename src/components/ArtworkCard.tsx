@@ -206,8 +206,8 @@ const ArtworkCard: React.FC<ArtworkCardProps> = ({ art, index, onAddToCart, isPr
       <div className="flex justify-between items-start mb-6">
         <div>
           <h3 className="text-3xl font-serif italic mb-2">{art.title}</h3>
-          <p className="text-[10px] font-sans text-zinc-400 uppercase tracking-widest">{artistName}</p>
-          <p className={`text-[9px] font-sans mt-2 uppercase tracking-wide ${isAvailable ? 'text-emerald-600' : 'text-[#D0021B]'}`}>
+          <p className="text-sm font-sans text-zinc-400 uppercase tracking-widest">{artistName}</p>
+          <p className={`text-xs font-sans mt-2 uppercase tracking-wide ${isAvailable ? 'text-emerald-600' : 'text-[#D0021B]'}`}>
             {isAvailable ? `${art.stock} piece${art.stock > 1 ? 's' : ''} remaining` : '0 piece remaining'}
           </p>
         </div>

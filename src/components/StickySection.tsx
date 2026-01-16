@@ -118,7 +118,7 @@ const StickySection: React.FC<StickySectionProps> = ({ onNavigate }) => {
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.8 }}
-            className="relative w-full lg:w-full h-[200px] lg:h-[500px] bg-zinc-100 overflow-hidden shadow-2xl rounded-2xl"
+            className="relative w-full lg:w-full h-[200px] lg:h-[500px] bg-zinc-100 overflow-hidden shadow-2xl rounded-none"
           >
             <img
               src="/media/pic1.jpeg"
@@ -133,7 +133,7 @@ const StickySection: React.FC<StickySectionProps> = ({ onNavigate }) => {
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.8 }}
-            className="relative w-full lg:w-full h-[200px] lg:h-[500px] bg-zinc-100 overflow-hidden shadow-2xl rounded-2xl"
+            className="relative w-full lg:w-full h-[200px] lg:h-[500px] bg-zinc-100 overflow-hidden shadow-2xl rounded-none"
           >
             <img
               src="/media/pic2.jpeg"
@@ -148,7 +148,7 @@ const StickySection: React.FC<StickySectionProps> = ({ onNavigate }) => {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.8 }}
-            className="relative col-span-2 w-full lg:w-full h-[200px] lg:h-[500px] bg-zinc-100 overflow-hidden shadow-2xl rounded-2xl"
+            className="relative col-span-2 w-full lg:w-full h-[200px] lg:h-[500px] bg-zinc-100 overflow-hidden shadow-2xl rounded-none"
           >
             <img
               src="/media/pic3.jpeg"
