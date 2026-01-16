@@ -25,7 +25,7 @@ import Toast from './Toast';
 
 const WorkshopPage: React.FC = () => {
   const { workshops, setWorkshops } = useDataContext();
-  
+
   // Check for missing keys on mount
   useEffect(() => {
     const missingKeys: string[] = [];
@@ -184,13 +184,18 @@ const WorkshopPage: React.FC = () => {
   return (
     <div className="pt-24 md:pt-32 pb-40 px-6 md:px-8 bg-[#F3EFE0]">
       <div className="max-w-7xl mx-auto">
-        <header className="mb-20 md:mb-32">
-          <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-[10px] md:text-[13px] uppercase tracking-[0.4em] md:tracking-[0.5em] text-black mb-4 md:mb-6 font-sans">Education & Mastery</motion.p>
-          <motion.h1 initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} className="text-5xl md:text-9xl font-serif italic tracking-tighter leading-none text-[#1A1A1A]">Craft & Community.</motion.h1>
+        <header className="mb-20 md:mb-32 flex flex-col md:flex-row justify-between items-end gap-6 md:gap-10">
+          <div>
+            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-[10px] md:text-[13px] uppercase tracking-[0.4em] md:tracking-[0.5em] text-black mb-4 md:mb-6">Education & Mastery</motion.p>
+            <motion.h1 initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} className="text-5xl md:text-9xl font-serif italic tracking-tighter leading-none">Community.</motion.h1>
+          </div>
+          <p className="max-w-xs text-[14px] md:text-s font-sans text-black uppercase tracking-widest leading-relaxed text-right italic">
+            "A space shaped by presence and practice, where making unfolds through shared attention"
+          </p>
         </header>
 
         {/* WORKSHOPS GRID */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-40">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 md:gap-6 mb-40">
           {workshops.map((w, idx) => {
             const isSoldOut = w.remaining === 0;
             const isLoading = reservingId === w.id;
@@ -198,65 +203,81 @@ const WorkshopPage: React.FC = () => {
             return (
               <motion.div
                 key={w.id}
-                initial={{ opacity: 0, y: 30 }}
+                initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: idx * 0.1 }}
-                className={`group bg-white border ${isSoldOut ? 'border-red-100 bg-red-50/10' : 'border-black/5'} p-8 shadow-sm hover:shadow-xl transition-all duration-500`}
+                transition={{ delay: idx * 0.08 }}
+                className={`group overflow-hidden ${isSoldOut ? 'opacity-70' : ''} transition-all duration-500 shadow-[0_2px_20px_-8px_rgba(0,0,0,0.12)] hover:shadow-[0_4px_30px_-8px_rgba(0,0,0,0.18)]`}
               >
-                <div className="aspect-square overflow-hidden mb-8 relative bg-zinc-100">
-                  <img src={w.image_url || "https://images.unsplash.com/photo-1541167760496-162955ed8a9f?auto=format&fit=crop&q=80&w=1000"} className={`w-full h-full object-cover transition-all duration-700 ${isSoldOut ? 'grayscale opacity-50' : ''}`} alt={w.title} />
-                  {isSoldOut && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-                      <span className="bg-red-500 text-white text-[10px] uppercase tracking-[0.3em] font-bold px-4 py-2">Sold Out</span>
-                    </div>
-                  )}
-                </div>
-
-                <h3 className="text-3xl font-serif italic mb-4 text-[#1A1A1A]">{w.title}</h3>
-                <p className="text-sm font-sans text-zinc-500 mb-8 leading-relaxed uppercase tracking-wider">{w.description || "A unique coffee craft experience"}</p>
-
-                <div className="flex flex-col space-y-3 mb-10 text-[10px] font-sans uppercase tracking-[0.2em] font-bold text-[#1A1A1A]">
-                  <div className="flex justify-between border-b border-black/5 pb-2">
-                    <span className="text-zinc-400">Date & Time</span>
-                    <span>{w.datetime}</span>
-                  </div>
-                  <div className="flex justify-between border-b border-black/5 pb-2">
-                    <span className="text-zinc-400">Available</span>
-                    <span className={w.remaining <= 4 ? 'text-red-500' : 'text-emerald-600'}>{w.remaining} spots left</span>
-                  </div>
-                </div>
-
-                <form onSubmit={(e) => handleReserveSubmit(e, w.id)} className="space-y-4">
-                  <input
-                    required
-                    type="email"
-                    disabled={isSoldOut || isLoading}
-                    value={reservationEmails[w.id] || ''}
-                    onChange={(e) => handleReservationEmailChange(w.id, e.target.value)}
-                    placeholder={isSoldOut ? "REGISTRATION CLOSED" : "EMAIL ADDRESS"}
-                    className="w-full bg-[#f9f9f9] border-b border-black/10 p-3 text-[10px] font-sans lowercase tracking-widest outline-none focus:border-black transition-all text-black disabled:opacity-50 disabled:cursor-not-allowed placeholder:uppercase"
-                  />
-
-                  <button
-                    type="submit"
-                    disabled={isSoldOut || isLoading}
-                    className={`w-full py-4 text-[10px] uppercase tracking-[0.3em] font-bold transition-all flex items-center justify-center space-x-2 ${isSoldOut
-                      ? 'bg-zinc-200 text-zinc-400 cursor-not-allowed'
-                      : 'bg-black text-white hover:bg-zinc-800'
-                      }`}
-                  >
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="w-3 h-3 animate-spin" />
-                        <span>Reserving...</span>
-                      </>
-                    ) : isSoldOut ? (
-                      <span>Class Full</span>
-                    ) : (
-                      <span>Reserve Spot</span>
+                {/* Full-bleed image at top */}
+                <div className="relative overflow-hidden">
+                  <div className="aspect-[16/11] overflow-hidden bg-zinc-100">
+                    <img
+                      src={w.image_url || "https://images.unsplash.com/photo-1541167760496-162955ed8a9f?auto=format&fit=crop&q=80&w=1000"}
+                      className={`w-full h-full object-cover transition-all duration-700 ${isSoldOut ? 'grayscale opacity-50' : 'group-hover:scale-[1.02]'}`}
+                      alt={w.title}
+                    />
+                    {isSoldOut && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/25 backdrop-blur-[1px]">
+                        <span className="bg-rose-500/95 text-white text-[9px] uppercase tracking-[0.25em] font-semibold px-3 py-1.5 rounded-sm shadow-md">Sold Out</span>
+                      </div>
                     )}
-                  </button>
-                </form>
+                  </div>
+                </div>
+
+                {/* Content - warm off-white background */}
+                <div className="bg-[#FDFCF9] p-5 md:p-6">
+                  {/* Title - dominant */}
+                  <h3 className="text-xl md:text-2xl font-serif italic mb-2 text-[#1A1A1A] leading-snug tracking-tight">{w.title}</h3>
+
+                  {/* Description - lighter weight */}
+                  <p className="text-[10px] md:text-[11px] font-sans text-black mb-4 leading-relaxed uppercase tracking-[0.15em]">{w.description || "A unique coffee craft experience"}</p>
+
+                  {/* Compact info section */}
+                  <div className="flex flex-col gap-1.5 mb-4 text-[9px] font-sans uppercase tracking-[0.15em] text-[#1A1A1A]">
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-black font-medium">Date:</span>
+                      <span className="text-[10px] font-semibold text-emerald-600">{w.datetime}</span>
+                    </div>
+                    <div className="flex items-baseline gap-1 pb-3 border-b border-black/[0.04]">
+                      <span className="text-black font-medium">Spots:</span>
+                      <span className={`text-[10px] font-semibold ${w.remaining <= 4 ? 'text-rose-500' : 'text-emerald-600'}`}>{w.remaining} left</span>
+                    </div>
+                  </div>
+
+                  {/* Compressed form */}
+                  <form onSubmit={(e) => handleReserveSubmit(e, w.id)} className="space-y-2.5">
+                    <input
+                      required
+                      type="email"
+                      disabled={isSoldOut || isLoading}
+                      value={reservationEmails[w.id] || ''}
+                      onChange={(e) => handleReservationEmailChange(w.id, e.target.value)}
+                      placeholder={isSoldOut ? "CLOSED" : "your@email.com"}
+                      className="w-full bg-white/60 border border-black/[0.06] px-3 py-2.5 text-[10px] font-sans lowercase tracking-wide outline-none focus:border-black/20 focus:bg-white transition-all text-black placeholder:text-zinc-300 placeholder:lowercase disabled:opacity-40 disabled:cursor-not-allowed rounded-sm"
+                    />
+
+                    {/* Compact button */}
+                    <button
+                      type="submit"
+                      disabled={isSoldOut || isLoading}
+                      className={`w-full py-2.5 text-[9px] uppercase tracking-[0.25em] font-semibold transition-all flex items-center justify-center gap-2 rounded-sm ${isSoldOut
+                        ? 'bg-zinc-100 text-zinc-300 cursor-not-allowed'
+                        : 'bg-[#1A1A1A] text-[#FDFCF9] hover:bg-black shadow-sm hover:shadow-md'
+                        }`}
+                    >
+                      {isLoading ? (
+                        <>
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                          <span>Reserving</span>
+                        </>
+                      ) : isSoldOut ? (
+                        <span>Full</span>
+                      ) : (
+                        <span>Reserve</span>
+                      )}
+                    </button>
+                  </form>
+                </div>
               </motion.div>
             );
           })}
@@ -278,7 +299,7 @@ const WorkshopPage: React.FC = () => {
                 onChange={handleHostChange}
                 required
                 placeholder="CONTACT EMAIL"
-                className="bg-transparent border-b border-white/20 p-3 md:p-4 text-[10px] font-sans lowercase tracking-widest outline-none focus:border-white transition-all text-white placeholder:text-zinc-600 placeholder:uppercase"
+                className="bg-transparent border-b border-white/20 p-3 md:p-4 text-[10px] font-sans lowercase tracking-widest outline-none focus:border-white transition-all text-white placeholder:text-zinc-400 placeholder:uppercase"
               />
 
               <input
@@ -289,7 +310,7 @@ const WorkshopPage: React.FC = () => {
                 required
                 maxLength={10}
                 placeholder="PREFERRED DATE (DD/MM/YYYY)"
-                className="bg-transparent border-b border-white/20 p-3 md:p-4 text-[10px] font-sans uppercase tracking-widest outline-none focus:border-white transition-all text-white placeholder:text-zinc-600"
+                className="bg-transparent border-b border-white/20 p-3 md:p-4 text-[10px] font-sans uppercase tracking-widest outline-none focus:border-white transition-all text-white placeholder:text-zinc-400"
               />
 
               <textarea
@@ -299,7 +320,7 @@ const WorkshopPage: React.FC = () => {
                 required
                 rows={4}
                 placeholder="DETAILED WORKSHOP IDEA (Theme, format, requirements, etc.)"
-                className="bg-transparent border-b border-white/20 p-3 md:p-4 text-[10px] font-sans uppercase tracking-widest outline-none focus:border-white transition-all text-white placeholder:text-zinc-600 resize-none"
+                className="bg-transparent border-b border-white/20 p-3 md:p-4 text-[10px] font-sans uppercase tracking-widest outline-none focus:border-white transition-all text-white placeholder:text-zinc-400 resize-none"
               />
 
               <button

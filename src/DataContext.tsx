@@ -289,6 +289,7 @@ interface DataContextValue {
   deleteWorkshop: (id: string) => void;
   placeOrder: (customer: OrderCustomer, items: CartItem[], total: number, pickupTime: string, paymentMethod?: string) => Promise<Order>;
   refreshArtItems: () => Promise<void>;
+  setWorkshops: React.Dispatch<React.SetStateAction<WorkshopAdminItem[]>>;
 }
 
 const DataContext = createContext<DataContextValue | undefined>(undefined);
@@ -600,6 +601,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         deleteWorkshop,
         placeOrder,
         refreshArtItems,
+        setWorkshops
       }}
     >
       {children}
