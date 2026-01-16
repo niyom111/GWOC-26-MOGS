@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { motion as motionBase } from 'framer-motion';
+import { motion as motionBase, AnimatePresence } from 'framer-motion';
 import { CoffeeItem } from '../types';
 import { API_BASE_URL } from '../config';
 
@@ -9,332 +9,326 @@ const motion = motionBase as any;
 import Toast from './Toast';
 
 interface BrewDeskPopupProps {
-  onClose: () => void;
-  onAddToCart: (item: CoffeeItem) => void;
+    onClose: () => void;
+    onAddToCart: (item: CoffeeItem) => void;
 }
 
-// BrewDesk popup: calm, minimal, vibe-based suggestion UI
+// BrewDesk popup: Wide, Premium, Minimal, Balanced.
 const BrewDeskPopup: React.FC<BrewDeskPopupProps> = ({ onClose, onAddToCart }) => {
-  const [selectedActivityKey, setSelectedActivityKey] = useState<string | null>(null);
-  const [selectedMoodKey, setSelectedMoodKey] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<any | null>(null);
-  const [coffeeQuantity, setCoffeeQuantity] = useState(1);
-  const [snackQuantity, setSnackQuantity] = useState(1);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const toastTimeoutRef = useRef<number | null>(null);
+    const [selectedActivityKey, setSelectedActivityKey] = useState<string | null>(null);
+    const [selectedMoodKey, setSelectedMoodKey] = useState<string | null>(null);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [result, setResult] = useState<any | null>(null);
+    const [coffeeQuantity, setCoffeeQuantity] = useState(1);
+    const [snackQuantity, setSnackQuantity] = useState(1);
+    const [toastMessage, setToastMessage] = useState<string | null>(null);
+    const toastTimeoutRef = useRef<number | null>(null);
 
-  useEffect(() => {
-    return () => {
-      if (toastTimeoutRef.current) {
-        window.clearTimeout(toastTimeoutRef.current);
-      }
+    useEffect(() => {
+        return () => {
+            if (toastTimeoutRef.current) {
+                window.clearTimeout(toastTimeoutRef.current);
+            }
+        };
+    }, []);
+
+    type Activity = 'Work' | 'Hangout' | 'Chill';
+    type Mood = 'Energetic' | 'Weak' | 'Comfort';
+
+    const activityMap: Record<string, Activity> = {
+        work: 'Work',
+        hangout: 'Hangout',
+        chill: 'Chill',
     };
-  }, []);
 
-  type Activity = 'Work' | 'Hangout' | 'Chill';
-  type Mood = 'Energetic' | 'Weak' | 'Comfort';
+    const moodMap: Record<string, Mood> = {
+        energetic: 'Energetic',
+        weak: 'Weak',
+        comfort: 'Comfort',
+    };
 
-  const activityMap: Record<string, Activity> = {
-    work: 'Work',
-    hangout: 'Hangout',
-    chill: 'Chill',
-  };
+    const canSubmit = selectedActivityKey && selectedMoodKey && !loading;
 
-  const moodMap: Record<string, Mood> = {
-    energetic: 'Energetic',
-    weak: 'Weak',
-    comfort: 'Comfort',
-  };
+    const handleSubmit = async () => {
+        if (!selectedActivityKey || !selectedMoodKey) return;
 
-  const canSubmit = selectedActivityKey && selectedMoodKey && !loading;
+        const activity = activityMap[selectedActivityKey];
+        const mood = moodMap[selectedMoodKey];
 
-  const handleSubmit = async () => {
-    if (!selectedActivityKey || !selectedMoodKey) return;
+        setLoading(true);
+        setError(null);
 
-    const activity = activityMap[selectedActivityKey];
-    const mood = moodMap[selectedMoodKey];
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/recommendations/context`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ mood, activity }),
+            });
 
-    setLoading(true);
-    setError(null);
+            if (!res.ok) {
+                const data = await res.json().catch(() => ({}));
+                throw new Error(data.error || 'Unable to suggest right now.');
+            }
 
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/recommendations/context`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mood, activity }),
-      });
+            const data = await res.json();
+            setResult(data);
+            setCoffeeQuantity(1);
+            setSnackQuantity(1);
+        } catch (e: any) {
+            setError('Something didn\'t brew right. Try again.');
+            setResult(null);
+        } finally {
+            setLoading(false);
+        }
+    };
 
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || 'Unable to suggest right now.');
-      }
+    const handleAddToCartWithQuantity = (item: CoffeeItem, quantity: number, itemName: string) => {
+        for (let i = 0; i < quantity; i++) {
+            onAddToCart(item);
+        }
 
-      const data = await res.json();
-      setResult(data);
-      setCoffeeQuantity(1);
-      setSnackQuantity(1);
-    } catch (e: any) {
-      setError('Something didn\'t brew right. Try again.');
-      setResult(null);
-    } finally {
-      setLoading(false);
-    }
-  };
+        const message = quantity > 1
+            ? `${quantity}x ${itemName} added to cart`
+            : `${itemName} added to cart`;
 
-  const handleAddToCartWithQuantity = (item: CoffeeItem, quantity: number, itemName: string) => {
-    for (let i = 0; i < quantity; i++) {
-      onAddToCart(item);
-    }
+        setToastMessage(message);
 
-    const message = quantity > 1
-      ? `${quantity}x ${itemName} added to cart`
-      : `${itemName} added to cart`;
+        if (toastTimeoutRef.current) {
+            window.clearTimeout(toastTimeoutRef.current);
+        }
+        toastTimeoutRef.current = window.setTimeout(() => {
+            setToastMessage(null);
+        }, 2000);
+    };
 
-    setToastMessage(message);
-
-    if (toastTimeoutRef.current) {
-      window.clearTimeout(toastTimeoutRef.current);
-    }
-    toastTimeoutRef.current = window.setTimeout(() => {
-      setToastMessage(null);
-    }, 2000);
-  };
-
-  return (
-    <div className="w-full max-w-lg bg-[#F3EFE0] border border-black/10 rounded-2xl shadow-xl p-6 md:p-8 font-sans max-h-[85vh] overflow-y-auto no-scrollbar">
-      {/* Header row */}
-      <div className="flex items-center justify-between mb-6">
-        <p className="text-[10px] uppercase tracking-[0.3em] text-zinc-500">BrewDesk Suggestion</p>
-        <button
-          type="button"
-          onClick={onClose}
-          className="text-[11px] uppercase tracking-[0.25em] text-zinc-500 hover:text-zinc-800 transition-opacity"
-        >
-          Close
-        </button>
-      </div>
-
-      <h2 className="text-3xl md:text-4xl font-serif italic mb-8">
-        Let me help you choose.
-      </h2>
-
-      {/* Two-column layout: Activity / Mood - Symmetric */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-        {/* ACTIVITY column */}
-        <div>
-          <p className="text-[10px] uppercase tracking-[0.3em] text-zinc-500 mb-3 ml-1">Activity</p>
-          <div className="flex flex-col gap-3">
-            {[
-              { key: 'work', label: 'DEEP FOCUS', hint: 'productivity, flow, clarity' },
-              { key: 'hangout', label: 'CATCH UP', hint: 'friends, gossip, laughter' },
-              { key: 'chill', label: 'SLOW SIP', hint: 'peace, quiet, savoring' },
-            ].map((opt) => {
-              const selected = selectedActivityKey === opt.key;
-              return (
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-8 bg-black/20 backdrop-blur-sm">
+            {/* Main Card Container - Wide & Centered */}
+            <div
+                className="relative w-full max-w-[1120px] bg-[#F9F8F4] rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+                style={{ height: 'auto', minHeight: '600px' }} // Target height range
+            >
+                {/* Close Button - absolute top right */}
                 <button
-                  key={opt.key}
-                  type="button"
-                  onClick={() => {
-                    setSelectedActivityKey(opt.key);
-                    setError(null);
-                  }}
-                  className={[
-                    'group w-full px-6 py-4 rounded-xl text-xs uppercase tracking-[0.25em] border transition-all duration-200 flex flex-col items-start justify-center text-left relative overflow-hidden',
-                    selected
-                      ? 'bg-[#0a0a0a] text-[#F9F8F4] border-[#0a0a0a] shadow-md'
-                      : 'bg-white text-zinc-600 border-black/40 hover:border-black/60 hover:bg-zinc-50',
-                  ].join(' ')}
+                    onClick={onClose}
+                    className="absolute top-6 right-6 z-10 text-xs uppercase tracking-[0.2em] text-zinc-400 hover:text-[#B5693E] transition-colors"
                 >
-                  <span className="relative z-10 font-semibold">{opt.label}</span>
-                  <span
-                    className={[
-                      'text-[10px] mt-1 font-sans normal-case tracking-normal transition-opacity duration-200',
-                      selected ? 'text-zinc-400 opacity-100' : 'text-zinc-400 opacity-60 group-hover:opacity-100',
-                    ].join(' ')}
-                  >
-                    {opt.hint}
-                  </span>
+                    Close
                 </button>
-              );
-            })}
-          </div>
-        </div>
 
-        {/* MOOD column */}
-        <div>
-          <p className="text-[10px] uppercase tracking-[0.3em] text-zinc-500 mb-3 ml-1">Current Mood</p>
-          <div className="flex flex-col gap-3">
-            {[
-              { key: 'energetic', label: 'BUZZING', hint: 'sustain the vibe' },
-              { key: 'weak', label: 'DRAINED', hint: 'need a kick' },
-              { key: 'comfort', label: 'COZY', hint: 'warm hug' },
-            ].map((opt) => {
-              const selected = selectedMoodKey === opt.key;
-              return (
-                <button
-                  key={opt.key}
-                  type="button"
-                  onClick={() => {
-                    setSelectedMoodKey(opt.key);
-                    setError(null);
-                  }}
-                  className={[
-                    'group w-full px-6 py-4 rounded-xl text-xs uppercase tracking-[0.25em] border transition-all duration-200 flex flex-col items-start justify-center text-left relative overflow-hidden',
-                    selected
-                      ? 'bg-[#0a0a0a] text-[#F9F8F4] border-[#0a0a0a] shadow-md'
-                      : 'bg-white text-zinc-600 border-black/40 hover:border-black/60 hover:bg-zinc-50',
-                  ].join(' ')}
-                >
-                  <span className="relative z-10 font-semibold">{opt.label}</span>
-                  <span
-                    className={[
-                      'text-[10px] mt-1 font-sans normal-case tracking-normal transition-opacity duration-200',
-                      selected ? 'text-zinc-400 opacity-100' : 'text-zinc-400 opacity-60 group-hover:opacity-100',
-                    ].join(' ')}
-                  >
-                    {opt.hint}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </div>
+                {/* Scrollable Content Area */}
+                <div className="flex-1 overflow-y-auto no-scrollbar p-8 md:p-12 lg:p-16 flex flex-col">
 
-      {/* Error (calm) */}
-      {error && (
-        <p className="text-[11px] text-zinc-500 mb-3">
-          {error}
-        </p>
-      )}
+                    {/* Header Section */}
+                    <div className="text-center mb-12 md:mb-16">
+                        <h2 className="text-4xl md:text-5xl lg:text-6xl font-serif italic text-[#27272a] mb-3 md:mb-4">
+                            Let me help you choose.
+                        </h2>
+                        <p className="text-zinc-500 font-sans text-sm md:text-base tracking-wide uppercase">
+                            Curate your perfect moment
+                        </p>
+                    </div>
 
-      {/* Results */}
-      {result && (
-        <div className="mt-4 space-y-4 text-sm">
-          {result.coffee && (
-            <div className="border border-black/10 rounded-xl p-3">
-              <div className="flex items-center justify-between gap-4 mb-3">
-                <div>
-                  <p className="text-[10px] uppercase tracking-[0.3em] text-zinc-500 mb-1">Coffee</p>
-                  <p className="font-serif text-lg mb-1">{result.coffee.name}</p>
-                  <p className="text-xs text-zinc-600">₹{result.coffee.price}</p>
+                    {/* Selection Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-24 lg:gap-32 w-full max-w-5xl mx-auto mb-12">
+
+                        {/* Column 1: Activity */}
+                        <div className="flex flex-col">
+                            <div className="flex items-center gap-3 mb-6 border-b border-zinc-200 pb-2">
+                                <span className="text-[10px] font-bold text-[#B5693E] uppercase tracking-widest">01</span>
+                                <span className="text-xs font-medium text-zinc-400 uppercase tracking-[0.2em]">Select Activity</span>
+                            </div>
+
+                            <div className="space-y-3">
+                                {[
+                                    { key: 'work', label: 'Deep Focus', hint: 'Productivity & Flow' },
+                                    { key: 'hangout', label: 'Catch Up', hint: 'Friends & Laughter' },
+                                    { key: 'chill', label: 'Slow Sip', hint: 'Peace & Quiet' },
+                                ].map((opt) => (
+                                    <button
+                                        key={opt.key}
+                                        onClick={() => setSelectedActivityKey(opt.key)}
+                                        className={`
+                                        w-full text-left p-4 md:p-5 rounded-lg transition-all duration-300 group
+                                        ${selectedActivityKey === opt.key
+                                                ? 'bg-[#B5693E] text-white shadow-lg translate-x-1'
+                                                : 'bg-white hover:bg-zinc-50 text-zinc-600 border border-transparent hover:border-zinc-200'
+                                            }
+                                    `}
+                                    >
+                                        <div className="flex justify-between items-center">
+                                            <span className={`font-serif text-xl italic ${selectedActivityKey === opt.key ? 'text-white' : 'text-[#27272a]'}`}>
+                                                {opt.label}
+                                            </span>
+                                            {selectedActivityKey === opt.key && (
+                                                <span className="w-1.5 h-1.5 rounded-full bg-white/80" />
+                                            )}
+                                        </div>
+                                        <span className={`text-[10px] uppercase tracking-wider mt-1 block ${selectedActivityKey === opt.key ? 'text-white/70' : 'text-zinc-400'}`}>
+                                            {opt.hint}
+                                        </span>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Column 2: Mood */}
+                        <div className="flex flex-col">
+                            <div className="flex items-center gap-3 mb-6 border-b border-zinc-200 pb-2">
+                                <span className="text-[10px] font-bold text-[#B5693E] uppercase tracking-widest">02</span>
+                                <span className="text-xs font-medium text-zinc-400 uppercase tracking-[0.2em]">Select Mood</span>
+                            </div>
+
+                            <div className="space-y-3">
+                                {[
+                                    { key: 'energetic', label: 'Buzzing', hint: 'Sustain the vibe' },
+                                    { key: 'weak', label: 'Drained', hint: 'Need a kick' },
+                                    { key: 'comfort', label: 'Cozy', hint: 'Warm hug' },
+                                ].map((opt) => (
+                                    <button
+                                        key={opt.key}
+                                        onClick={() => setSelectedMoodKey(opt.key)}
+                                        className={`
+                                        w-full text-left p-4 md:p-5 rounded-lg transition-all duration-300 group
+                                        ${selectedMoodKey === opt.key
+                                                ? 'bg-[#B5693E] text-white shadow-lg translate-x-1'
+                                                : 'bg-white hover:bg-zinc-50 text-zinc-600 border border-transparent hover:border-zinc-200'
+                                            }
+                                    `}
+                                    >
+                                        <div className="flex justify-between items-center">
+                                            <span className={`font-serif text-xl italic ${selectedMoodKey === opt.key ? 'text-white' : 'text-[#27272a]'}`}>
+                                                {opt.label}
+                                            </span>
+                                            {selectedMoodKey === opt.key && (
+                                                <span className="w-1.5 h-1.5 rounded-full bg-white/80" />
+                                            )}
+                                        </div>
+                                        <span className={`text-[10px] uppercase tracking-wider mt-1 block ${selectedMoodKey === opt.key ? 'text-white/70' : 'text-zinc-400'}`}>
+                                            {opt.hint}
+                                        </span>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Error Message */}
+                    {error && (
+                        <div className="text-center mb-8 animate-in fade-in slide-in-from-bottom-2">
+                            <span className="text-xs text-red-500 font-medium bg-red-50 px-3 py-1 rounded-full border border-red-100">
+                                {error}
+                            </span>
+                        </div>
+                    )}
+
+                    {/* Recommendations Section */}
+                    {result ? (
+                        <div className="mt-auto animate-in fade-in slide-in-from-bottom-8 duration-700 w-full max-w-5xl mx-auto pt-8 border-t border-zinc-200/60">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
+                                {/* Coffee Card */}
+                                {result.coffee && (
+                                    <div className="bg-white p-6 rounded-xl border border-zinc-100 shadow-sm flex flex-col md:flex-row gap-6 items-center hover:shadow-md transition-shadow">
+                                        <div className="flex-1">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <span className="text-[10px] font-bold text-[#B5693E] uppercase tracking-widest"> Ideally Suited</span>
+                                            </div>
+                                            <h3 className="font-serif text-2xl italic text-[#27272a] mb-1">{result.coffee.name}</h3>
+                                            <p className="text-zinc-500 text-xs mb-4">Perfect match for your mood.</p>
+                                            <span className="text-lg font-serif italic text-[#B5693E]">₹{result.coffee.price}</span>
+                                        </div>
+
+                                        <div className="flex flex-col items-center gap-3 min-w-[120px]">
+                                            <div className="flex items-center gap-3 bg-zinc-50 rounded-full px-2 py-1">
+                                                <button onClick={() => setCoffeeQuantity(Math.max(1, coffeeQuantity - 1))} className="w-6 h-6 flex items-center justify-center text-zinc-400 hover:text-black">-</button>
+                                                <span className="text-xs font-semibold w-4 text-center">{coffeeQuantity}</span>
+                                                <button onClick={() => setCoffeeQuantity(coffeeQuantity + 1)} className="w-6 h-6 flex items-center justify-center text-zinc-400 hover:text-black">+</button>
+                                            </div>
+                                            <button
+                                                onClick={() => handleAddToCartWithQuantity({
+                                                    id: result.coffee.id,
+                                                    name: result.coffee.name,
+                                                    notes: result.coffee.category || 'Coffee',
+                                                    caffeine: (result.coffee.caffeine_mg && result.coffee.caffeine_mg > 220) ? 'High' : 'Medium',
+                                                    intensity: 4,
+                                                    image: result.coffee.image || '/media/menu-placeholder.jpg',
+                                                    price: result.coffee.price,
+                                                    description: result.coffee.description || result.coffee.category || result.coffee.name
+                                                }, coffeeQuantity, result.coffee.name)}
+                                                className="w-full py-2 px-4 bg-[#B5693E] hover:bg-[#a05530] text-white text-[10px] uppercase tracking-widest font-bold rounded-lg transition-colors shadow-sm"
+                                            >
+                                                Add
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Snack Card */}
+                                {result.snack && (
+                                    <div className="bg-white p-6 rounded-xl border border-zinc-100 shadow-sm flex flex-col md:flex-row gap-6 items-center hover:shadow-md transition-shadow">
+                                        <div className="flex-1">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <span className="text-[10px] font-bold text-[#B5693E] uppercase tracking-widest">Accompaniment</span>
+                                            </div>
+                                            <h3 className="font-serif text-2xl italic text-[#27272a] mb-1">{result.snack.name}</h3>
+                                            <p className="text-zinc-500 text-xs mb-4">Pairs beautifully.</p>
+                                            <span className="text-lg font-serif italic text-[#B5693E]">₹{result.snack.price}</span>
+                                        </div>
+
+                                        <div className="flex flex-col items-center gap-3 min-w-[120px]">
+                                            <div className="flex items-center gap-3 bg-zinc-50 rounded-full px-2 py-1">
+                                                <button onClick={() => setSnackQuantity(Math.max(1, snackQuantity - 1))} className="w-6 h-6 flex items-center justify-center text-zinc-400 hover:text-black">-</button>
+                                                <span className="text-xs font-semibold w-4 text-center">{snackQuantity}</span>
+                                                <button onClick={() => setSnackQuantity(snackQuantity + 1)} className="w-6 h-6 flex items-center justify-center text-zinc-400 hover:text-black">+</button>
+                                            </div>
+                                            <button
+                                                onClick={() => handleAddToCartWithQuantity({
+                                                    id: result.snack.id,
+                                                    name: result.snack.name,
+                                                    notes: result.snack.category || 'Snack',
+                                                    caffeine: 'None',
+                                                    intensity: 1,
+                                                    image: result.snack.image || '/media/menu-placeholder.jpg',
+                                                    price: result.snack.price,
+                                                    description: result.snack.description || result.snack.category || result.snack.name
+                                                }, snackQuantity, result.snack.name)}
+                                                className="w-full py-2 px-4 bg-[#B5693E] hover:bg-[#a05530] text-white text-[10px] uppercase tracking-widest font-bold rounded-lg transition-colors shadow-sm"
+                                            >
+                                                Add
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    ) : (
+                        /* Initial CTA to Reveal - Centered at bottom area */
+                        <div className="mt-auto pt-8 flex justify-center w-full">
+                            <button
+                                onClick={handleSubmit}
+                                disabled={!canSubmit}
+                                className={`
+                                group relative px-8 py-3 rounded-full overflow-hidden transition-all duration-500
+                                ${canSubmit
+                                        ? 'bg-[#27272a] hover:bg-black text-white shadow-lg cursor-pointer transform hover:-translate-y-1'
+                                        : 'bg-zinc-100 text-zinc-300 cursor-not-allowed'
+                                    }
+                            `}
+                            >
+                                <span className="relative z-10 text-xs font-bold uppercase tracking-[0.25em]">
+                                    {loading ? 'Curating...' : 'Reveal Recommendation'}
+                                </span>
+                            </button>
+                        </div>
+                    )}
                 </div>
-              </div>
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setCoffeeQuantity(Math.max(1, coffeeQuantity - 1))}
-                    className="w-8 h-8 rounded-full border border-black/20 flex items-center justify-center text-sm hover:bg-black/5 transition-colors"
-                  >
-                    −
-                  </button>
-                  <span className="text-sm font-medium w-8 text-center">{coffeeQuantity}</span>
-                  <button
-                    type="button"
-                    onClick={() => setCoffeeQuantity(coffeeQuantity + 1)}
-                    className="w-8 h-8 rounded-full border border-black/20 flex items-center justify-center text-sm hover:bg-black/5 transition-colors"
-                  >
-                    +
-                  </button>
-                </div>
-                <button
-                  type="button"
-                  className="px-4 py-2 rounded-full border border-black/20 text-[10px] uppercase tracking-[0.25em] hover:bg-[#0a0a0a] hover:text-[#F9F8F4] transition-colors"
-                  onClick={() => {
-                    const rec = result.coffee;
-                    const item: CoffeeItem = {
-                      id: rec.id,
-                      name: rec.name,
-                      notes: rec.category || 'Coffee',
-                      caffeine: (rec.caffeine_mg && rec.caffeine_mg > 220)
-                        ? 'High'
-                        : 'Medium',
-                      intensity: 4,
-                      image: rec.image || '/media/menu-placeholder.jpg',
-                      price: rec.price,
-                      description: rec.description || rec.category || rec.name,
-                    };
-                    handleAddToCartWithQuantity(item, coffeeQuantity, rec.name);
-                  }}
-                >
-                  Add to Cart
-                </button>
-              </div>
+
+                {/* Toast Notification */}
+                <Toast message={toastMessage} />
             </div>
-          )}
-
-          {result.snack && (
-            <div className="border border-black/10 rounded-xl p-3">
-              <div className="flex items-center justify-between gap-4 mb-3">
-                <div>
-                  <p className="text-[10px] uppercase tracking-[0.3em] text-zinc-500 mb-1">Snack</p>
-                  <p className="font-serif text-lg mb-1">{result.snack.name}</p>
-                  <p className="text-xs text-zinc-600">₹{result.snack.price}</p>
-                </div>
-              </div>
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setSnackQuantity(Math.max(1, snackQuantity - 1))}
-                    className="w-8 h-8 rounded-full border border-black/20 flex items-center justify-center text-sm hover:bg-black/5 transition-colors"
-                  >
-                    −
-                  </button>
-                  <span className="text-sm font-medium w-8 text-center">{snackQuantity}</span>
-                  <button
-                    type="button"
-                    onClick={() => setSnackQuantity(snackQuantity + 1)}
-                    className="w-8 h-8 rounded-full border border-black/20 flex items-center justify-center text-sm hover:bg-black/5 transition-colors"
-                  >
-                    +
-                  </button>
-                </div>
-                <button
-                  type="button"
-                  className="px-4 py-2 rounded-full border border-black/20 text-[10px] uppercase tracking-[0.25em] hover:bg-[#0a0a0a] hover:text-[#F9F8F4] transition-colors"
-                  onClick={() => {
-                    const rec = result.snack;
-                    const item: CoffeeItem = {
-                      id: rec.id,
-                      name: rec.name,
-                      notes: rec.category || 'Snack',
-                      caffeine: 'None',
-                      intensity: 1,
-                      image: rec.image || '/media/menu-placeholder.jpg',
-                      price: rec.price,
-                      description: rec.description || rec.category || rec.name,
-                    };
-                    handleAddToCartWithQuantity(item, snackQuantity, rec.name);
-                  }}
-                >
-                  Add to Cart
-                </button>
-              </div>
-            </div>
-          )}
         </div>
-      )}
-
-      {/* CTA row */}
-      <div className="flex justify-end mt-6 text-[11px] uppercase tracking-[0.25em]">
-        <button
-          type="button"
-          disabled={!canSubmit}
-          onClick={handleSubmit}
-          className="px-8 py-2 rounded-full bg-[#0a0a0a] text-[#F9F8F4] hover:bg-black transition-colors disabled:opacity-40"
-        >
-          {loading ? 'Brewing...' : 'Get Recommendation'}
-        </button>
-      </div>
-
-      {/* Toast notification */}
-      <Toast message={toastMessage} />
-    </div>
-  );
+    );
 };
 
 export default BrewDeskPopup;

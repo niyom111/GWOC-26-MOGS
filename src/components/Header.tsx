@@ -48,7 +48,7 @@ const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage, cartCount }) =
 
   // MENU BUTTON BACKGROUND:
   // Brand brown for mobile visibility (as requested)
-  const menuButtonBg = 'bg-[#A35D36] border-[#A35D36] text-white';
+  const menuButtonBg = 'bg-[#B5693E] border-[#B5693E] text-white';
 
   // --- SCROLL VISIBILITY LOGIC ---
   const { scrollY } = useScroll();
@@ -163,7 +163,7 @@ const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage, cartCount }) =
                     className={`
                       relative px-5 py-3 rounded-full text-[10px] md:text-xs uppercase tracking-[0.15em] font-bold whitespace-nowrap transition-all duration-300
                       ${isActive
-                        ? 'bg-[#F3EFE0] text-black shadow-md'
+                        ? 'bg-[#B5693E] text-white shadow-md'
                         : 'text-white hover:bg-white/10'
                       }
                     `}

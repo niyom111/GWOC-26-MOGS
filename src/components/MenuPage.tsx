@@ -18,11 +18,18 @@ interface MenuItem {
   price: number;
 }
 
+interface MenuSubCategory {
+  id: string;
+  title: string;
+  items: MenuItem[];
+}
+
 interface MenuCategory {
   id: string;
   label: string;
-  group: string; // e.g., Robusta Specialty, Blend, etc.
-  items: MenuItem[];
+  subCategories: MenuSubCategory[];
+  items: MenuItem[]; // Keep for flat fallback/search flattening
+  group?: string; // For legacy or grouping
 }
 
 // NOTE: static MENU_CATEGORIES kept only as reference; live data now comes from MenuContext.
@@ -30,22 +37,28 @@ const MENU_CATEGORIES: MenuCategory[] = [
   {
     id: 'robusta-cold-non-milk',
     label: 'Robusta Specialty (Cold - Non Milk)',
-    group: 'Robusta Specialty',
-    items: [
-      { id: 'robusta-cold-non-milk-iced-americano', name: 'Iced Americano', price: 160 },
-      { id: 'robusta-cold-non-milk-iced-espresso', name: 'Iced Espresso', price: 130 },
+    subCategories: [
       {
-        id: 'robusta-cold-non-milk-iced-espresso-tonic',
-        name: 'Iced Espresso (Tonic / Ginger Ale / Orange)',
-        price: 250,
-      },
-      {
-        id: 'robusta-cold-non-milk-iced-espresso-red-bull',
-        name: 'Iced Espresso (Red Bull)',
-        price: 290,
-      },
-      { id: 'robusta-cold-non-milk-cranberry-tonic', name: 'Cranberry Tonic', price: 270 },
+        id: 'robusta-cold-non-milk-sub',
+        title: 'Robusta Specialty (Cold - Non Milk)',
+        items: [
+          { id: 'robusta-cold-non-milk-iced-americano', name: 'Iced Americano', price: 160 },
+          { id: 'robusta-cold-non-milk-iced-espresso', name: 'Iced Espresso', price: 130 },
+          {
+            id: 'robusta-cold-non-milk-iced-espresso-tonic',
+            name: 'Iced Espresso (Tonic / Ginger Ale / Orange)',
+            price: 250,
+          },
+          {
+            id: 'robusta-cold-non-milk-iced-espresso-red-bull',
+            name: 'Iced Espresso (Red Bull)',
+            price: 290,
+          },
+          { id: 'robusta-cold-non-milk-cranberry-tonic', name: 'Cranberry Tonic', price: 270 },
+        ]
+      }
     ],
+    items: [], // Legacy flat fallback
   },
   {
     id: 'robusta-cold-milk',
@@ -267,6 +280,54 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
     fetchTrending();
   }, []);
 
+  // Auto-trigger BrewDesk popup on first visit
+  useEffect(() => {
+    const hasSeenPopup = sessionStorage.getItem('brewDeskShown');
+    if (!hasSeenPopup) {
+      // Small delay to let page load/animate in
+      const timer = setTimeout(() => {
+        setShowBrewDesk(true);
+        sessionStorage.setItem('brewDeskShown', 'true');
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, []);
+
+  // --- HELPER: VEGETARIAN LOGIC ---
+  const isVegetarian = (item: { name?: string; tags?: string | any[]; category?: string }): boolean => {
+    // Default to veg unless identified otherwise
+    const text = ((item.name || '') + ' ' + (item.category || '')).toLowerCase();
+
+    // Explicit non-veg keywords
+    const nonVegKeywords = ['chicken', 'lamb', 'fish', 'prawn', 'egg', 'meat', 'beef', 'pork'];
+    if (nonVegKeywords.some(k => text.includes(k))) return false;
+
+    // Explicit veg keywords (optional, for confirmation if needed, but we default to true if no meat found)
+    // const vegKeywords = ['veg', 'paneer', 'cheese', 'mushroom', 'potato', 'corn', 'spinach'];
+
+    // Check tags if available
+    if (Array.isArray(item.tags)) {
+      if (item.tags.some(t => t.name.toLowerCase() === 'non-veg')) return false;
+    } else if (typeof item.tags === 'string') {
+      if (item.tags.toLowerCase().includes('non-veg')) return false;
+    }
+
+    return true;
+  };
+
+  // Helper for Veg Icon
+  const VegIcon = () => (
+    <div className="inline-flex items-center justify-center border border-green-600 p-[1px] w-3 h-3 mr-1.5 align-middle">
+      <div className="w-1.5 h-1.5 rounded-full bg-green-600"></div>
+    </div>
+  );
+
+  const NonVegIcon = () => (
+    <div className="inline-flex items-center justify-center border border-red-600 p-[1px] w-3 h-3 mr-1.5 align-middle">
+      <div className="w-1.5 h-1.5 rounded-full bg-red-600"></div>
+    </div>
+  );
+
   // --- RECOMMENDATION ENGINE ---
   const [recommendedItems, setRecommendedItems] = useState<CoffeeItem[]>([]);
 
@@ -466,19 +527,15 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
 
   const handleCategoryClick = (id: string) => {
     setActiveCategoryId(id);
-
     const el = document.getElementById(id);
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-
-    // Clear highlight after 1 second
-    if (activeCategoryTimeoutRef.current) {
-      window.clearTimeout(activeCategoryTimeoutRef.current);
-    }
-    activeCategoryTimeoutRef.current = window.setTimeout(() => {
-      setActiveCategoryId('');
-    }, 1000);
+    /* 
+       With tab layout, scrolling might not be needed if we render only one, 
+       but if we scroll to top of list it's fine. 
+       Actually with Tabs, we are likely replacing the content.
+       So scroll to top of container? 
+       Let's keep scroll but remove timeout.
+    */
+    /* window.scrollTo({ top: 0, behavior: 'smooth' }); // Optional */
   };
 
   const handleAddToCart = (category: MenuCategory, item: MenuItem) => {
@@ -617,33 +674,103 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
       const categoryStr = rawCategory.trim();
       if (!categoryStr) return;
 
-      const canonicalCategory = categoryStr.toUpperCase();
-      const id = canonicalCategory
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/(^-|-$)/g, '');
+      // --- MAIN CATEGORY DETECTION ---
+      // Determine Main Category (Coffee, Tea, etc.)
+      let mainCategoryLabel = 'Other';
+      const rawLower = rawCategory.toLowerCase();
 
-      const groupSource = item.sub_category_name || rawCategory;
-      const group = (groupSource.split('(')[0] ?? '').trim();
+      if (item.category_name) {
+        mainCategoryLabel = item.category_name.toUpperCase();
+      } else {
+        // Fallback Heuristics
+        if (rawLower.includes('robusta') || rawLower.includes('blend') || rawLower.includes('manual brew') || rawLower.includes('coffee') || rawLower.includes('espresso') || rawLower.includes('latte')) {
+          mainCategoryLabel = 'COFFEE';
+        } else if (rawLower.includes('tea')) {
+          mainCategoryLabel = 'TEA';
+        } else if (rawLower.includes('shake') || rawLower.includes('smoothie')) {
+          mainCategoryLabel = 'SHAKE';
+        } else if (rawLower.includes('food') || rawLower.includes('fries') || rawLower.includes('pizza') || rawLower.includes('croissant') || rawLower.includes('bagel')) {
+          mainCategoryLabel = 'FOOD';
+        } else if (rawLower.includes('legacy')) {
+          mainCategoryLabel = 'OTHERS';
+        } else {
+          mainCategoryLabel = 'OTHERS'; // Default
+        }
+      }
 
-      if (!categoryMap.has(canonicalCategory)) {
-        categoryMap.set(canonicalCategory, {
-          id,
-          label: canonicalCategory,
-          group,
+      const mainId = mainCategoryLabel.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+
+      // --- SUB CATEGORY DETECTION ---
+      let subCategoryLabel = 'General';
+      if (item.sub_category_name) {
+        subCategoryLabel = item.sub_category_name;
+      } else {
+        // Extract from parenthesis or legacy group
+        // e.g. "Robusta Specialty (Cold - Non Milk)" -> "Robusta Specialty"
+        // "Blend (Cold...)" -> "Blend"
+        // "Manual Brew (Peaberry...)" -> "Manual Brew"
+        const split = rawCategory.split('(');
+        if (split.length > 0) {
+          subCategoryLabel = split[0].trim();
+        }
+      }
+
+      if (!categoryMap.has(mainId)) {
+        categoryMap.set(mainId, {
+          id: mainId,
+          label: mainCategoryLabel,
+          subCategories: [],
           items: [],
         });
       }
 
-      categoryMap.get(canonicalCategory)!.items.push({
+      const mainCat = categoryMap.get(mainId)!;
+
+      // Add to flat items list (for search etc)
+      const newItem = {
         id: item.id,
         name: item.name,
         price: item.price,
-      });
+      };
+      mainCat.items.push(newItem);
+
+      // Add to Sub Category
+      let subCat = mainCat.subCategories.find(s => s.title === subCategoryLabel);
+      if (!subCat) {
+        subCat = {
+          id: `${mainId}-${subCategoryLabel.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
+          title: subCategoryLabel,
+          items: []
+        };
+        mainCat.subCategories.push(subCat);
+      }
+      subCat.items.push(newItem);
     });
 
-    return Array.from(categoryMap.values());
+    // Ensure strictly ordered categories if needed? 
+    // Usually Coffee first.
+    return Array.from(categoryMap.values()).sort((a, b) => {
+      const order = ['COFFEE', 'TEA', 'REFRESHER', 'BREW', 'SHAKE', 'FOOD'];
+      const idxA = order.indexOf(a.label);
+      const idxB = order.indexOf(b.label);
+      if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+      if (idxA !== -1) return -1;
+      if (idxB !== -1) return 1;
+      return 0;
+    });
   }, [menuItems]);
+
+  // Set default category to Coffee (or first available)
+  useEffect(() => {
+    if (!activeCategoryId && allCategories.length > 0) {
+      const coffee = allCategories.find(c => c.label.toUpperCase().includes('COFFEE'));
+      if (coffee) {
+        setActiveCategoryId(coffee.id);
+      } else {
+        setActiveCategoryId(allCategories[0].id);
+      }
+    }
+  }, [allCategories, activeCategoryId]);
 
   const [didYouMean, setDidYouMean] = useState<string | null>(null);
 
@@ -655,8 +782,11 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
     // or use a separate effect. For now, let's keep logic pure here.
     // Actually, setting state in useMemo is bad. Let's do suggestion check after filtering.
 
-    // If no search query, return all
+    // If no search query, return filter by activeCategoryId
     if (!query) {
+      if (activeCategoryId) {
+        return allCategories.filter(c => c.id === activeCategoryId);
+      }
       return allCategories;
     }
 
@@ -706,7 +836,12 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
     // This implies we check similarity against available items.
 
     // Let's filter out empty categories
-    const results = Array.from(matchedCategoriesMap.values()).filter(c => c.items.length > 0);
+    let results = Array.from(matchedCategoriesMap.values()).filter(c => c.items.length > 0);
+
+    // If NO search query, treat as Tabs: Filter by activeCategoryId
+    if (!query && activeCategoryId) {
+      results = results.filter(c => c.id === activeCategoryId);
+    }
 
     // Sort logic
     if (sortBy === 'price-asc' || sortBy === 'price-desc') {
@@ -721,7 +856,7 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
 
     return results;
 
-  }, [allCategories, menuItems, search, sortBy]);
+  }, [allCategories, menuItems, search, sortBy, activeCategoryId]);
 
   // Effect for "Did You Mean"
   useEffect(() => {
@@ -759,88 +894,121 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
   }, [search, filteredCategories, menuItems]);
 
   return (
-    <div className="bg-[#F3EFE0] text-[#0a0a0a] pt-24 md:pt-32 pb-40 px-6 md:px-10 min-h-screen">
-      <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-20">
-        {/* Sidebar (Desktop Only) */}
-        <aside className="hidden md:block md:col-span-3">
-          <div className="sticky top-28 space-y-6">
-            <div>
-              <p className="text-[13px] uppercase tracking-[0.5em] text-black mb-3 font-sans">
-                Rabuste Menu
-              </p>
-              <h1 className="text-3xl md:text-4xl font-serif italic tracking-tight">
-                The Menu Standard.
-              </h1>
-            </div>
-
-            <nav className="space-y-2 text-xs md:text-sm font-sans uppercase tracking-[0.25em]">
-              {allCategories.map(cat => (
-                <button
-                  key={cat.id}
-                  onClick={() => handleCategoryClick(cat.id)}
-                  className={`block w-full text-left px-3 py-2 rounded-md transition-colors ${activeCategoryId === cat.id
-                    ? 'bg-[#0a0a0a] text-[#F9F8F4] font-semibold'
-                    : 'text-zinc-600 hover:text-[#0a0a0a] hover:bg-black/5'
-                    }`}
-                >
-                  {cat.label}
-                </button>
-              ))}
-            </nav>
+    <div className="pt-24 md:pt-32 pb-40 px-6 md:px-8 bg-[#F3EFE0] min-h-screen">
+      <div className="max-w-7xl mx-auto">
+        {/* NEW HEADER - Community Style (Wide) */}
+        <header className="mb-20 md:mb-32 flex flex-col md:flex-row justify-between items-end gap-6 md:gap-10">
+          <div>
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="text-[10px] md:text-[13px] uppercase tracking-[0.4em] md:tracking-[0.5em] text-black mb-4 md:mb-6"
+            >
+              Curated Selections
+            </motion.p>
+            <motion.h1
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-5xl md:text-9xl font-serif italic tracking-tighter leading-none"
+            >
+              The Menu.
+            </motion.h1>
           </div>
-        </aside>
+          <p className="max-w-xs text-[14px] md:text-s font-sans text-black uppercase tracking-widest leading-relaxed text-right italic">
+            "Flavor is a language, and every dish tells a story of origin and craft."
+          </p>
+        </header>
+      </div>
 
-        {/* Mobile Navigation (Sticky Top) */}
-        <div className="md:hidden sticky top-16 z-30 bg-[#F3EFE0]/95 backdrop-blur-sm py-4 -mx-6 px-6 border-b border-black/5 mb-4">
-          <p className="text-[9px] uppercase tracking-[0.4em] text-zinc-500 mb-2 font-sans">Menu Categories</p>
-          <div className="flex overflow-x-auto gap-3 pb-2 no-scrollbar snap-x">
+      <div className="max-w-7xl mx-auto">
+        {/* Mobile Navigation (Sticky Top) - Optional, keeping for usability but centered relative to content? 
+            Or maybe remove since user asked for Community layout which doesn't have sticky nav typically.
+            But Menu is long... let's keep it but make it blend in or cleaner.
+        */}
+        <div className="sticky top-24 z-30 bg-[#F3EFE0]/95 backdrop-blur-sm py-4 mb-10 -mx-6 px-6 md:mx-0 md:px-0 border-b border-black/5">
+          <div className="flex overflow-x-auto gap-3 pb-2 no-scrollbar snap-x justify-start md:justify-center">
+            {/* Removed All Button */}
             {allCategories.map(cat => (
               <button
                 key={cat.id}
                 onClick={() => handleCategoryClick(cat.id)}
-                className={`shrink-0 px-4 py-2 rounded-full text-[10px] uppercase tracking-[0.2em] font-sans border transition-colors snap-start ${activeCategoryId === cat.id
-                  ? 'bg-[#0a0a0a] text-[#F9F8F4] border-[#0a0a0a]'
+                className={`shrink-0 px-6 py-3 rounded-full text-xs uppercase tracking-[0.2em] font-bold font-sans border transition-colors snap-start ${activeCategoryId === cat.id
+                  ? 'bg-[#B5693E] text-[#F9F8F4] border-[#B5693E]'
                   : 'bg-white border-black/10 text-zinc-600'
                   }`}
               >
-                {cat.group}
+                {cat.label}
               </button>
             ))}
           </div>
         </div>
 
-        {/* Right Content */}
-        <main className="md:col-span-8">
-          {/* Top bar: search + sort (non-sticky) */}
-          <div className="mb-6">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-              <div className="relative w-[85%] md:w-full md:max-w-md">
-                <Search className="w-4 h-4 text-black absolute left-3 top-1/2 -translate-y-1/2" />
+
+        {/* Right Content -> Main Content (Centered) */}
+        <main>
+          {/* Unified Premium Toolbar */}
+          <div className="mb-16 border-b border-black/5 pb-8">
+            <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-8 xl:gap-12">
+
+              {/* Left: Search Bar (Dominant) */}
+              <div className="relative w-full xl:max-w-xl">
+                <Search className="w-5 h-5 text-zinc-400 absolute left-0 top-1/2 -translate-y-1/2 transition-colors group-focus-within:text-black" />
                 <input
                   value={search}
                   onChange={e => setSearch(e.target.value)}
                   placeholder="Search menu..."
-                  className="w-full pl-9 pr-3 py-2 bg-transparent border-b border-black/20 text-sm font-sans outline-none focus:border-black"
+                  className="w-full pl-8 pr-4 py-3 bg-transparent border-b border-black/10 text-lg font-serif italic text-[#1A1A1A] placeholder:text-zinc-400 outline-none focus:border-black/40 transition-all"
                 />
               </div>
 
-              <div className="flex flex-row items-center justify-between w-full md:w-auto gap-4 text-sm font-sans md:items-center md:flex-row md:gap-12">
-                <div className="flex items-center gap-2">
-                  <Filter className="w-4 h-4 text-" />
-                  <select
-                    value={sortBy}
-                    onChange={e => setSortBy(e.target.value as any)}
-                    className="bg-transparent border-b border-black/20 py-2 text-[10px] md:text-xs uppercase tracking-[0.25em] outline-none focus:border-black"
-                  >
-                    <option value="default">Sort by</option>
-                    <option value="price-asc">Price: Low to High</option>
-                    <option value="price-desc">Price: High to Low</option>
-                  </select>
+              {/* Right: Actions Cluster */}
+              <div className="flex flex-col md:flex-row md:items-center gap-6 md:gap-8 xl:gap-10">
+
+                {/* 1. Sort Dropdown */}
+                <div className="flex items-center gap-3 group cursor-pointer">
+                  <Filter className="w-4 h-4 text-zinc-400 group-hover:text-black transition-colors" />
+                  <div className="relative">
+                    <select
+                      value={sortBy}
+                      onChange={e => setSortBy(e.target.value as any)}
+                      className="appearance-none bg-transparent py-2 pr-8 text-xs font-sans uppercase tracking-[0.2em] text-zinc-600 outline-none cursor-pointer group-hover:text-black transition-colors"
+                    >
+                      <option value="default">Sort by</option>
+                      <option value="price-asc">Price: Low to High</option>
+                      <option value="price-desc">Price: High to Low</option>
+                    </select>
+                  </div>
                 </div>
+
+                {/* 2. Dietary Key (Inline) */}
+                <div className="flex items-center gap-4 text-[10px] font-sans text-zinc-500 uppercase tracking-widest border-l border-black/10 pl-0 md:pl-8 xl:border-l-0 xl:pl-0">
+                  <span className="hidden md:inline text-zinc-300">Key:</span>
+
+                  <div className="flex items-center gap-2" title="Jain">
+                    <span className="inline-flex items-center justify-center bg-[#E69F31] text-white w-4 h-4 text-[9px] font-bold rounded-[2px]">J</span>
+                    <span className="hidden lg:inline">Jain</span>
+                  </div>
+
+                  <div className="flex items-center gap-2" title="Vegetarian">
+                    <div className="inline-flex items-center justify-center border border-green-600 p-[2px] w-4 h-4 rounded-[2px]">
+                      <div className="w-2 h-2 rounded-full bg-green-600"></div>
+                    </div>
+                    <span className="hidden lg:inline">Veg</span>
+                  </div>
+
+                  <div className="flex items-center gap-2" title="Non-Vegetarian">
+                    <div className="inline-flex items-center justify-center border border-red-600 p-[2px] w-4 h-4 rounded-[2px]">
+                      <div className="w-2 h-2 rounded-full bg-red-600"></div>
+                    </div>
+                    <span className="hidden lg:inline">Non-Veg</span>
+                  </div>
+                </div>
+
+                {/* 3. CTA Button */}
                 <button
                   type="button"
                   onClick={() => setShowBrewDesk(true)}
-                  className="px-4 py-2 rounded-full border border-black/40 text-[10px] uppercase tracking-[0.25em] text-black bg-white hover:bg-black hover:text-white transition-colors whitespace-nowrap"
+                  className="px-6 py-3 rounded-full bg-[#B5693E] text-[#F9F8F4] text-[10px] font-bold uppercase tracking-[0.25em] hover:bg-[#a05530] transition-colors shadow-sm hover:shadow-md whitespace-nowrap"
                 >
                   Help me choose
                 </button>
@@ -849,7 +1017,7 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
           </div>
 
           {/* Sections list */}
-          <div className="space-y-10">
+          <div className="space-y-16">
             {/* Did You Mean Suggestion */}
             {search && didYouMean && (
               <div className="mb-2">
@@ -861,52 +1029,64 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
 
             {/* Recommended Section (Personalized) */}
             {(!search && recommendedItems.length > 0) && (
-              <section id="recommended-for-you" className="scroll-mt-28 mb-10">
-                <div className="mb-4">
+              <section id="recommended-for-you" className="scroll-mt-36 mb-16">
+                <div className="mb-8 text-center md:text-left">
                   <p className="text-[10px] uppercase tracking-[0.4em] text-black font-sans mb-1">
                     picked for you
                   </p>
-                  <h2 className="text-3xl md:text-4xl font-serif italic tracking-tight text-black">
+                  <h2 className="text-3xl md:text-5xl font-serif italic tracking-tight text-black">
                     Recommended
                   </h2>
                 </div>
-                <div>
-                  {recommendedItems.map(item => (
-                    <div
-                      key={`rec-${item.id}`}
-                      className="flex items-center justify-between gap-4 py-3 border-b border-black/10 hover:bg-black/5 transition-all duration-200"
-                    >
-                      <div className="flex-1">
-                        <span className="font-medium text-[15px] font-serif">
-                          {item.name}
-                        </span>
-                        <p className="text-[11px] text-black mt-0.5 font-sans">
-                          {item.notes} • Based on your taste
-                        </p>
-                      </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-10">
+                  {recommendedItems.map(item => {
+                    const isVeg = isVegetarian(item);
+                    return (
+                      <div
+                        key={`rec-${item.id}`}
+                        className="flex flex-col pb-4 border-b border-black/10 group"
+                      >
+                        {/* Top Row: Name and Price/Add */}
+                        <div className="flex items-baseline justify-between mb-2">
+                          <h3 className="text-xl md:text-2xl font-serif text-[#1A1A1A] leading-tight tracking-tight">
+                            {item.name}
+                          </h3>
+                          <div className="flex items-center gap-4 shrink-0 pl-4">
+                            <span className="text-lg font-medium font-sans text-[#1A1A1A]">
+                              ₹{item.price}
+                            </span>
+                            <button
+                              onClick={() => {
+                                onAddToCart(item);
+                                setToastMessage(`${item.name} added to cart`);
+                                if (toastTimeoutRef.current) {
+                                  window.clearTimeout(toastTimeoutRef.current);
+                                }
+                                toastTimeoutRef.current = window.setTimeout(() => {
+                                  setToastMessage(null);
+                                }, 1500);
+                              }}
+                              className="w-6 h-6 flex items-center justify-center rounded-full border border-[#B5693E] text-[#B5693E] 
+                                         hover:bg-[#B5693E] hover:text-white transition-all duration-300"
+                              aria-label="Add to cart"
+                            >
+                              <span className="text-lg leading-none mb-0.5">+</span>
+                            </button>
+                          </div>
+                        </div>
 
-                      <div className="flex items-center gap-4">
-                        <span className="text-sm font-semibold font-sans">
-                          ₹{item.price}
-                        </span>
-                        <button
-                          onClick={() => {
-                            onAddToCart(item);
-                            setToastMessage(`${item.name} added to cart`);
-                            if (toastTimeoutRef.current) {
-                              window.clearTimeout(toastTimeoutRef.current);
-                            }
-                            toastTimeoutRef.current = window.setTimeout(() => {
-                              setToastMessage(null);
-                            }, 1500);
-                          }}
-                          className="px-4 py-2 text-[10px] uppercase tracking-[0.3em] font-sans border border-black/40 bg-white rounded-full hover:bg-[#0a0a0a] hover:text-[#F9F8F4] transition-colors"
-                        >
-                          Add to Cart
-                        </button>
+                        {/* Bottom Row: Icon + Description */}
+                        <div className="flex items-start text-sm text-zinc-500 font-sans font-light leading-relaxed">
+                          <span className="inline-flex shrink-0 translate-y-[3px] mr-2">
+                            {isVeg ? <VegIcon /> : <NonVegIcon />}
+                          </span>
+                          <p>
+                            {item.notes} • Based on your taste
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </section>
             )}
@@ -915,15 +1095,15 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
             {trendingItems.length >= 3 && (
               <section
                 id="trending-now"
-                className="scroll-mt-28"
+                className="scroll-mt-36"
               >
-                <div className="mb-4">
-                  <h2 className="text-3xl md:text-4xl font-serif italic tracking-tight">
+                <div className="mb-8 text-center md:text-left">
+                  <h2 className="text-3xl md:text-5xl font-serif italic tracking-tight">
                     Trending Now
                   </h2>
                 </div>
 
-                <div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-10">
                   {trendingItems.map(item => {
                     // Find the category group for this item
                     if (!item.category || !item.name || !item.id || item.price == null) return null; // Skip items without required fields
@@ -943,39 +1123,50 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
                       description: item.description || item.category || item.name,
                     };
 
+                    const isVeg = isVegetarian(item);
+
                     return (
                       <div
                         key={item.id}
-                        className="flex items-center justify-between gap-4 py-3 border-b border-black/10 hover:bg-black/5 transition-all duration-200 hover:opacity-90"
+                        className="flex flex-col pb-4 border-b border-black/10 group"
                       >
-                        <div className="flex-1">
-                          <span className="font-medium text-[15px] font-serif">
+                        {/* Top Row: Name and Price/Add */}
+                        <div className="flex items-baseline justify-between mb-2">
+                          <h3 className="text-xl md:text-2xl font-serif text-[#1A1A1A] leading-tight tracking-tight">
                             {item.name}
-                          </span>
-                          <p className="text-[11px] text-zinc-500 mt-0.5 font-sans">
-                            Popular in the last 72 hours
-                          </p>
+                          </h3>
+                          <div className="flex items-center gap-4 shrink-0 pl-4">
+                            <span className="text-lg font-medium font-sans text-[#1A1A1A]">
+                              ₹{item.price}
+                            </span>
+                            <button
+                              onClick={() => {
+                                onAddToCart(cartItem);
+                                setToastMessage(`${item.name} added to cart`);
+                                if (toastTimeoutRef.current) {
+                                  window.clearTimeout(toastTimeoutRef.current);
+                                }
+                                toastTimeoutRef.current = window.setTimeout(() => {
+                                  setToastMessage(null);
+                                }, 1500);
+                              }}
+                              className="w-6 h-6 flex items-center justify-center rounded-full border border-[#B5693E] text-[#B5693E] 
+                                         hover:bg-[#B5693E] hover:text-white transition-all duration-300"
+                              aria-label="Add to cart"
+                            >
+                              <span className="text-lg leading-none mb-0.5">+</span>
+                            </button>
+                          </div>
                         </div>
 
-                        <div className="flex items-center gap-4">
-                          <span className="text-sm font-semibold font-sans">
-                            ₹{item.price}
+                        {/* Bottom Row: Icon + Description */}
+                        <div className="flex items-start text-sm text-zinc-500 font-sans font-light leading-relaxed">
+                          <span className="inline-flex shrink-0 translate-y-[3px] mr-2">
+                            {isVeg ? <VegIcon /> : <NonVegIcon />}
                           </span>
-                          <button
-                            onClick={() => {
-                              onAddToCart(cartItem);
-                              setToastMessage(`${item.name} added to cart`);
-                              if (toastTimeoutRef.current) {
-                                window.clearTimeout(toastTimeoutRef.current);
-                              }
-                              toastTimeoutRef.current = window.setTimeout(() => {
-                                setToastMessage(null);
-                              }, 1500);
-                            }}
-                            className="px-4 py-2 text-[10px] uppercase tracking-[0.3em] font-sans border border-black/40 rounded-full hover:bg-[#0a0a0a] hover:text-[#F9F8F4] transition-colors"
-                          >
-                            Add to Cart
-                          </button>
+                          <p>
+                            {item.description || item.category || 'Popular choice'}
+                          </p>
                         </div>
                       </div>
                     );
@@ -988,74 +1179,145 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
                 key={category.id}
                 id={category.id}
                 data-category-id={category.id}
-                className="scroll-mt-28"
+                className="scroll-mt-36"
               >
-                <div className="mb-4">
-                  <h2 className="text-3xl md:text-4xl font-serif italic tracking-tight">
+                <div className="mb-6 mt-4 text-center md:text-left">
+                  <h2 className="text-3xl md:text-5xl font-serif italic tracking-tight">
                     {category.label}
                   </h2>
                 </div>
 
-                <div>
-                  {category.items.map(item => (
-                    <div
-                      key={item.id}
-                      className="flex items-center justify-between gap-4 py-3 border-b border-black/10 hover:bg-black/5 transition-colors"
-                    >
-                      <div className="flex-1">
-                        <span className="font-medium text-[15px] font-serif">
-                          {item.name}
-                        </span>
-                      </div>
+                <div className="space-y-16">
+                  {category.subCategories.length > 0 ? (
+                    category.subCategories.map(subCategory => (
+                      <div key={subCategory.id}>
+                        <h3 className="text-xl md:text-2xl font-serif italic text-black/70 mb-8 border-b border-black/5 pb-2 inline-block pr-8">
+                          {subCategory.title}
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-10">
+                          {subCategory.items.map(item => {
+                            const fullItem = menuItems.find(m => m.id === item.id) || item as any;
+                            const description = fullItem.description || fullItem.category || '';
+                            const isVeg = isVegetarian(fullItem);
 
-                      <div className="flex items-center gap-4">
-                        <span className="text-sm font-semibold font-sans">
-                          ₹{item.price}
-                        </span>
-                        <button
-                          onClick={() => handleAddToCart(category, item)}
-                          className="px-4 py-2 text-[10px] uppercase tracking-[0.3em] font-sans border border-black/40 rounded-full bg-white hover:bg-[#0a0a0a] hover:text-[#F9F8F4] transition-colors"
-                        >
-                          Add to Cart
-                        </button>
+                            return (
+                              <div
+                                key={item.id}
+                                className="flex flex-col pb-4 border-b border-black/10 group"
+                              >
+                                {/* Top Row: Name and Price/Add */}
+                                <div className="flex items-baseline justify-between mb-2">
+                                  <h3 className="text-xl md:text-2xl font-serif text-[#1A1A1A] leading-tight tracking-tight">
+                                    {item.name}
+                                  </h3>
+                                  <div className="flex items-center gap-4 shrink-0 pl-4">
+                                    <span className="text-lg font-medium font-sans text-[#1A1A1A]">
+                                      ₹{item.price}
+                                    </span>
+                                    <button
+                                      onClick={() => handleAddToCart(category, item)}
+                                      className="w-6 h-6 flex items-center justify-center rounded-full border border-[#B5693E] text-[#B5693E] 
+                                                  hover:bg-[#B5693E] hover:text-white transition-all duration-300"
+                                      aria-label="Add to cart"
+                                    >
+                                      <span className="text-lg leading-none mb-0.5">+</span>
+                                    </button>
+                                  </div>
+                                </div>
+
+                                {/* Bottom Row: Icon + Description */}
+                                <div className="flex items-start text-sm text-zinc-500 font-sans font-light leading-relaxed">
+                                  <span className="inline-flex shrink-0 translate-y-[3px] mr-2">
+                                    {isVeg ? <VegIcon /> : <NonVegIcon />}
+                                  </span>
+                                  <p>
+                                    {description}
+                                  </p>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
+                    ))
+                  ) : (
+                    // Fallback for items without valid sub-categories or if logic fails
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-10">
+                      {category.items.map(item => {
+                        const fullItem = menuItems.find(m => m.id === item.id) || item as any;
+                        const description = fullItem.description || fullItem.category || '';
+                        const isVeg = isVegetarian(fullItem);
+
+                        return (
+                          <div
+                            key={item.id}
+                            className="flex flex-col pb-4 border-b border-black/10 group"
+                          >
+                            <div className="flex items-baseline justify-between mb-2">
+                              <h3 className="text-xl md:text-2xl font-serif text-[#1A1A1A] leading-tight tracking-tight">
+                                {item.name}
+                              </h3>
+                              <div className="flex items-center gap-4 shrink-0 pl-4">
+                                <span className="text-lg font-medium font-sans text-[#1A1A1A]">
+                                  ₹{item.price}
+                                </span>
+                                <button
+                                  onClick={() => handleAddToCart(category, item)}
+                                  className="w-6 h-6 flex items-center justify-center rounded-full border border-[#B5693E] text-[#B5693E] 
+                                              hover:bg-[#B5693E] hover:text-white transition-all duration-300"
+                                  aria-label="Add to cart"
+                                >
+                                  <span className="text-lg leading-none mb-0.5">+</span>
+                                </button>
+                              </div>
+                            </div>
+                            <div className="flex items-start text-sm text-zinc-500 font-sans font-light leading-relaxed">
+                              <span className="inline-flex shrink-0 translate-y-[3px] mr-2">
+                                {isVeg ? <VegIcon /> : <NonVegIcon />}
+                              </span>
+                              <p>{description}</p>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
-                  ))}
+                  )}
                 </div>
               </section>
             ))}
           </div>
         </main>
-      </div>
-
-      {typeof document !== 'undefined' && createPortal(
-        <AnimatePresence>
-          {showBrewDesk && (
-            <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 font-sans">
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-                onClick={() => setShowBrewDesk(false)}
-              />
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                className="relative z-[10000] w-full max-w-lg"
-              >
-                <BrewDeskPopup onClose={() => setShowBrewDesk(false)} onAddToCart={onAddToCart} />
-              </motion.div>
-            </div>
-          )}
-        </AnimatePresence>,
-        document.body
-      )}
+      </div >
+      {
+        typeof document !== 'undefined' && createPortal(
+          <AnimatePresence>
+            {showBrewDesk && (
+              <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 font-sans">
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+                  onClick={() => setShowBrewDesk(false)}
+                />
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                  transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                  className="relative z-[10000] w-full max-w-lg"
+                >
+                  <BrewDeskPopup onClose={() => setShowBrewDesk(false)} onAddToCart={onAddToCart} />
+                </motion.div>
+              </div>
+            )}
+          </AnimatePresence>,
+          document.body
+        )
+      }
 
       <Toast message={toastMessage} />
-    </div>
+    </div >
   );
 };
 
