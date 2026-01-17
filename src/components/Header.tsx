@@ -47,8 +47,8 @@ const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage, cartCount }) =
   const logoFilterClass = isBeigeText ? 'brightness-100' : 'brightness-0';
 
   // MENU BUTTON BACKGROUND:
-  // Brand brown for mobile visibility (as requested)
-  const menuButtonBg = 'bg-[#B5693E] border-[#B5693E] text-white';
+  // Brand brown for mobile visibility (as requested) -> Changed to Beige for Adaptive Filtering
+  const menuButtonBg = 'bg-[#F3EFE0] border-[#F3EFE0] text-black';
 
   // --- SCROLL VISIBILITY LOGIC ---
   const { scrollY } = useScroll();
@@ -66,7 +66,7 @@ const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage, cartCount }) =
     <>
       {/* HEADER CONTAINER (Logo & Cart Only) */}
       <motion.header
-        className={`fixed top-0 left-0 w-full z-40 pointer-events-none transition-all duration-700 ${isFranchise ? 'mix-blend-difference' : ''}`}
+        className="fixed top-0 left-0 w-full z-40 pointer-events-none transition-all duration-700 mix-blend-difference"
       >
         <div
           className={`relative flex items-center justify-between px-6 ${isHome ? 'py-1' : 'pt-2 pb-3'
@@ -82,14 +82,14 @@ const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage, cartCount }) =
               <img
                 src="/media/logo.png"
                 alt="Rabuste Logo"
-                className={`h-16 md:h-20 w-30 object-contain ${logoFilterClass}`}
+                className="h-16 md:h-20 w-30 object-contain brightness-0 invert"
               />
             </button>
           )}
 
           {/* RIGHT SIDE ICONS */}
           {currentPage !== Page.ADMIN && (
-            <div className={`fixed top-4 right-4 md:top-8 md:right-12 z-50 flex items-center space-x-4 md:space-x-6 pointer-events-auto ${textColorClass}`}>
+            <div className="fixed top-4 right-4 md:top-8 md:right-12 z-50 flex items-center space-x-4 md:space-x-6 pointer-events-auto text-[#F3EFE0]">
               {/* Cart Button */}
               <button
                 onClick={() => handleNavigate(Page.CART)}

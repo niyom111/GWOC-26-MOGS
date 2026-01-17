@@ -2,7 +2,7 @@
 import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion as motionBase, AnimatePresence } from 'framer-motion';
-import { Search, Filter, X } from 'lucide-react';
+import { Search, Filter, X, Star } from 'lucide-react';
 import { CoffeeItem } from '../types';
 import { useDataContext } from '../DataContext';
 import BrewDeskPopup from './BrewDeskPopup';
@@ -63,6 +63,7 @@ const MENU_CATEGORIES: Partial<MenuCategory>[] = [
   {
     id: 'robusta-cold-milk',
     label: 'Robusta Specialty (Cold - Milk Based)',
+    subCategories: [],
     group: 'Robusta Specialty',
     items: [
       { id: 'robusta-cold-milk-iced-latte', name: 'Iced Latte', price: 220 },
@@ -81,6 +82,7 @@ const MENU_CATEGORIES: Partial<MenuCategory>[] = [
     id: 'robusta-hot-non-milk',
     label: 'Robusta Specialty (Hot - Non Milk)',
     group: 'Robusta Specialty',
+    subCategories: [],
     items: [
       { id: 'robusta-hot-non-milk-hot-americano', name: 'Hot Americano', price: 150 },
       { id: 'robusta-hot-non-milk-hot-espresso', name: 'Hot Espresso', price: 130 },
@@ -90,6 +92,7 @@ const MENU_CATEGORIES: Partial<MenuCategory>[] = [
     id: 'robusta-hot-milk',
     label: 'Robusta Specialty (Hot - Milk Based)',
     group: 'Robusta Specialty',
+    subCategories: [],
     items: [
       { id: 'robusta-hot-milk-latte', name: 'Hot Latte', price: 190 },
       { id: 'robusta-hot-milk-flat-white', name: 'Hot Flat White', price: 180 },
@@ -101,6 +104,7 @@ const MENU_CATEGORIES: Partial<MenuCategory>[] = [
     id: 'blend-cold-non-milk',
     label: 'Blend (Cold - Non Milk)',
     group: 'Blend',
+    subCategories: [],
     items: [
       { id: 'blend-cold-non-milk-iced-americano', name: 'Iced Americano', price: 150 },
       { id: 'blend-cold-non-milk-iced-espresso', name: 'Iced Espresso', price: 120 },
@@ -121,6 +125,7 @@ const MENU_CATEGORIES: Partial<MenuCategory>[] = [
     id: 'blend-cold-milk',
     label: 'Blend (Cold - Milk Based)',
     group: 'Blend',
+    subCategories: [],
     items: [
       { id: 'blend-cold-milk-iced-latte', name: 'Iced Latte', price: 210 },
       { id: 'blend-cold-milk-affogato', name: 'Affogato', price: 240 },
@@ -135,6 +140,7 @@ const MENU_CATEGORIES: Partial<MenuCategory>[] = [
     id: 'blend-hot-non-milk',
     label: 'Blend (Hot - Non Milk)',
     group: 'Blend',
+    subCategories: [],
     items: [
       { id: 'blend-hot-non-milk-hot-americano', name: 'Hot Americano', price: 140 },
       { id: 'blend-hot-non-milk-hot-espresso', name: 'Hot Espresso', price: 120 },
@@ -144,6 +150,7 @@ const MENU_CATEGORIES: Partial<MenuCategory>[] = [
     id: 'blend-hot-milk',
     label: 'Blend (Hot - Milk Based)',
     group: 'Blend',
+    subCategories: [],
     items: [
       { id: 'blend-hot-milk-latte', name: 'Hot Latte', price: 180 },
       { id: 'blend-hot-milk-flat-white', name: 'Hot Flat White', price: 170 },
@@ -155,6 +162,7 @@ const MENU_CATEGORIES: Partial<MenuCategory>[] = [
     id: 'manual-brew',
     label: 'Manual Brew (Peaberry Special)',
     group: 'Manual Brew',
+    subCategories: [],
     items: [
       { id: 'manual-brew-classic-cold-brew', name: 'Classic Cold Brew', price: 220 },
       {
@@ -180,6 +188,7 @@ const MENU_CATEGORIES: Partial<MenuCategory>[] = [
     id: 'shakes',
     label: 'Shakes',
     group: 'Shakes',
+    subCategories: [],
     items: [
       { id: 'shake-chocolate', name: 'Chocolate', price: 220 },
       { id: 'shake-biscoff', name: 'Biscoff', price: 250 },
@@ -190,6 +199,7 @@ const MENU_CATEGORIES: Partial<MenuCategory>[] = [
     id: 'tea-cold',
     label: 'Tea (Cold)',
     group: 'Tea',
+    subCategories: [],
     items: [
       { id: 'tea-lemon-ice', name: 'Lemon Ice Tea', price: 210 },
       { id: 'tea-peach-ice', name: 'Peach Ice Tea', price: 210 },
@@ -201,6 +211,7 @@ const MENU_CATEGORIES: Partial<MenuCategory>[] = [
     id: 'food-bagels',
     label: 'Food & Bagels',
     group: 'Food & Bagels',
+    subCategories: [],
     items: [
       { id: 'food-fries', name: 'Fries', price: 150 },
       { id: 'food-wedges', name: 'Potato Wedges', price: 170 },
@@ -238,8 +249,12 @@ interface TrendingItem {
   recentOrderCount: number;
 }
 
+interface MenuPageProps {
+  onAddToCart: (item: CoffeeItem) => void;
+}
+
 const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
-  const { menuItems } = useDataContext();
+  const { menuItems } = useDataContext(); // Removed valid addToCart check since it comes from props now
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState<'default' | 'price-asc' | 'price-desc'>('default');
   const [activeCategoryId, setActiveCategoryId] = useState<string>('');
@@ -247,6 +262,18 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
   const toastTimeoutRef = useRef<number | null>(null);
   const activeCategoryTimeoutRef = useRef<number | null>(null);
   const [showBrewDesk, setShowBrewDesk] = useState(false);
+
+  const handleAddToCart = (item: CoffeeItem) => {
+    onAddToCart(item);
+    // Show toast
+    setToastMessage(`${item.name} added to cart`);
+    if (toastTimeoutRef.current) {
+      window.clearTimeout(toastTimeoutRef.current);
+    }
+    toastTimeoutRef.current = window.setTimeout(() => {
+      setToastMessage(null);
+    }, 3000);
+  };
   const [trendingItems, setTrendingItems] = useState<TrendingItem[]>([]);
 
   useEffect(() => {
@@ -476,13 +503,13 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
     const group = item.sub_category_name || (item.category ? item.category.split('(')[0].trim() : (item.category_name || 'Specialty'));
     return {
       id: item.id,
-      name: item.name,
+      name: item.name.replace(/_/g, ' '),
       notes: group,
       caffeine: item.caffeine || 'Medium',
       intensity: 4, // Default or derived
       image: item.image || '/media/menu-placeholder.jpg',
       price: item.price,
-      description: item.description || item.name
+      description: (item.description || item.name).replace(/_/g, ' ')
     };
   };
   // -----------------------------
@@ -526,137 +553,67 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
   };
 
   const handleCategoryClick = (id: string) => {
+    setSearch('');
     setActiveCategoryId(id);
-    const el = document.getElementById(id);
-    /* 
-       With tab layout, scrolling might not be needed if we render only one, 
-       but if we scroll to top of list it's fine. 
-       Actually with Tabs, we are likely replacing the content.
-       So scroll to top of container? 
-       Let's keep scroll but remove timeout.
-    */
-    /* window.scrollTo({ top: 0, behavior: 'smooth' }); // Optional */
+
+    // Smooth scroll to the section after a short delay to ensure DOM update
+    setTimeout(() => {
+      const element = document.getElementById(id);
+      if (element) {
+        const yOffset = -180; // Offset for sticky navigation/header
+        const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
+        window.scrollTo({ top: y, behavior: 'smooth' });
+      }
+    }, 100);
   };
 
-  const handleAddToCart = (category: MenuCategory, item: MenuItem) => {
-    const cartItem: CoffeeItem = {
-      id: item.id,
-      name: item.name,
-      notes: category.group,
-      caffeine: 'High',
-      intensity: 4,
-      image: '/media/menu-placeholder.jpg',
-      price: item.price,
-      description: `${category.label} - ${item.name}`,
-    };
 
-    onAddToCart(cartItem);
-    setToastMessage(`${item.name} added to cart`);
 
-    if (toastTimeoutRef.current) {
-      window.clearTimeout(toastTimeoutRef.current);
-    }
-    toastTimeoutRef.current = window.setTimeout(() => {
-      setToastMessage(null);
-    }, 1500);
-  };
-
-  // Fuzzy search helper - checks if query is similar to text (handles typos)
+  // Fuzzy search helper - checks if query is similar to text (handles typos and multi-words)
   const fuzzyMatch = (text: string, query: string): boolean => {
-    const textLower = text.toLowerCase();
-    const queryLower = query.toLowerCase();
+    // Normalize: remove accents and lowercase
+    const normalize = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
-    // Exact substring match (highest priority)
-    if (textLower.includes(queryLower)) return true;
+    const t = normalize(text);
+    const q = normalize(query);
 
-    // If query is too short, only do exact match
-    if (queryLower.length < 3) return false;
+    const queryWords = q.split(/\s+/).filter(w => w.length > 0);
+    if (queryWords.length === 0) return false;
 
-    // Normalize: remove special characters and spaces
-    const normalizedText = textLower.replace(/[^a-z0-9]/g, '');
-    const normalizedQuery = queryLower.replace(/[^a-z0-9]/g, '');
+    // Create a version with only alphanumeric and spaces for easy word logic
+    const tClean = t.replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ');
+    const tWords = tClean.split(/\s+/).filter(w => w.length > 0);
 
-    // Check if normalized query is a substring of normalized text
-    if (normalizedText.includes(normalizedQuery)) return true;
+    // 1. Exact phrase match at word boundaries (e.g., "iced latte")
+    const escapedQ = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const phraseRegex = new RegExp(`\\b${escapedQ}\\b`);
+    if (phraseRegex.test(tClean)) return true;
 
-    // Only do fuzzy matching for queries 4+ characters to avoid false matches
-    if (normalizedQuery.length < 4) return false;
-
-    // Split into words for word-by-word matching (prevents "tea" matching "coffee")
-    const textWords = textLower.split(/[\s\-_]+/).filter(w => w.length > 0);
-    const queryWords = queryLower.split(/[\s\-_]+/).filter(w => w.length > 0);
-
-    // Check if ALL query words match at least one text word (AND logic)
-    for (const queryWord of queryWords) {
-      if (queryWord.length < 3) continue; // Skip very short words
-
-      let wordMatched = false;
-
-      for (const textWord of textWords) {
-        // Exact match in word
-        if (textWord.includes(queryWord)) {
-          wordMatched = true;
-          break;
-        }
-
-        // Only do fuzzy matching if words are similar length (within 2 chars)
-        if (Math.abs(textWord.length - queryWord.length) > 2) continue;
-
-        // Check if words share the same first 2-3 characters (prefix match)
-        // This prevents "tea" from matching "coffee" (different prefixes)
-        const minPrefix = Math.min(3, Math.min(textWord.length, queryWord.length));
-        if (textWord.substring(0, minPrefix) !== queryWord.substring(0, minPrefix)) {
-          continue; // Different words, skip fuzzy matching
-        }
-
-        // For words that share a prefix, allow common typos
-        const normalizedTextWord = textWord.replace(/[^a-z0-9]/g, '');
-        const normalizedQueryWord = queryWord.replace(/[^a-z0-9]/g, '');
-
-        // Common character swaps only for similar words
-        const commonSwaps: [string, string][] = [
-          ['ee', 'e'], ['e', 'ee'], // coffee/cofee
-          ['a', 'e'], ['e', 'a'], // bagel/begel
-        ];
-
-        for (const [from, to] of commonSwaps) {
-          const swappedQuery = normalizedQueryWord.replace(new RegExp(from, 'g'), to);
-          if (normalizedTextWord.includes(swappedQuery) || swappedQuery.includes(normalizedTextWord)) {
-            wordMatched = true;
-            break;
-          }
-        }
-        if (wordMatched) break;
-
-        // For longer words (5+ chars), allow 1 character difference if they're very similar
-        if (normalizedQueryWord.length >= 5 && normalizedTextWord.length >= 5) {
-          // Count matching characters in order
-          let matchingChars = 0;
-          let textIndex = 0;
-          for (let i = 0; i < normalizedQueryWord.length && textIndex < normalizedTextWord.length; i++) {
-            if (normalizedTextWord[textIndex] === normalizedQueryWord[i]) {
-              matchingChars++;
-              textIndex++;
-            } else if (textIndex + 1 < normalizedTextWord.length &&
-              normalizedTextWord[textIndex + 1] === normalizedQueryWord[i]) {
-              // Allow skipping one character
-              textIndex += 2;
-              matchingChars++;
-            }
-          }
-          // Only match if at least 80% of query characters match (very strict)
-          const matchRatio = matchingChars / normalizedQueryWord.length;
-          if (matchRatio >= 0.8) {
-            wordMatched = true;
-            break;
-          }
-        }
+    // 2. Multi-word AND logic (check each word of query)
+    return queryWords.every(qw => {
+      // For very short query words (1-2 chars), only allow exact word match
+      if (qw.length < 3) {
+        return tWords.includes(qw);
       }
 
-      if (!wordMatched) return false;
-    }
+      // Check for exact word match or prefix match
+      // This allows "tea" to match "tea" or "teapot" but NOT "instead" or "steamed"
+      const hasPrefixMatch = tWords.some(tw => tw === qw || tw.startsWith(qw));
+      if (hasPrefixMatch) return true;
 
-    return true;
+      // 3. Fuzzy match for longer words (allow small typos)
+      if (qw.length >= 4) {
+        return tWords.some(tw => {
+          // Words must be somewhat similar in length
+          if (Math.abs(tw.length - qw.length) > 2) return false;
+          // Only match if they share the same first 2 letters to avoid false positives
+          if (tw.substring(0, 2) !== qw.substring(0, 2)) return false;
+          return getSimilarity(tw, qw) > 0.8;
+        });
+      }
+
+      return false;
+    });
   };
 
   // ALL CATEGORIES (for Sidebar) - independent of search
@@ -680,7 +637,7 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
       const rawLower = rawCategory.toLowerCase();
 
       if (item.category_name) {
-        mainCategoryLabel = item.category_name.toUpperCase();
+        mainCategoryLabel = item.category_name.toUpperCase().replace(/_/g, ' ');
       } else {
         // Fallback Heuristics
         if (rawLower.includes('robusta') || rawLower.includes('blend') || rawLower.includes('manual brew') || rawLower.includes('coffee') || rawLower.includes('espresso') || rawLower.includes('latte')) {
@@ -703,7 +660,7 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
       // --- SUB CATEGORY DETECTION ---
       let subCategoryLabel = 'General';
       if (item.sub_category_name) {
-        subCategoryLabel = item.sub_category_name;
+        subCategoryLabel = item.sub_category_name.replace(/_/g, ' ');
       } else {
         // Extract from parenthesis or legacy group
         // e.g. "Robusta Specialty (Cold - Non Milk)" -> "Robusta Specialty"
@@ -711,7 +668,7 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
         // "Manual Brew (Peaberry...)" -> "Manual Brew"
         const split = rawCategory.split('(');
         if (split.length > 0) {
-          subCategoryLabel = split[0].trim();
+          subCategoryLabel = split[0].trim().replace(/_/g, ' ');
         }
       }
 
@@ -782,79 +739,72 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
     // or use a separate effect. For now, let's keep logic pure here.
     // Actually, setting state in useMemo is bad. Let's do suggestion check after filtering.
 
-    // If no search query, return filter by activeCategoryId
-    if (!query) {
-      if (activeCategoryId) {
-        return allCategories.filter(c => c.id === activeCategoryId);
-      }
-      return allCategories;
+    // 1. First, select the base categories (either all or specific active one)
+    let baseCategories = allCategories;
+    if (activeCategoryId && activeCategoryId !== 'all') { // Added 'all' check just in case
+      baseCategories = allCategories.filter(c => c.id === activeCategoryId);
     }
 
-    const categories = allCategories.map(cat => ({ ...cat, items: [] as MenuItem[] })); // Deep clone structure with empty items
+    // 2. Apply Search Filter if query exists
+    let processedCategories = baseCategories;
 
-    // We also need to map items back from allCategories structure or re-filter menuItems.
-    // Re-filtering menuItems is safer for search.
-
-    const matchedCategoriesMap = new Map<string, MenuCategory>();
-    // Pre-fill map from allCategories to keep order and metadata
-    allCategories.forEach(c => matchedCategoriesMap.set(c.label, { ...c, items: [] }));
-
-    let hasExactMatches = false;
-
-    menuItems.forEach(item => {
-      // duplicates logic from above but that's fine for safety
-      if (!item.name || item.price == null || !item.id) return;
-      const rawCategory = item.category || item.category_legacy || item.category_name || '';
-      const categoryStr = rawCategory.trim();
-      if (!categoryStr) return;
-      const canonicalCategory = categoryStr.toUpperCase();
-
-      // Search
-      const nameStr = (item.name ?? '').toLowerCase();
-      const groupSource = item.sub_category_name || rawCategory;
-      const group = (groupSource.split('(')[0] ?? '').trim();
-
-      // Improved Search Logic:
-      // 1. Check strict substring/fuzzy match
-      const combinedText = `${nameStr} ${categoryStr.toLowerCase()} ${group.toLowerCase()}`;
-
-      if (fuzzyMatch(combinedText, query)) {
-        hasExactMatches = true;
-        if (matchedCategoriesMap.has(canonicalCategory)) {
-          matchedCategoriesMap.get(canonicalCategory)!.items.push({
-            id: item.id,
-            name: item.name,
-            price: item.price
+    if (query) {
+      processedCategories = baseCategories.map(category => {
+        // Deep clone subcategories and filter their items
+        const filteredSubCategories = category.subCategories.map(sub => {
+          const filteredItems = sub.items.filter(item => {
+            const fullItem = menuItems.find(m => m.id === item.id) || item as any;
+            const nameStr = (fullItem.name ?? '').toLowerCase();
+            const categoryStr = (fullItem.category || fullItem.category_legacy || fullItem.category_name || '').toLowerCase();
+            const groupStr = (fullItem.sub_category_name || '').toLowerCase();
+            const combinedText = `${nameStr} ${categoryStr} ${groupStr}`;
+            return fuzzyMatch(combinedText, query);
           });
-        }
-      }
-    });
+          return { ...sub, items: filteredItems };
+        }).filter(sub => sub.items.length > 0);
 
-    // If we have matches, great. If not, check "Did you mean?"
-    // We need to look for a potential match in all items if result is empty OR if matches are weak?
-    // Requirement: "while searching... if there is under 60% similarity... did you mean"
-    // This implies we check similarity against available items.
+        // Also filter category.items (flat fallback)
+        const filteredFlatItems = category.items.filter(item => {
+          const fullItem = menuItems.find(m => m.id === item.id) || item as any;
+          const nameStr = (fullItem.name ?? '').toLowerCase();
+          const categoryStr = (fullItem.category || fullItem.category_legacy || fullItem.category_name || '').toLowerCase();
+          const combinedText = `${nameStr} ${categoryStr}`;
+          return fuzzyMatch(combinedText, query);
+        });
 
-    // Let's filter out empty categories
-    let results = Array.from(matchedCategoriesMap.values()).filter(c => c.items.length > 0);
-
-    // If NO search query, treat as Tabs: Filter by activeCategoryId
-    if (!query && activeCategoryId) {
-      results = results.filter(c => c.id === activeCategoryId);
+        return {
+          ...category,
+          subCategories: filteredSubCategories,
+          items: filteredFlatItems
+        };
+      }).filter(category => category.subCategories.length > 0 || category.items.length > 0);
     }
 
-    // Sort logic
+    // 3. Apply Sorting (Always applies, even if no search)
     if (sortBy === 'price-asc' || sortBy === 'price-desc') {
-      const sorted = results.map(category => {
-        const sortedItems = [...category.items].sort((a, b) =>
-          sortBy === 'price-asc' ? a.price - b.price : b.price - a.price
-        );
-        return { ...category, items: sortedItems };
+      processedCategories = processedCategories.map(category => {
+        // Sort items in subcategories
+        const sortedSubCategories = category.subCategories.map(sub => ({
+          ...sub,
+          items: [...sub.items].sort((a, b) => {
+            const priceA = Number(a.price) || 0;
+            const priceB = Number(b.price) || 0;
+            return sortBy === 'price-asc' ? priceA - priceB : priceB - priceA;
+          })
+        }));
+
+        // Sort flat items
+        const sortedItems = [...category.items].sort((a, b) => {
+          const priceA = Number(a.price) || 0;
+          const priceB = Number(b.price) || 0;
+          return sortBy === 'price-asc' ? priceA - priceB : priceB - priceA;
+        });
+
+        return { ...category, subCategories: sortedSubCategories, items: sortedItems };
       });
-      return sorted;
     }
 
-    return results;
+    return processedCategories;
 
   }, [allCategories, menuItems, search, sortBy, activeCategoryId]);
 
@@ -894,10 +844,30 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
   }, [search, filteredCategories, menuItems]);
 
   return (
-    <div className="pt-24 md:pt-32 pb-40 px-6 md:px-8 bg-[#F3EFE0] min-h-screen">
+    <motion.div
+      initial="hidden"
+      animate="visible"
+      variants={{
+        hidden: { opacity: 0 },
+        visible: {
+          opacity: 1,
+          transition: {
+            staggerChildren: 0.1,
+            delayChildren: 0.1
+          }
+        }
+      }}
+      className="pt-24 md:pt-32 pb-40 px-6 md:px-8 bg-[#F3EFE0] min-h-screen"
+    >
       <div className="max-w-7xl mx-auto">
         {/* NEW HEADER - Community Style (Wide) */}
-        <header className="mb-20 md:mb-32 flex flex-col md:flex-row justify-between items-end gap-6 md:gap-10">
+        <motion.header
+          variants={{
+            hidden: { opacity: 0, y: 20 },
+            visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] } }
+          }}
+          className="mb-20 md:mb-32 flex flex-col md:flex-row justify-between items-end gap-6 md:gap-10"
+        >
           <div>
             <motion.p
               initial={{ opacity: 0 }}
@@ -917,7 +887,7 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
           <p className="max-w-xs text-[14px] md:text-s font-sans text-black uppercase tracking-widest leading-relaxed text-right italic">
             "Flavor is a language, and every dish tells a story of origin and craft."
           </p>
-        </header>
+        </motion.header>
       </div>
 
       <div className="max-w-7xl mx-auto">
@@ -925,23 +895,43 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
             Or maybe remove since user asked for Community layout which doesn't have sticky nav typically.
             But Menu is long... let's keep it but make it blend in or cleaner.
         */}
-        <div className="sticky top-24 z-30 bg-[#F3EFE0]/95 backdrop-blur-sm py-4 mb-10 -mx-6 px-6 md:mx-0 md:px-0 border-b border-black/5">
+        {/* Mobile Navigation (Sticky Top) - Refined: Smooth Entry, Beige, Unbold, Soft Mask */}
+        <motion.div
+          variants={{
+            hidden: { opacity: 0, y: -10 },
+            visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut", delay: 0.4 } }
+          }}
+          className="sticky top-24 z-30 bg-[#F3EFE0]/85 backdrop-blur-md py-5 mb-12 -mx-6 px-6 md:mx-0 md:px-0"
+        >
           <div className="flex overflow-x-auto gap-3 pb-2 no-scrollbar snap-x justify-start md:justify-center">
             {/* Removed All Button */}
-            {allCategories.map(cat => (
-              <button
-                key={cat.id}
-                onClick={() => handleCategoryClick(cat.id)}
-                className={`shrink-0 px-6 py-3 rounded-full text-xs uppercase tracking-[0.2em] font-bold font-sans border transition-colors snap-start ${activeCategoryId === cat.id
-                  ? 'bg-[#B5693E] text-[#F9F8F4] border-[#B5693E]'
-                  : 'bg-white border-black/10 text-zinc-600'
-                  }`}
-              >
-                {cat.label}
-              </button>
-            ))}
+            {allCategories.map(cat => {
+              const isActive = activeCategoryId === cat.id;
+              return (
+                <button
+                  key={cat.id}
+                  onClick={() => handleCategoryClick(cat.id)}
+                  className={`relative shrink-0 px-8 py-3 rounded-full text-base font-bold font-sans border transition-colors snap-start ${isActive
+                    ? 'text-[#F9F8F4] border-[#B5693E]'
+                    : 'bg-white border-black/80 text-black hover:bg-black/5'
+                    }`}
+                >
+                  {isActive && (
+                    <motion.div
+                      layoutId="activeCategory"
+                      className="absolute inset-0 bg-[#B5693E] rounded-full"
+                      initial={false}
+                      transition={{ type: "spring", stiffness: 350, damping: 30 }}
+                    />
+                  )}
+                  <span className="relative z-10 capitalize tracking-wide">
+                    {cat.label.toLowerCase()}
+                  </span>
+                </button>
+              );
+            })}
           </div>
-        </div>
+        </motion.div>
 
 
         {/* Right Content -> Main Content (Centered) */}
@@ -957,54 +947,14 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
                   value={search}
                   onChange={e => setSearch(e.target.value)}
                   placeholder="Search menu..."
-                  className="w-full pl-8 pr-4 py-3 bg-transparent border-b border-black/10 text-lg font-serif italic text-[#1A1A1A] placeholder:text-zinc-400 outline-none focus:border-black/40 transition-all"
+                  className="w-full pl-8 pr-4 py-3 bg-transparent border-b border-black/10 text-lg font-serif italic text-black placeholder:text-black/60 outline-none focus:border-black/40 transition-all"
                 />
               </div>
 
               {/* Right: Actions Cluster */}
               <div className="flex flex-col md:flex-row md:items-center gap-6 md:gap-8 xl:gap-10">
 
-                {/* 1. Sort Dropdown */}
-                <div className="flex items-center gap-3 group cursor-pointer">
-                  <Filter className="w-4 h-4 text-zinc-400 group-hover:text-black transition-colors" />
-                  <div className="relative">
-                    <select
-                      value={sortBy}
-                      onChange={e => setSortBy(e.target.value as any)}
-                      className="appearance-none bg-transparent py-2 pr-8 text-xs font-sans uppercase tracking-[0.2em] text-zinc-600 outline-none cursor-pointer group-hover:text-black transition-colors"
-                    >
-                      <option value="default">Sort by</option>
-                      <option value="price-asc">Price: Low to High</option>
-                      <option value="price-desc">Price: High to Low</option>
-                    </select>
-                  </div>
-                </div>
-
-                {/* 2. Dietary Key (Inline) */}
-                <div className="flex items-center gap-4 text-[10px] font-sans text-zinc-500 uppercase tracking-widest border-l border-black/10 pl-0 md:pl-8 xl:border-l-0 xl:pl-0">
-                  <span className="hidden md:inline text-zinc-300">Key:</span>
-
-                  <div className="flex items-center gap-2" title="Jain">
-                    <span className="inline-flex items-center justify-center bg-[#E69F31] text-white w-4 h-4 text-[9px] font-bold rounded-[2px]">J</span>
-                    <span className="hidden lg:inline">Jain</span>
-                  </div>
-
-                  <div className="flex items-center gap-2" title="Vegetarian">
-                    <div className="inline-flex items-center justify-center border border-green-600 p-[2px] w-4 h-4 rounded-[2px]">
-                      <div className="w-2 h-2 rounded-full bg-green-600"></div>
-                    </div>
-                    <span className="hidden lg:inline">Veg</span>
-                  </div>
-
-                  <div className="flex items-center gap-2" title="Non-Vegetarian">
-                    <div className="inline-flex items-center justify-center border border-red-600 p-[2px] w-4 h-4 rounded-[2px]">
-                      <div className="w-2 h-2 rounded-full bg-red-600"></div>
-                    </div>
-                    <span className="hidden lg:inline">Non-Veg</span>
-                  </div>
-                </div>
-
-                {/* 3. CTA Button */}
+                {/* 1. CTA Button (Now First) */}
                 <button
                   type="button"
                   onClick={() => setShowBrewDesk(true)}
@@ -1012,6 +962,51 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
                 >
                   Help me choose
                 </button>
+
+                {/* 2. Dietary Key & Cafe Special */}
+                <div className="flex items-center gap-4 text-xs font-sans text-black uppercase tracking-widest border-l border-black/10 pl-0 md:pl-8 xl:border-l-0 xl:pl-0">
+                  <span className="hidden md:inline text-black">Key:</span>
+
+                  <div className="flex items-center gap-1.5" title="Jain">
+                    <span className="inline-flex items-center justify-center bg-[#E69F31] text-white w-5 h-5 text-[10px] font-bold rounded-[2px] shrink-0">J</span>
+                    <span className="hidden lg:inline">Jain</span>
+                  </div>
+
+                  <div className="flex items-center gap-1.5" title="Vegetarian">
+                    <div className="inline-flex items-center justify-center border border-green-600 p-[2px] w-5 h-5 rounded-[2px] shrink-0">
+                      <div className="w-2.5 h-2.5 rounded-full bg-green-600"></div>
+                    </div>
+                    <span className="hidden lg:inline">Veg</span>
+                  </div>
+
+                  <div className="flex items-center gap-1.5" title="Non-Vegetarian">
+                    <div className="inline-flex items-center justify-center border border-red-600 p-[2px] w-5 h-5 rounded-[2px] shrink-0">
+                      <div className="w-2.5 h-2.5 rounded-full bg-red-600"></div>
+                    </div>
+                    <span className="hidden lg:inline whitespace-nowrap">Non-Veg</span>
+                  </div>
+
+                  <div className="flex items-center gap-1.5" title="Cafe Special">
+                    <Star className="w-5 h-5 text-[#FFD700] fill-[#FFD700]" />
+                    <span className="hidden lg:inline whitespace-nowrap font-medium text-[#B5693E]">Cafe Special</span>
+                  </div>
+                </div>
+
+                {/* 3. Sort Dropdown (Now Last) */}
+                <div className="flex items-center gap-3 group cursor-pointer">
+                  <Filter className="w-4 h-4 text-black group-hover:text-black transition-colors" />
+                  <div className="relative">
+                    <select
+                      value={sortBy}
+                      onChange={e => setSortBy(e.target.value as any)}
+                      className="appearance-none bg-transparent py-2 pr-8 text-xs font-sans uppercase tracking-[0.2em] text-black outline-none cursor-pointer group-hover:text-black transition-colors"
+                    >
+                      <option value="default">Sort by</option>
+                      <option value="price-asc">Price: Low to High</option>
+                      <option value="price-desc">Price: High to Low</option>
+                    </select>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -1021,8 +1016,8 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
             {/* Did You Mean Suggestion */}
             {search && didYouMean && (
               <div className="mb-2">
-                <p className="text-sm font-sans text-zinc-600">
-                  Did you mean <button onClick={() => setSearch(didYouMean)} className="font-semibold underline text-black hover:text-zinc-800">{didYouMean}</button>?
+                <p className="text-sm font-sans text-black">
+                  Did you mean <button onClick={() => setSearch(didYouMean)} className="font-semibold underline text-black hover:text-black/80">{didYouMean}</button>?
                 </p>
               </div>
             )}
@@ -1031,10 +1026,10 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
             {(!search && recommendedItems.length > 0) && (
               <section id="recommended-for-you" className="scroll-mt-36 mb-16">
                 <div className="mb-8 text-center md:text-left">
-                  <p className="text-[10px] uppercase tracking-[0.4em] text-black font-sans mb-1">
+                  <p className="text-[10px] uppercase tracking-[0.4em] text-black font-stardom mb-1">
                     picked for you
                   </p>
-                  <h2 className="text-3xl md:text-5xl font-serif italic tracking-tight text-black">
+                  <h2 className="text-5xl md:text-7xl font-stardom italic tracking-tight text-black">
                     Recommended
                   </h2>
                 </div>
@@ -1048,11 +1043,11 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
                       >
                         {/* Top Row: Name and Price/Add */}
                         <div className="flex items-baseline justify-between mb-2">
-                          <h3 className="text-xl md:text-2xl font-serif text-[#1A1A1A] leading-tight tracking-tight">
+                          <h3 className="text-2xl md:text-3xl font-serif text-[#1A1A1A] leading-tight tracking-tight">
                             {item.name}
                           </h3>
                           <div className="flex items-center gap-4 shrink-0 pl-4">
-                            <span className="text-lg font-medium font-sans text-[#1A1A1A]">
+                            <span className="text-xl md:text-2xl font-medium font-sans text-[#1A1A1A]">
                               ₹{item.price}
                             </span>
                             <button
@@ -1066,18 +1061,19 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
                                   setToastMessage(null);
                                 }, 1500);
                               }}
-                              className="w-6 h-6 flex items-center justify-center rounded-full border border-[#B5693E] text-[#B5693E] 
-                                         hover:bg-[#B5693E] hover:text-white transition-all duration-300"
+                              className="w-10 h-10 flex items-center justify-center rounded-full border border-[#B5693E] text-[#B5693E] 
+                                         hover:bg-[#B5693E] hover:text-white transition-all duration-300 hover:-translate-y-1 hover:rotate-90"
                               aria-label="Add to cart"
                             >
-                              <span className="text-lg leading-none mb-0.5">+</span>
+                              <span className="text-3xl leading-none mb-1">+</span>
                             </button>
                           </div>
                         </div>
 
                         {/* Bottom Row: Icon + Description */}
-                        <div className="flex items-start text-sm text-zinc-500 font-sans font-light leading-relaxed">
-                          <span className="inline-flex shrink-0 translate-y-[3px] mr-2">
+                        {/* Bottom Row: Icon + Description */}
+                        <div className="flex items-start text-base md:text-lg text-black font-sans font-light leading-relaxed">
+                          <span className="inline-flex shrink-0 translate-y-[5px] mr-2">
                             {isVeg ? <VegIcon /> : <NonVegIcon />}
                           </span>
                           <p>
@@ -1098,7 +1094,7 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
                 className="scroll-mt-36"
               >
                 <div className="mb-8 text-center md:text-left">
-                  <h2 className="text-3xl md:text-5xl font-serif italic tracking-tight">
+                  <h2 className="text-5xl md:text-7xl font-stardom italic tracking-tight">
                     Trending Now
                   </h2>
                 </div>
@@ -1132,11 +1128,11 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
                       >
                         {/* Top Row: Name and Price/Add */}
                         <div className="flex items-baseline justify-between mb-2">
-                          <h3 className="text-xl md:text-2xl font-serif text-[#1A1A1A] leading-tight tracking-tight">
+                          <h3 className="text-2xl md:text-3xl font-serif text-[#1A1A1A] leading-tight tracking-tight">
                             {item.name}
                           </h3>
                           <div className="flex items-center gap-4 shrink-0 pl-4">
-                            <span className="text-lg font-medium font-sans text-[#1A1A1A]">
+                            <span className="text-xl md:text-2xl font-medium font-sans text-[#1A1A1A]">
                               ₹{item.price}
                             </span>
                             <button
@@ -1150,18 +1146,19 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
                                   setToastMessage(null);
                                 }, 1500);
                               }}
-                              className="w-6 h-6 flex items-center justify-center rounded-full border border-[#B5693E] text-[#B5693E] 
-                                         hover:bg-[#B5693E] hover:text-white transition-all duration-300"
+                              className="w-10 h-10 flex items-center justify-center rounded-full border border-[#B5693E] text-[#B5693E] 
+                                         hover:bg-[#B5693E] hover:text-white transition-all duration-300 hover:-translate-y-1 hover:rotate-90"
                               aria-label="Add to cart"
                             >
-                              <span className="text-lg leading-none mb-0.5">+</span>
+                              <span className="text-3xl leading-none mb-1">+</span>
                             </button>
                           </div>
                         </div>
 
                         {/* Bottom Row: Icon + Description */}
-                        <div className="flex items-start text-sm text-zinc-500 font-sans font-light leading-relaxed">
-                          <span className="inline-flex shrink-0 translate-y-[3px] mr-2">
+                        {/* Bottom Row: Icon + Description */}
+                        <div className="flex items-start text-base md:text-lg text-black font-sans font-light leading-relaxed">
+                          <span className="inline-flex shrink-0 translate-y-[5px] mr-2">
                             {isVeg ? <VegIcon /> : <NonVegIcon />}
                           </span>
                           <p>
@@ -1182,7 +1179,7 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
                 className="scroll-mt-36"
               >
                 <div className="mb-6 mt-4 text-center md:text-left">
-                  <h2 className="text-3xl md:text-5xl font-serif italic tracking-tight">
+                  <h2 className="text-5xl md:text-7xl font-stardom italic tracking-tight">
                     {category.label}
                   </h2>
                 </div>
@@ -1191,14 +1188,25 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
                   {category.subCategories.length > 0 ? (
                     category.subCategories.map(subCategory => (
                       <div key={subCategory.id}>
-                        <h3 className="text-xl md:text-2xl font-serif italic text-black/70 mb-8 border-b border-black/5 pb-2 inline-block pr-8">
+                        <h3 className="text-3xl md:text-4xl font-stardom italic text-[#B5693E] mb-12 capitalize">
                           {subCategory.title}
                         </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-10">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-20">
                           {subCategory.items.map(item => {
                             const fullItem = menuItems.find(m => m.id === item.id) || item as any;
                             const description = fullItem.description || fullItem.category || '';
                             const isVeg = isVegetarian(fullItem);
+
+                            const cartItem: CoffeeItem = {
+                              id: fullItem.id,
+                              name: fullItem.name,
+                              notes: fullItem.category || '',
+                              caffeine: fullItem.caffeine || 'Medium',
+                              intensity: 4,
+                              image: fullItem.image || '/media/menu-placeholder.jpg',
+                              price: fullItem.price,
+                              description: fullItem.description || fullItem.category || fullItem.name,
+                            };
 
                             return (
                               <div
@@ -1207,27 +1215,27 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
                               >
                                 {/* Top Row: Name and Price/Add */}
                                 <div className="flex items-baseline justify-between mb-2">
-                                  <h3 className="text-xl md:text-2xl font-serif text-[#1A1A1A] leading-tight tracking-tight">
+                                  <h3 className="text-2xl md:text-3xl font-serif text-[#1A1A1A] leading-tight tracking-tight">
                                     {item.name}
                                   </h3>
                                   <div className="flex items-center gap-4 shrink-0 pl-4">
-                                    <span className="text-lg font-medium font-sans text-[#1A1A1A]">
+                                    <span className="text-xl md:text-2xl font-medium font-sans text-[#1A1A1A]">
                                       ₹{item.price}
                                     </span>
                                     <button
-                                      onClick={() => handleAddToCart(category, item)}
-                                      className="w-6 h-6 flex items-center justify-center rounded-full border border-[#B5693E] text-[#B5693E] 
-                                                  hover:bg-[#B5693E] hover:text-white transition-all duration-300"
+                                      onClick={() => handleAddToCart(cartItem)}
+                                      className="w-10 h-10 flex items-center justify-center rounded-full border border-[#B5693E] text-[#B5693E] 
+                                                  hover:bg-[#B5693E] hover:text-white transition-all duration-300 hover:-translate-y-1 hover:rotate-90"
                                       aria-label="Add to cart"
                                     >
-                                      <span className="text-lg leading-none mb-0.5">+</span>
+                                      <span className="text-3xl leading-none mb-1">+</span>
                                     </button>
                                   </div>
                                 </div>
 
                                 {/* Bottom Row: Icon + Description */}
-                                <div className="flex items-start text-sm text-zinc-500 font-sans font-light leading-relaxed">
-                                  <span className="inline-flex shrink-0 translate-y-[3px] mr-2">
+                                <div className="flex items-start text-base md:text-lg text-black font-sans font-light leading-relaxed">
+                                  <span className="inline-flex shrink-0 translate-y-[5px] mr-2">
                                     {isVeg ? <VegIcon /> : <NonVegIcon />}
                                   </span>
                                   <p>
@@ -1242,11 +1250,22 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
                     ))
                   ) : (
                     // Fallback for items without valid sub-categories or if logic fails
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-10">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-16">
                       {category.items.map(item => {
                         const fullItem = menuItems.find(m => m.id === item.id) || item as any;
                         const description = fullItem.description || fullItem.category || '';
                         const isVeg = isVegetarian(fullItem);
+
+                        const cartItem: CoffeeItem = {
+                          id: fullItem.id,
+                          name: fullItem.name,
+                          notes: fullItem.category || '',
+                          caffeine: fullItem.caffeine || 'Medium',
+                          intensity: 4,
+                          image: fullItem.image || '/media/menu-placeholder.jpg',
+                          price: fullItem.price,
+                          description: fullItem.description || fullItem.category || fullItem.name,
+                        };
 
                         return (
                           <div
@@ -1254,25 +1273,25 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
                             className="flex flex-col pb-4 border-b border-black/10 group"
                           >
                             <div className="flex items-baseline justify-between mb-2">
-                              <h3 className="text-xl md:text-2xl font-serif text-[#1A1A1A] leading-tight tracking-tight">
+                              <h3 className="text-2xl md:text-3xl font-serif text-[#1A1A1A] leading-tight tracking-tight">
                                 {item.name}
                               </h3>
                               <div className="flex items-center gap-4 shrink-0 pl-4">
-                                <span className="text-lg font-medium font-sans text-[#1A1A1A]">
+                                <span className="text-xl md:text-2xl font-medium font-sans text-[#1A1A1A]">
                                   ₹{item.price}
                                 </span>
                                 <button
-                                  onClick={() => handleAddToCart(category, item)}
-                                  className="w-6 h-6 flex items-center justify-center rounded-full border border-[#B5693E] text-[#B5693E] 
-                                              hover:bg-[#B5693E] hover:text-white transition-all duration-300"
+                                  onClick={() => handleAddToCart(cartItem)}
+                                  className="w-10 h-10 flex items-center justify-center rounded-full border border-[#B5693E] text-[#B5693E] 
+                                              hover:bg-[#B5693E] hover:text-white transition-all duration-300 hover:-translate-y-1 hover:rotate-90"
                                   aria-label="Add to cart"
                                 >
-                                  <span className="text-lg leading-none mb-0.5">+</span>
+                                  <span className="text-3xl leading-none mb-1">+</span>
                                 </button>
                               </div>
                             </div>
-                            <div className="flex items-start text-sm text-zinc-500 font-sans font-light leading-relaxed">
-                              <span className="inline-flex shrink-0 translate-y-[3px] mr-2">
+                            <div className="flex items-start text-base md:text-lg text-black font-sans font-light leading-relaxed">
+                              <span className="inline-flex shrink-0 translate-y-[5px] mr-2">
                                 {isVeg ? <VegIcon /> : <NonVegIcon />}
                               </span>
                               <p>{description}</p>
@@ -1282,11 +1301,11 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
                       })}
                     </div>
                   )}
-                </div>
-              </section>
+                </div >
+              </section >
             ))}
-          </div>
-        </main>
+          </div >
+        </main >
       </div >
       {
         typeof document !== 'undefined' && createPortal(
@@ -1301,13 +1320,13 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
                   onClick={() => setShowBrewDesk(false)}
                 />
                 <motion.div
-                  initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                  transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                  className="relative z-[10000] w-full max-w-lg"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.3, ease: "easeOut" }}
+                  className="relative z-[10000] w-full max-w-6xl mx-4"
                 >
-                  <BrewDeskPopup onClose={() => setShowBrewDesk(false)} onAddToCart={onAddToCart} />
+                  <BrewDeskPopup onClose={() => setShowBrewDesk(false)} onAddToCart={handleAddToCart} />
                 </motion.div>
               </div>
             )}
@@ -1317,7 +1336,7 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
       }
 
       <Toast message={toastMessage} />
-    </div >
+    </motion.div>
   );
 };
 

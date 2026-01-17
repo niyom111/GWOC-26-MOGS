@@ -307,11 +307,11 @@ const FranchisePage: React.FC = () => {
     };
 
     const itemVariants: Variants = {
-        hidden: { opacity: 0, y: 30 }, // Slide up effect
+        hidden: { opacity: 0, y: 20 },
         visible: {
             opacity: 1,
             y: 0,
-            transition: { duration: 0.6, ease: [0.25, 0.1, 0.25, 1.0] }
+            transition: { duration: 0.5, ease: "easeOut" }
         }
     };
 
@@ -325,7 +325,7 @@ const FranchisePage: React.FC = () => {
                     <motion.video
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 0.8 }}
-                        transition={{ duration: 2, ease: "easeOut" }}
+                        transition={{ duration: 2.5, ease: "easeOut" }} // Slower fade for video
                         autoPlay
                         loop
                         muted
@@ -359,9 +359,10 @@ const FranchisePage: React.FC = () => {
 
                 <div className="relative z-10 max-w-7xl mx-auto px-6 text-center">
                     <motion.div
+                        key="partnership-tag"
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1.0] }}
+                        transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
                         className="mb-8"
                     >
                         <h2 className="text-[10px] md:text-xs font-bold uppercase tracking-[0.4em] text-white/90 font-sans inline-block border-b border-white/30 pb-3">
@@ -371,10 +372,11 @@ const FranchisePage: React.FC = () => {
 
                     <div className="overflow-hidden mb-2 relative">
                         <motion.h1
+                            key="hero-title-1"
                             className="text-[13vw] md:text-[8vw] leading-[0.9] font-serif italic tracking-tighter text-white"
-                            initial={{ opacity: 0, y: 100 }}
+                            initial={{ opacity: 0, y: "100%" }} // Percentage often handles resize better
                             animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 1.2, delay: 0.1, ease: [0.25, 0.1, 0.25, 1.0] }}
+                            transition={{ duration: 1.4, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
                             style={{ willChange: "transform, opacity" }}
                         >
                             Built for
@@ -382,10 +384,11 @@ const FranchisePage: React.FC = () => {
                     </div>
                     <div className="overflow-hidden mb-12 relative pb-4">
                         <motion.h1
+                            key="hero-title-2"
                             className="text-[13vw] md:text-[8vw] leading-[0.9] font-serif italic tracking-tighter text-white"
-                            initial={{ opacity: 0, y: 100 }}
+                            initial={{ opacity: 0, y: "100%" }}
                             animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 1.2, delay: 0.25, ease: [0.25, 0.1, 0.25, 1.0] }}
+                            transition={{ duration: 1.4, delay: 0.35, ease: [0.22, 1, 0.36, 1] }}
                             style={{ willChange: "transform, opacity" }}
                         >
                             Intentionality.
@@ -393,9 +396,10 @@ const FranchisePage: React.FC = () => {
                     </div>
 
                     <motion.p
+                        key="hero-subtitle"
                         initial={{ opacity: 0, y: 30 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 1, delay: 0.5, ease: [0.25, 0.1, 0.25, 1.0] }}
+                        transition={{ duration: 1.2, delay: 0.6, ease: [0.22, 1, 0.36, 1] }}
                         className="text-xl md:text-3xl font-serif italic max-w-3xl mx-auto leading-relaxed text-white/90"
                     >
                         Own a sanctuary of bold Robusta and minimalist design. <br className="hidden md:block" />Join the movement.
@@ -461,7 +465,9 @@ const FranchisePage: React.FC = () => {
                     >
                         {/* Card 1: Space */}
                         <motion.div variants={itemVariants}
-                            className="group bg-white p-8 md:p-10 rounded-xl relative overflow-hidden border border-black/5 transition-all duration-500 hover:scale-105 hover:-translate-y-2 hover:bg-black hover:shadow-2xl"
+                            whileHover={{ scale: 1.02, y: -5 }}
+                            transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                            className="group bg-white p-8 md:p-10 rounded-xl relative overflow-hidden border border-black/5 hover:bg-black hover:shadow-2xl cursor-default"
                         >
                             <h4 className="text-lg md:text-xl font-bold uppercase tracking-[0.2em] text-black group-hover:text-white transition-colors mb-6 font-sans">Space</h4>
                             <p className="text-3xl md:text-5xl font-serif italic mb-6 group-hover:text-white transition-colors">1000 <span className="text-xl font-sans text-zinc-400 not-italic mx-2">-</span> 1500 <span className="text-xs font-sans text-zinc-500 group-hover:text-zinc-400 not-italic block mt-1">sq.ft.</span></p>
@@ -472,7 +478,9 @@ const FranchisePage: React.FC = () => {
 
                         {/* Card 2: Investment */}
                         <motion.div variants={itemVariants}
-                            className="group bg-white p-8 md:p-10 rounded-xl relative overflow-hidden border border-black/5 transition-all duration-500 hover:scale-105 hover:-translate-y-2 hover:bg-black hover:shadow-2xl"
+                            whileHover={{ scale: 1.02, y: -5 }}
+                            transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                            className="group bg-white p-8 md:p-10 rounded-xl relative overflow-hidden border border-black/5 hover:bg-black hover:shadow-2xl cursor-default"
                         >
                             <h4 className="text-lg md:text-xl font-bold uppercase tracking-[0.2em] text-black group-hover:text-white transition-colors mb-6 font-sans">Investment</h4>
                             <p className="text-3xl md:text-5xl font-serif italic mb-6 group-hover:text-white transition-colors">₹35L <span className="text-xl font-sans text-zinc-400 not-italic mx-2">-</span> 50L</p>
@@ -483,7 +491,9 @@ const FranchisePage: React.FC = () => {
 
                         {/* Card 3: Passion */}
                         <motion.div variants={itemVariants}
-                            className="group bg-white p-8 md:p-10 rounded-xl relative overflow-hidden border border-black/5 transition-all duration-500 hover:scale-105 hover:-translate-y-2 hover:bg-black hover:shadow-2xl"
+                            whileHover={{ scale: 1.02, y: -5 }}
+                            transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                            className="group bg-white p-8 md:p-10 rounded-xl relative overflow-hidden border border-black/5 hover:bg-black hover:shadow-2xl cursor-default"
                         >
                             <h4 className="text-lg md:text-xl font-bold uppercase tracking-[0.2em] text-black group-hover:text-white transition-colors mb-6 font-sans">Experience</h4>
                             <p className="text-3xl md:text-5xl font-serif italic mb-6 group-hover:text-white transition-colors">Passion First</p>
