@@ -830,10 +830,20 @@ const FranchisePage: React.FC = () => {
                                 <motion.div
                                     variants={itemVariants}
                                     key={i}
-                                    initial={{ opacity: 0.8, scale: 0.95, backgroundColor: "#000000" }}
-                                    whileInView={{ opacity: 1, scale: 1.03, backgroundColor: "#ffffff" }}
+                                    initial={{ opacity: 0.8, scale: 0.95, backgroundColor: "#ffffff", color: "#000000" }}
+                                    whileInView={{
+                                        opacity: 1,
+                                        scale: 1.03,
+                                        backgroundColor: isDesktop ? "#ffffff" : "#000000",
+                                        color: isDesktop ? "#000000" : "#ffffff"
+                                    }}
                                     viewport={isDesktop ? { once: false, amount: 0.5 } : { once: false, amount: 0.3, margin: "-40% 0px -40% 0px" }}
-                                    whileHover={{ scale: 1.05, y: -5 }}
+                                    whileHover={isDesktop ? {
+                                        scale: 1.05,
+                                        y: -5,
+                                        backgroundColor: "#000000",
+                                        color: "#ffffff"
+                                    } : { scale: 1.05, y: -5 }}
                                     whileTap={{ scale: 0.98 }}
                                     transition={{
                                         type: "spring",
@@ -842,39 +852,25 @@ const FranchisePage: React.FC = () => {
                                         backgroundColor: { duration: 0.5 },
                                         scale: { duration: 0.4 }
                                     }}
-                                    className="flex gap-5 p-5 border border-white/10 rounded-none shadow-md cursor-pointer"
+                                    className="flex gap-5 p-5 border border-black/5 rounded-none shadow-md cursor-pointer"
+                                    style={{ willChange: "background-color, color" }}
                                 >
-                                    <motion.div
-                                        className="w-12 h-12 rounded-full flex items-center justify-center shrink-0"
-                                        initial={{ backgroundColor: "rgba(255,255,255,0.1)", color: "#ffffff" }}
-                                        whileInView={{ backgroundColor: "rgba(0,0,0,0.05)", color: "#000000" }}
-                                        transition={{ duration: 0.5 }}
+                                    <div
+                                        className="w-12 h-12 rounded-full flex items-center justify-center shrink-0 border border-current border-opacity-10 transition-colors duration-500"
                                     >
-                                        <motion.div
-                                            initial={{ color: "#ffffff" }}
-                                            whileInView={{ color: "#000000" }}
-                                            transition={{ duration: 0.5 }}
-                                        >
-                                            <item.icon className="w-5 h-5" />
-                                        </motion.div>
-                                    </motion.div>
+                                        <item.icon className="w-5 h-5" />
+                                    </div>
                                     <div>
-                                        <motion.h4
-                                            className="font-bold font-serif italic mb-2 text-2xl"
-                                            initial={{ color: "#ffffff" }}
-                                            whileInView={{ color: "#000000" }}
-                                            transition={{ duration: 0.5 }}
+                                        <h4
+                                            className="font-bold font-serif italic mb-2 text-2xl transition-colors duration-500"
                                         >
                                             {item.title}
-                                        </motion.h4>
-                                        <motion.p
-                                            className="text-xs font-sans tracking-wide leading-relaxed"
-                                            initial={{ color: "#a1a1aa" }}
-                                            whileInView={{ color: "#52525b" }}
-                                            transition={{ duration: 0.5 }}
+                                        </h4>
+                                        <p
+                                            className="text-xs font-sans tracking-wide leading-relaxed opacity-80 transition-colors duration-500"
                                         >
                                             {item.desc}
-                                        </motion.p>
+                                        </p>
                                     </div>
                                 </motion.div>
                             ))}
