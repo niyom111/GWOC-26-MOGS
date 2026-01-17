@@ -622,10 +622,7 @@ const FranchisePage: React.FC = () => {
                                 Passion First
                             </motion.p>
                             <motion.p
-                                className="text-lg font-sans leading-relaxed border-t pt-6"
-                                initial={{ color: "#000000", borderColor: "rgba(0,0,0,0.1)" }}
-                                whileInView={{ color: "#d4d4d8", borderColor: "rgba(255,255,255,0.2)" }}
-                                transition={{ duration: 0.5 }}
+                                className="text-lg font-sans leading-relaxed border-t pt-6 border-current border-opacity-20 transition-colors duration-500"
                             >
                                 No prior F&B experience needed. A deep commitment to quality and community is mandatory.
                             </motion.p>

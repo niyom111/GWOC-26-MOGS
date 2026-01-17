@@ -83,22 +83,35 @@ const FAQPage: React.FC = () => {
               <motion.div
                 key={index}
                 initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
+                animate={{
+                  opacity: 1,
+                  y: 0,
+                  backgroundColor: isOpen ? '#ffffff' : '#ffffff',
+                  color: isOpen ? '#9B6833' : '#5C4033'
+                }}
+                whileHover={{
+                  scale: 1.02,
+                  backgroundColor: '#000000',
+                  color: '#ffffff'
+                }}
+                transition={{
+                  duration: 0.3,
+                  layout: { duration: 0.3 }
+                }}
                 onClick={() => setOpenIndex(isOpen ? null : index)}
                 className={`
-                  bg-white rounded-xl shadow-sm cursor-pointer overflow-hidden transition-all duration-300
-                  ${isOpen ? 'ring-1 ring-[#9B6833]/20 shadow-md' : 'hover:shadow-md'}
+                  rounded-none shadow-sm cursor-pointer overflow-hidden
+                  ${isOpen ? 'ring-1 ring-[#9B6833]/20 shadow-md' : 'hover:shadow-lg'}
                 `}
               >
                 {/* Question Header */}
-                <div className="p-6 md:p-8 flex items-center justify-between">
-                  <h3 className={`text-xl md:text-2xl font-serif italic transition-colors duration-300 ${isOpen ? 'text-[#9B6833]' : 'text-[#5C4033]'}`}>
+                <div className="p-6 md:p-8 flex items-center justify-between group">
+                  <h3 className={`text-xl md:text-2xl font-serif italic transition-colors duration-300 w-full`}>
                     {item.question}
                   </h3>
 
                   <div className={`
-                    w-8 h-8 rounded-full flex items-center justify-center transition-all duration-500
+                    w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300
                     ${isOpen ? 'bg-[#9B6833] text-white rotate-180' : 'bg-[#EFEBE0] text-[#5C4033]'}
                   `}>
                     <ChevronDown size={18} strokeWidth={2.5} />
@@ -112,11 +125,11 @@ const FAQPage: React.FC = () => {
                       initial={{ height: 0, opacity: 0 }}
                       animate={{ height: 'auto', opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.3, ease: [0.04, 0.62, 0.23, 0.98] }}
+                      transition={{ duration: 0.3 }}
                     >
                       <div className="px-6 md:px-8 pb-8">
                         <div className="flex border-l-2 border-[#9B6833] pl-6 py-1">
-                          <p className="text-zinc-600 leading-relaxed text-sm md:text-base font-serif italic text-[#5C4033]/80">
+                          <p className="leading-relaxed text-sm md:text-base font-serif italic opacity-90">
                             {item.answer}
                           </p>
                         </div>
