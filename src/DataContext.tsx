@@ -318,7 +318,16 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
         if (artRes.ok) {
           const artData = await artRes.json();
-          setArtItems(Array.isArray(artData) ? artData : []);
+          const items = Array.isArray(artData) ? artData : [];
+          // Sort items: Available (stock > 0) first
+          const sorted = [...items].sort((a, b) => {
+            const aAvailable = (a.stock || 0) > 0;
+            const bAvailable = (b.stock || 0) > 0;
+            if (aAvailable && !bAvailable) return -1;
+            if (!aAvailable && bAvailable) return 1;
+            return 0;
+          });
+          setArtItems(sorted);
         }
         if (workshopRes.ok) {
           const workshopData = await workshopRes.json();
@@ -345,13 +354,21 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  // Helper to refresh art items
   const refreshArtItems = async () => {
     try {
       const res = await fetch(`${API_BASE_URL}/api/art`);
       if (res.ok) {
         const artData = await res.json();
-        setArtItems(Array.isArray(artData) ? artData : []);
+        const items = Array.isArray(artData) ? artData : [];
+        // Sort items: Available (stock > 0) first
+        const sorted = [...items].sort((a, b) => {
+          const aAvailable = (a.stock || 0) > 0;
+          const bAvailable = (b.stock || 0) > 0;
+          if (aAvailable && !bAvailable) return -1;
+          if (!aAvailable && bAvailable) return 1;
+          return 0;
+        });
+        setArtItems(sorted);
       }
     } catch (err) {
       console.error("Failed to refresh art items:", err);
@@ -413,7 +430,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       });
       if (res.ok) {
         const newItem = await res.json();
-        setArtItems(prev => [...prev, newItem]);
+        setArtItems(prev => {
+          const newItems = [...prev, newItem];
+          return newItems.sort((a, b) => ((b.stock || 0) > 0 ? 1 : 0) - ((a.stock || 0) > 0 ? 1 : 0));
+        });
       } else {
         const errData = await res.json().catch(() => ({}));
         throw new Error(errData.error || 'Failed to add art item');
@@ -433,16 +453,18 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       });
       if (!res.ok) throw new Error('Failed to update art item');
 
-      setArtItems(prev => prev.map(item => {
-        if (item.id !== id) return item;
-        const updated = { ...item, ...updates };
-        // Auto-update status based on stock if stock is part of updates
-        if (updates.stock !== undefined) {
-          if (updates.stock > 0) updated.status = 'Available';
-          else updated.status = 'Sold';
-        }
-        return updated;
-      }));
+      setArtItems(prev => {
+        const updatedItems = prev.map(item => {
+          if (item.id !== id) return item;
+          const updated = { ...item, ...updates };
+          if (updates.stock !== undefined) {
+            if (updates.stock > 0) updated.status = 'Available';
+            else updated.status = 'Sold';
+          }
+          return updated;
+        });
+        return [...updatedItems].sort((a, b) => ((b.stock || 0) > 0 ? 1 : 0) - ((a.stock || 0) > 0 ? 1 : 0));
+      });
     } catch (err) {
       console.error(err);
       throw err;
