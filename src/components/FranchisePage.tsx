@@ -88,7 +88,7 @@ const TimelineSection: React.FC = () => {
                 </div>
 
                 {/* MOBILE STRAIGHT LINE (Hidden on Desktop) */}
-                <div className="absolute left-[20px] top-0 bottom-0 w-px bg-black/5 md:hidden">
+                <div className="absolute left-1/2 -translate-x-1/2 top-0 bottom-0 w-px bg-black/5 md:hidden">
                     <motion.div
                         className="w-full bg-[#A35D36] origin-top"
                         initial={{ height: 0 }}
@@ -140,18 +140,17 @@ const TimelineSection: React.FC = () => {
                             </div>
 
                             {/* Mobile Dot */}
-                            <div className="absolute left-[10px] top-0 md:hidden w-5 h-5 shrink-0 rounded-full border-[2px] border-white shadow-xl z-30" style={{ backgroundColor: '#ef4444' }}></div>
+                            <div className="absolute left-1/2 -translate-x-1/2 top-0 md:hidden w-5 h-5 shrink-0 rounded-full border-[2px] border-white shadow-xl z-30" style={{ backgroundColor: '#ef4444' }}></div>
 
 
                             {/* 
                                 CONTENT POSITIONING
-                                Increased padding to ensure text sits CLEAR of the curve.
-                                Peak is 150px from center. 
-                                We use pr-48 / pl-48 (192px) to push text well clear of the 150px mark.
+                                Desktop uses a zigzag layout.
+                                Mobile uses a single centered vertical line.
                             */}
 
-                            {/* LEFT SIDE CONTENT (Visible for Even Indices 0, 2, 4) */}
-                            <div className={`w-full md:w-1/2 md:pr-48 md:text-right ${index % 2 !== 0 ? 'md:invisible' : ''} relative`}>
+                            {/* DESKTOP CONTENT (Alternating Sides) */}
+                            <div className={`hidden md:block w-1/2 ${index % 2 !== 0 ? 'invisible' : 'pr-48 text-right'}`}>
                                 {index % 2 === 0 && (
                                     <>
                                         <span className="text-8xl font-serif italic text-black/25 block -mb-10 relative z-0">{item.step}</span>
@@ -163,9 +162,7 @@ const TimelineSection: React.FC = () => {
                                 )}
                             </div>
 
-
-                            {/* RIGHT SIDE CONTENT (Visible for Odd Indices 1, 3) */}
-                            <div className={`w-full md:w-1/2 md:pl-48 md:text-left ${index % 2 === 0 ? 'hidden md:block md:invisible' : ''} relative`}>
+                            <div className={`hidden md:block w-1/2 ${index % 2 === 0 ? 'invisible' : 'pl-48 text-left'}`}>
                                 {index % 2 !== 0 && (
                                     <>
                                         <span className="text-8xl font-serif italic text-black/25 block -mb-10 relative z-0">{item.step}</span>
@@ -177,16 +174,13 @@ const TimelineSection: React.FC = () => {
                                 )}
                             </div>
 
-                            {/* Mobile Content Display (Always visible on mobile) */}
-                            <div className={`md:hidden pl-12 -mt-6 ${index % 2 === 0 ? 'hidden' : 'block'}`}>
-                                <span className="text-8xl font-serif italic text-black/25 block -mb-10 relative z-0">{item.step}</span>
+                            {/* MOBILE CONTENT (Always Center Aligned) */}
+                            <div className="md:hidden flex flex-col items-center text-center px-6 py-10 w-full">
+                                <span className="text-7xl font-serif italic text-black/25 block -mb-8 relative z-0">{item.step}</span>
                                 <div className="relative z-10">
-                                    <h3 className="text-4xl font-serif italic mb-2 text-black">{item.title}</h3>
-                                    <p className="font-sans text-black text-xl leading-relaxed">{item.desc}</p>
+                                    <h3 className="text-3xl font-serif italic mb-2 text-black">{item.title}</h3>
+                                    <p className="font-sans text-black text-lg leading-relaxed">{item.desc}</p>
                                 </div>
-                            </div>
-                            <div className={`md:hidden pl-12 -mt-6 ${index % 2 !== 0 ? 'hidden' : 'block'}`}>
-                                {/* Just placeholder for structure if needed, but handled by above blocks */}
                             </div>
 
                         </motion.div>
@@ -598,19 +592,21 @@ const FranchisePage: React.FC = () => {
                     faqs.length === 0 ? (
                         <p className="text-center text-zinc-400 font-sans text-xs uppercase tracking-widest">No FAQs available at the moment.</p>
                     ) : (
-                        <div className="space-y-2">
+                        <div className="space-y-4">
                             {faqs.map((item, index) => (
-                                <div key={item.id} className="border-b border-black/5">
+                                <div key={item.id} className="border-2 border-black/20 overflow-hidden bg-[#F3EFE0]">
                                     <button
                                         onClick={() => toggleFaq(index)}
-                                        className="w-full flex items-center justify-between py-8 text-left group"
+                                        className={`w-full flex items-center justify-between py-3 px-6 text-left transition-all duration-300 ${activeFaq === index ? 'bg-black/[0.03]' : 'hover:bg-black/[0.03]'}`}
                                     >
-                                        <span className="font-serif text-xl group-hover:text-[#A35D36] transition-colors pr-8">{item.question}</span>
+                                        <span className={`font-serif text-lg md:text-xl italic pr-8 tracking-tight transition-colors duration-300 ${activeFaq === index ? 'text-[#A35D36]' : 'text-[#1A1A1A]'}`}>
+                                            {item.question}
+                                        </span>
                                         <motion.div
                                             animate={{ rotate: activeFaq === index ? 180 : 0 }}
                                             transition={{ duration: 0.3 }}
                                         >
-                                            <ChevronDown className="w-5 h-5 text-zinc-300 group-hover:text-[#A35D36]" />
+                                            <ChevronDown className={`w-4 h-4 transition-colors duration-300 ${activeFaq === index ? 'text-[#A35D36]' : 'text-zinc-400'}`} />
                                         </motion.div>
                                     </button>
                                     <AnimatePresence>
@@ -619,9 +615,13 @@ const FranchisePage: React.FC = () => {
                                                 initial={{ height: 0, opacity: 0 }}
                                                 animate={{ height: 'auto', opacity: 1 }}
                                                 exit={{ height: 0, opacity: 0 }}
-                                                className="overflow-hidden"
+                                                className="overflow-hidden border-t-2 border-black/20"
                                             >
-                                                <p className="pb-8 font-sans text-sm text-zinc-500 leading-relaxed max-w-2xl">{item.answer}</p>
+                                                <div className="p-6 md:p-10 bg-[#F3EFE0]">
+                                                    <p className="font-sans text-sm md:text-base text-zinc-700 leading-relaxed max-w-2xl border-l-2 border-[#A35D36] pl-6 italic">
+                                                        {item.answer}
+                                                    </p>
+                                                </div>
                                             </motion.div>
                                         )}
                                     </AnimatePresence>
