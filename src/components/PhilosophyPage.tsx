@@ -1,6 +1,6 @@
 
 import React, { useRef, useState, useEffect } from 'react';
-import { motion, useScroll, useTransform, useInView } from 'framer-motion';
+import { motion, useScroll, useTransform, useInView, useMotionTemplate, useSpring } from 'framer-motion';
 import { Page } from '../types';
 
 // Decorative Icons
@@ -49,6 +49,26 @@ const Section: React.FC<SectionProps> = ({ children, className = "" }) => {
 };
 
 
+const MenuPaperIcon = ({ className = "" }) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+        <polyline points="14 2 14 8 20 8" />
+        <line x1="8" y1="13" x2="16" y2="13" />
+        <line x1="8" y1="17" x2="12" y2="17" />
+        <line x1="8" y1="9" x2="10" y2="9" />
+    </svg>
+);
+
+const PaintbrushIcon = ({ className = "" }) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <path d="M14.5 2.5a5.5 5.5 0 0 1 7 7l-9 9a5.5 5.5 0 0 1-7-7l9-9z" />
+        <path d="M16 6l3 3" />
+        <path d="M6 14l2 2" />
+    </svg>
+);
+
+
+// Mobile Detection Hook
 // Extracted Card Component to handle Intersection Observer more cleanly
 interface TrifectaCardProps {
     item: any;
@@ -57,53 +77,20 @@ interface TrifectaCardProps {
 }
 
 const TrifectaCard: React.FC<TrifectaCardProps> = ({ item, index, onNavigate }) => {
-    const ref = useRef(null);
-    const [isActive, setIsActive] = useState(false);
+    // Default Icon: Always black ("keep it like black only"), scales on hover.
+    const iconColorClass = 'text-black group-hover:scale-110';
 
-    useEffect(() => {
-        const observer = new IntersectionObserver(
-            ([entry]) => {
-                // If it's intersecting the center area (defined by rootMargin below)
-                setIsActive(entry.isIntersecting);
-            },
-            {
-                root: null,
-                // Shrink the intersection area to a thin strip in the center of the viewport
-                // 50% from top, 50% from bottom (approx)
-                // Actually creating a 10px high window in the center
-                rootMargin: '-50% 0px -50% 0px',
-                threshold: 0
-            }
-        );
-
-        if (ref.current) {
-            observer.observe(ref.current);
-        }
-
-        return () => {
-            if (ref.current) {
-                observer.unobserve(ref.current);
-            }
-        };
-    }, []);
-
-    // Helper to conditionally apply classes based on active state OR hover (for desktop)
-    const iconColorClass = isActive ? 'text-black scale-110' : 'text-zinc-300 group-hover:text-black group-hover:scale-110';
-    const buttonClass = isActive
-        ? 'bg-black text-white border-black'
-        : 'bg-zinc-50 text-black border-zinc-200 hover:bg-black hover:text-white hover:border-black';
+    // Default Button: White/Zinc, turns black on hover.
+    const buttonClass = 'bg-zinc-50 text-black border-zinc-200 hover:bg-black hover:text-white hover:border-black';
 
     return (
         <motion.div
-            ref={ref}
-            whileHover={{ y: -8 }}
-            // We only want the scroll trigger on mobile, but it's fine if it triggers on desktop too as long as it looks good.
-            // However, 'isActive' logic is mainly for mobile scroll. On desktop, hover still works.
-            className={`bg-white p-10 border border-zinc-100 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col items-center text-center group h-full justify-between ${isActive ? 'shadow-xl -translate-y-2' : ''}`}
+            whileHover={{ y: -8, transition: { duration: 0.3, ease: "easeOut" } }}
+            className="bg-white p-10 border border-zinc-100 shadow-sm hover:shadow-xl transition-shadow duration-300 flex flex-col items-center text-center group h-full justify-between"
         >
             <div className="flex flex-col items-center">
-                <div className={`mb-6 transition-all transform duration-300 ${iconColorClass}`}>
-                    {index === 1 ? <StarIcon className="w-12 h-12" /> : item.icon}
+                <div className={`mb-6 transition-transform duration-300 ${iconColorClass}`}>
+                    {item.icon}
                 </div>
                 <h3 className="text-xl font-bold uppercase tracking-widest mb-4 text-black">{item.title}</h3>
                 <p className="text-zinc-600 text-sm leading-relaxed mb-8 max-w-xs">
@@ -113,11 +100,66 @@ const TrifectaCard: React.FC<TrifectaCardProps> = ({ item, index, onNavigate }) 
 
             <button
                 onClick={() => onNavigate(item.target)}
-                className={`px-6 py-3 text-[10px] uppercase tracking-[0.25em] font-bold border transition-all duration-300 ${buttonClass}`}
+                className={`px-6 py-3 text-[10px] uppercase tracking-[0.25em] font-bold border transition-colors duration-300 ${buttonClass}`}
             >
                 {item.action}
             </button>
         </motion.div>
+    );
+};
+
+const QuoteWord: React.FC<{ word: string; progress: any; range: [number, number] }> = ({ word, progress, range }) => {
+    const width = useTransform(progress, range, ["0%", "100%"]);
+
+    return (
+        <span className="relative inline-block mr-[0.2em] last:mr-0">
+            <span className="relative z-10">{word}</span>
+            <motion.span
+                aria-hidden="true"
+                style={{ width }}
+                className="absolute bottom-1 left-0 h-[2px] bg-black z-0 pointer-events-none"
+            />
+        </span>
+    );
+};
+
+const ScrollHighlightQuote: React.FC<{ text: string }> = ({ text }) => {
+    const ref = useRef(null);
+    const { scrollYProgress } = useScroll({
+        target: ref,
+        offset: ["start 0.8", "end 0.5"]
+    });
+
+    // Add spring smoothing to the scroll progress
+    const smoothProgress = useSpring(scrollYProgress, {
+        stiffness: 100,
+        damping: 30,
+        restDelta: 0.001
+    });
+
+    const words = text.split(" ");
+
+    return (
+        <blockquote ref={ref} className="text-4xl md:text-6xl font-serif italic leading-tight text-black mb-10 relative inline-block">
+            <span className="sr-only">"{text}"</span>
+            <span aria-hidden="true">
+                "
+                {words.map((word, i) => {
+                    const step = 1 / words.length;
+                    const start = i * step;
+                    const end = start + step;
+                    return (
+                        <QuoteWord
+                            key={i}
+                            word={word}
+                            progress={smoothProgress}
+                            range={[start, end]}
+                        />
+                    );
+                })}
+                "
+            </span>
+        </blockquote>
     );
 };
 
@@ -131,51 +173,24 @@ interface StoryCardProps {
 }
 
 const StoryCard: React.FC<StoryCardProps> = ({ year, title, children, delay = 0 }) => {
-    const ref = useRef(null);
-    const [isActive, setIsActive] = useState(false);
-
-    useEffect(() => {
-        const observer = new IntersectionObserver(
-            ([entry]) => {
-                setIsActive(entry.isIntersecting);
-            },
-            {
-                root: null,
-                rootMargin: '-50% 0px -50% 0px',
-                threshold: 0
-            }
-        );
-
-        if (ref.current) {
-            observer.observe(ref.current);
-        }
-
-        return () => {
-            if (ref.current) {
-                observer.unobserve(ref.current);
-            }
-        };
-    }, []);
-
     return (
         <motion.div
-            ref={ref}
             initial={{ opacity: 0, y: 40 }}
             whileInView={{ opacity: 1, y: 0 }}
+            whileHover={{ y: -8, transition: { duration: 0.3, ease: "easeOut" } }}
             viewport={{ once: true, margin: "-5%" }}
             transition={{ duration: 0.7, ease: "easeOut", delay }}
-            whileHover={{ y: -8 }}
-            className={`bg-white p-10 md:p-12 border border-black/5 shadow-sm transition-all duration-500 group h-full flex flex-col ${isActive ? 'shadow-xl -translate-y-2' : 'hover:shadow-xl'}`}
+            className="bg-white p-10 md:p-12 border border-black/5 shadow-sm transition-shadow duration-300 group h-full flex flex-col hover:shadow-xl"
         >
-            <div className="flex items-center justify-between mb-8 border-b border-black/5 pb-4">
-                <span className={`text-xs uppercase tracking-[0.25em] font-bold transition-colors ${isActive ? 'text-black' : 'text-zinc-400 group-hover:text-black'}`}>
+            <div className="flex items-center justify-between mb-8 border-b border-black/5 pb-4 transition-colors duration-300">
+                <span className="text-xs uppercase tracking-[0.25em] font-bold text-zinc-400 group-hover:text-black transition-colors duration-300">
                     {year}
                 </span>
             </div>
-            <h3 className="text-4xl md:text-6xl font-serif italic leading-none text-black mb-6">
+            <h3 className="text-4xl md:text-6xl font-serif italic leading-none text-black mb-6 transition-colors duration-300">
                 {title}
             </h3>
-            <div className="space-y-6 text-zinc-600 text-lg leading-relaxed font-light">
+            <div className="space-y-6 text-zinc-600 text-xl leading-relaxed font-light transition-colors duration-300">
                 {children}
             </div>
         </motion.div>
@@ -243,19 +258,14 @@ const AwarenessPage: React.FC<AwarenessPageProps> = ({ onNavigate }) => {
                     </motion.h1>
                 </motion.div>
 
-                {/* Bottom Text - Pinned to Viewport Bottom */}
+                {/* Bottom Text - Pinned to Viewport Bottom - Moved Higher and Stars Removed */}
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.8, delay: 0.6 }}
-                    className="absolute bottom-24 left-0 right-0 z-20 flex flex-col items-center gap-4 pb-8"
+                    className="absolute bottom-36 left-0 right-0 z-20 flex flex-col items-center gap-4 pb-8"
                 >
-                    <div className="flex gap-4 text-zinc-300">
-                        <StarIcon className="w-4 h-4" />
-                        <StarIcon className="w-4 h-4" />
-                        <StarIcon className="w-4 h-4" />
-                    </div>
-                    <p className="text-xs md:text-sm text-zinc-300 uppercase tracking-[0.3em] font-medium border-b border-zinc-200/50 pb-2">
+                    <p className="text-sm md:text-lg text-zinc-300 uppercase tracking-[0.3em] font-medium border-b border-zinc-200/50 pb-2">
                         Discipline meets Decadence
                     </p>
                 </motion.div>
@@ -277,7 +287,7 @@ const AwarenessPage: React.FC<AwarenessPageProps> = ({ onNavigate }) => {
                             <span className="underline decoration-1 underline-offset-8 decoration-zinc-300">Rabuste</span>
                         </h2>
 
-                        <p className="text-base md:text-xl text-zinc-800 leading-relaxed font-light text-balance max-w-xl">
+                        <p className="text-lg md:text-xl text-zinc-800 leading-relaxed font-light text-balance max-w-2xl">
                             A deliberate distortion of <span className="font-semibold text-black">Robusta</span>.
                             While others softened coffee into comfort, we leaned into the power.
                             It is a declaration of strength in every sip, rejecting the diluted and the mundane.
@@ -297,7 +307,7 @@ const AwarenessPage: React.FC<AwarenessPageProps> = ({ onNavigate }) => {
                             whileInView={{ opacity: 1, scale: 1 }}
                             viewport={{ once: true, margin: "-10%" }}
                             transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
-                            className="relative w-full max-w-lg aspect-[3/4] rounded-lg overflow-hidden shadow-2xl"
+                            className="relative w-full max-w-lg aspect-[3/4] overflow-hidden shadow-2xl"
                         >
                             <video
                                 autoPlay
@@ -333,7 +343,7 @@ const AwarenessPage: React.FC<AwarenessPageProps> = ({ onNavigate }) => {
                                 whileInView={{ opacity: 1, scale: 1 }}
                                 viewport={{ once: true, margin: "-10%" }}
                                 transition={{ duration: 0.8, ease: "easeOut" }}
-                                className="aspect-[3/4] relative w-full max-w-lg rounded-lg overflow-hidden shadow-2xl mt-6 md:mt-0 md:-ml-12"
+                                className="aspect-[3/4] relative w-full max-w-lg overflow-hidden shadow-2xl mt-6 md:mt-0 md:-ml-12"
                             >
                                 <img
                                     src="/media/rabuste1.jpeg"
@@ -360,21 +370,24 @@ const AwarenessPage: React.FC<AwarenessPageProps> = ({ onNavigate }) => {
                             </p>
 
                             <div className="grid grid-cols-2 gap-6 pt-6">
-                                <div className="bg-[#F9F8F4] p-6 border border-zinc-200 text-center shadow-sm">
-                                    <span className="block text-2xl md:text-3xl font-serif italic text-black">2x</span>
-                                    <span className="text-[10px] md:text-xs uppercase tracking-widest text-zinc-400">Caffeine</span>
+                                <div className="bg-[#F9F8F4] p-6 border border-zinc-200 text-center shadow-sm hover:shadow-lg hover:-translate-y-1 hover:bg-black transition-all duration-200 group cursor-default">
+                                    <span className="block text-2xl md:text-3xl font-serif italic text-black group-hover:text-white transition-colors duration-200">2x</span>
+                                    <span className="text-[10px] md:text-xs uppercase tracking-widest text-zinc-400 group-hover:text-zinc-300 transition-colors duration-200">Caffeine</span>
                                 </div>
-                                <div className="bg-[#F9F8F4] p-6 border border-zinc-200 text-center shadow-sm">
-                                    <span className="block text-2xl md:text-3xl font-serif italic text-black">High</span>
-                                    <span className="text-[10px] md:text-xs uppercase tracking-widest text-zinc-400">Altitude</span>
+                                <div className="bg-[#F9F8F4] p-6 border border-zinc-200 text-center shadow-sm hover:shadow-lg hover:-translate-y-1 hover:bg-black transition-all duration-200 group cursor-default">
+                                    <span className="block text-2xl md:text-3xl font-serif italic text-black group-hover:text-white transition-colors duration-200">High</span>
+                                    <span className="text-[10px] md:text-xs uppercase tracking-widest text-zinc-400 group-hover:text-zinc-300 transition-colors duration-200">Altitude</span>
                                 </div>
                             </div>
 
                             <button
                                 onClick={() => onNavigate(Page.ROBUSTA_STORY)}
-                                className="mt-6 text-xs uppercase tracking-[0.25em] border-b border-black pb-2 hover:text-zinc-600 transition-colors font-bold"
+                                className="group relative mt-6 flex flex-col items-start"
                             >
-                                Read The Deep Dive
+                                <span className="text-sm md:text-base uppercase tracking-[0.25em] font-bold text-black transition-transform duration-300 md:group-hover:scale-105 md:group-hover:font-extrabold origin-left">
+                                    Read The Deep Dive
+                                </span>
+                                <span className="mt-2 h-px w-full bg-black transition-all duration-300 md:group-hover:w-[115%] origin-left" />
                             </button>
                         </motion.div>
                     </div>
@@ -398,9 +411,7 @@ const AwarenessPage: React.FC<AwarenessPageProps> = ({ onNavigate }) => {
                                 <div className="flex items-center gap-3 text-sm uppercase tracking-[0.2em] text-zinc-900 font-bold mb-8">
                                     <span>The Visionary</span>
                                 </div>
-                                <blockquote className="text-4xl md:text-6xl font-serif italic leading-tight text-black mb-10">
-                                    "We didn't build Rabuste to compete with the coffee shop next door. We built it to compete with your comfort zone."
-                                </blockquote>
+                                <ScrollHighlightQuote text="We didn't build Rabuste to compete with the coffee shop next door. We built it to compete with your comfort zone." />
                                 <div className="flex items-center gap-4">
                                     <div className="w-16 h-px bg-zinc-300" />
                                     <cite className="not-italic text-base uppercase tracking-widest text-zinc-900 font-semibold flex flex-col">
@@ -470,7 +481,7 @@ const AwarenessPage: React.FC<AwarenessPageProps> = ({ onNavigate }) => {
                             The Trifecta.
                         </h2>
                         <div className="h-px w-24 bg-black mx-auto mb-8" />
-                        <p className="text-zinc-600 text-lg md:text-xl font-light leading-relaxed max-w-3xl mx-auto text-balance">
+                        <p className="text-zinc-600 text-xl md:text-2xl font-light leading-relaxed max-w-3xl mx-auto text-balance">
                             Rabuste is built on three unshakeable pillars. We believe that true coffee culture goes beyond the cup—it is an immersion of the senses. By fusing high-grade Robusta, avant-garde art, and expert-led education, we create an ecosystem where flavor, creativity, and knowledge converge. This is our holy trinity; an experience designed not just to be consumed, but to be felt.
                         </p>
                     </motion.div>
@@ -480,7 +491,7 @@ const AwarenessPage: React.FC<AwarenessPageProps> = ({ onNavigate }) => {
                             {
                                 title: "Menu",
                                 desc: "Explore our curated selection of high-grade Robusta brews, from classic espressos to experimental pours designed to awaken the senses.",
-                                icon: <CoffeeBeanIcon className="w-10 h-10" />,
+                                icon: <MenuPaperIcon className="w-10 h-10" />,
                                 action: "View Menu",
                                 target: Page.MENU
                             },

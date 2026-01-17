@@ -14,12 +14,12 @@ const FindStorePage: React.FC = () => {
     <section className="relative min-h-screen w-full overflow-x-hidden font-sans bg-[#F3EFE0] flex flex-col md:block">
 
       {/* Content Section (Mobile: Order 1, Desktop: Overlay) */}
-      <div className="relative z-10 w-full px-6 pt-32 pb-8 order-1 md:order-none md:absolute md:bottom-24 md:left-12 md:p-0 max-w-md md:pointer-events-none">
+      <div className="relative z-10 w-full px-6 pt-32 pb-8 order-1 md:order-none md:absolute md:bottom-36 md:left-12 md:p-0 max-w-md md:pointer-events-none">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-          className="md:bg-[#F3EFE0]/80 md:backdrop-blur-md md:border md:border-black/5 md:shadow-2xl md:px-12 md:py-16 md:rounded-xl pointer-events-auto"
+          className="md:bg-[#F3EFE0]/80 md:backdrop-blur-md md:border md:border-black/5 md:shadow-2xl md:px-12 md:py-16 md:rounded-none pointer-events-auto"
         >
           <motion.p
             initial={{ opacity: 0 }}
@@ -71,7 +71,7 @@ const FindStorePage: React.FC = () => {
 
       {/* Map Section (Mobile: Order 2, Desktop: Background) */}
       <div className="relative w-full h-[65vh] order-2 md:order-none md:absolute md:inset-0 md:h-full z-0 px-2 pb-10 md:p-0">
-        <div className="w-full h-full rounded-[2rem] md:rounded-none overflow-hidden shadow-inner md:shadow-none border border-black/5 md:border-0 relative grayscale-[20%] contrast-[1.05]">
+        <div className="w-full h-full rounded-none md:rounded-none overflow-hidden shadow-inner md:shadow-none border border-black/5 md:border-0 relative grayscale-[20%] contrast-[1.05]">
           <iframe
             title="Rabuste Surat Location"
             src="https://maps.google.com/maps?q=Rabuste+Coffee,+Surat&t=&z=15&ie=UTF8&iwloc=near&output=embed"

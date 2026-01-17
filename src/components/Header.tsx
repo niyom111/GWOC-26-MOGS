@@ -45,14 +45,10 @@ const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage, cartCount }) =
   // --- SCROLL VISIBILITY LOGIC ---
   const { scrollY } = useScroll();
   const [isHovered, setIsHovered] = React.useState(false);
-  const [isScrolled, setIsScrolled] = React.useState(false);
 
-  useMotionValueEvent(scrollY, "change", (latest) => {
-    setIsScrolled(latest > 50);
-  });
-
-  // Create a smooth opacity value based on scroll position
-  const scrollOpacity = useTransform(scrollY, [0, 200], [1, 0.8]);
+  // Smooth scroll animations mapping exact scroll positions to visual styles
+  const navOpacity = useTransform(scrollY, [0, 200], [1, 0.8]);
+  const navBackground = useTransform(scrollY, [0, 200], ["rgba(0,0,0,0.45)", "rgba(0,0,0,0.2)"]);
 
   return (
     <>
@@ -64,10 +60,10 @@ const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage, cartCount }) =
       >
         <div className={`relative flex items-center justify-between px-6 ${isHome ? 'py-1' : 'pt-2 pb-3'}`}>
           {/* LOGO (Inner Pages Only - or Conditional) */}
-          {!isHome && currentPage !== Page.ADMIN && currentPage !== Page.FIND_STORE && (
+          {!isHome && currentPage !== Page.ADMIN && (
             <button
               onClick={() => handleNavigate(Page.HOME)}
-              className="absolute top-6 left-8 z-50 flex items-center justify-center hover:opacity-80 transition-opacity pointer-events-auto"
+              className={`absolute top-6 left-8 z-50 flex items-center justify-center hover:opacity-80 transition-opacity pointer-events-auto ${currentPage === Page.FIND_STORE ? 'md:hidden' : ''}`}
             >
               <img
                 src="/media/logo.png"
@@ -118,13 +114,20 @@ const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage, cartCount }) =
       {/* HORIZONTAL FOOTER NAVIGATION (Desktop Only) */}
       {currentPage !== Page.ADMIN && (
         <motion.nav
-          style={{ opacity: isHovered ? 1 : scrollOpacity }}
-          transition={{ duration: 0.5, ease: "easeInOut" }}
+          style={{ opacity: isHovered ? 1 : navOpacity }}
+          initial={{ y: -20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.4, ease: "easeInOut" }}
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
           className="hidden md:flex fixed top-6 left-0 right-0 z-50 justify-center px-4 pointer-events-none"
         >
-          <div className="bg-black/30 backdrop-blur-xl rounded-xl shadow-2xl px-2 py-2 flex items-center max-w-full overflow-x-auto no-scrollbar border border-white/10 pointer-events-auto">
+          <motion.div
+            style={{
+              backgroundColor: navBackground
+            }}
+            className="backdrop-blur-xl rounded-xl shadow-2xl px-2 py-2 flex items-center max-w-full overflow-x-auto no-scrollbar pointer-events-auto"
+          >
             <div className="flex items-center space-x-1 px-2">
               {navLinks.map((link) => {
                 const isActive = currentPage === link.page;
@@ -145,7 +148,7 @@ const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage, cartCount }) =
                 );
               })}
             </div>
-          </div>
+          </motion.div>
         </motion.nav>
       )}
 

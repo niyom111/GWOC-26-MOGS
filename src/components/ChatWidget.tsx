@@ -110,15 +110,7 @@ export default function ChatWidget({ currentPage }: ChatWidgetProps) {
   const controls = useAnimation();
 
   useEffect(() => {
-    if (currentPage === Page.FRANCHISE) {
-      controls.set({ opacity: 0 });
-      controls.start({
-        opacity: 1,
-        transition: { delay: 1.5, duration: 1, ease: 'easeOut' }
-      });
-    } else {
-      controls.start({ opacity: 1, transition: { duration: 0.5 } });
-    }
+    controls.start({ opacity: 1, transition: { duration: 0.5 } });
   }, [currentPage, controls]);
 
   return (
