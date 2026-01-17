@@ -222,6 +222,15 @@ const FranchisePage: React.FC = () => {
         return () => window.removeEventListener('resize', checkDesktop);
     }, []);
 
+    // State for Mobile Click Interactions
+    const [activeCard, setActiveCard] = useState<string | null>(null);
+
+    const handleCardClick = (id: string) => {
+        if (!isDesktop) {
+            setActiveCard(activeCard === id ? null : id);
+        }
+    };
+
     // Fetch Data
     useEffect(() => {
         // Fetch Settings
@@ -386,7 +395,7 @@ const FranchisePage: React.FC = () => {
                             Built for
                         </motion.h1>
                     </div>
-                    <div className="overflow-hidden mb-12 relative pb-4">
+                    <div className="overflow-hidden mb-12 relative pb-8">
                         <motion.h1
                             key="hero-title-2"
                             className="text-[13vw] md:text-[8vw] leading-[0.9] font-serif italic tracking-tighter text-white"
@@ -470,162 +479,131 @@ const FranchisePage: React.FC = () => {
                         {/* Card 1: Space */}
                         <motion.div
                             variants={itemVariants}
-                            initial={{ opacity: 0.8, scale: 0.95, backgroundColor: "#ffffff", color: "#000000" }}
+                            initial={{ opacity: isDesktop ? 0.8 : 0.2, scale: 0.95, backgroundColor: "#ffffff", color: "#000000" }}
                             whileInView={{
                                 opacity: 1,
-                                scale: 1.03,
-                                backgroundColor: isDesktop ? "#ffffff" : "#000000",
-                                color: isDesktop ? "#000000" : "#ffffff"
+                                scale: 1
                             }}
-                            viewport={isDesktop ? { once: false, amount: 0.5 } : { once: false, amount: 0.3, margin: "-40% 0px -40% 0px" }}
+                            animate={!isDesktop ? {
+                                backgroundColor: activeCard === 'space' ? "#000000" : "#ffffff",
+                                color: activeCard === 'space' ? "#ffffff" : "#000000",
+                                scale: activeCard === 'space' ? 1.05 : 1
+                            } : {}}
+                            viewport={isDesktop ? { once: true } : { once: false, amount: 0.1 }}
                             whileHover={isDesktop ? {
                                 scale: 1.05,
-                                y: -5,
+                                y: -10,
                                 backgroundColor: "#000000",
                                 color: "#ffffff"
-                            } : { scale: 1.05, y: -5 }}
-                            whileTap={{ scale: 0.98 }}
+                            } : {}}
+                            onClick={() => handleCardClick('space')}
                             transition={{
                                 type: "spring",
-                                stiffness: 260,
+                                stiffness: isDesktop ? 260 : 180,
                                 damping: 20,
-                                backgroundColor: { duration: 0.5 },
-                                color: { duration: 0.5 },
-                                scale: { duration: 0.4 }
+                                backgroundColor: { duration: isDesktop ? 0 : 0.3 },
+                                color: { duration: isDesktop ? 0 : 0.3 },
+                                scale: { duration: isDesktop ? 0.3 : 0.4 },
+                                opacity: { duration: 0.4 }
                             }}
-                            className="p-8 md:p-10 rounded-none relative overflow-hidden border border-black/5 shadow-md cursor-pointer"
-                            style={{ willChange: "background-color, color" }}
+                            className="p-8 md:p-10 rounded-none relative overflow-hidden border border-black/5 shadow-md cursor-pointer transition-colors duration-500"
                         >
-                            <motion.h4
-                                className="text-lg md:text-xl font-bold uppercase tracking-[0.2em] mb-6 font-sans"
-                                initial={{ color: "#000000" }}
-                                whileInView={{ color: "inherit" }}
-                                transition={{ duration: 0.5 }}
-                            >
+                            <h4 className="text-lg md:text-xl font-bold uppercase tracking-[0.2em] mb-6 font-sans transition-colors duration-500">
                                 Space
-                            </motion.h4>
-                            <motion.p
-                                className="text-3xl md:text-5xl font-serif italic mb-6"
-                                initial={{ color: "#000000" }}
-                                whileInView={{ color: "inherit" }}
-                                transition={{ duration: 0.5 }}
-                            >
-                                1000 <span className="text-xl font-sans text-zinc-400 not-italic mx-2">-</span> 1500 <motion.span
-                                    className="text-xs font-sans not-italic block mt-1"
-                                    initial={{ color: "#71717a" }}
-                                    whileInView={{ color: "inherit" }}
-                                    transition={{ duration: 0.5 }}
-                                >
-                                    sq.ft.
-                                </motion.span>
-                            </motion.p>
-                            <motion.p
-                                className="text-lg font-sans leading-relaxed border-t pt-6 border-current border-opacity-20 transition-colors duration-500"
-                            >
+                            </h4>
+                            <p className="text-3xl md:text-5xl font-serif italic mb-6 transition-colors duration-500">
+                                1000 <span className="text-xl font-sans opacity-40 not-italic mx-2">-</span> 1500
+                                <span className="text-xs font-sans not-italic block mt-1 opacity-60">sq.ft.</span>
+                            </p>
+                            <p className="text-lg font-sans leading-relaxed border-t pt-6 border-current border-opacity-20 transition-colors duration-500">
                                 Ideally located in high-street zones or premium commercial hubs with high footfall.
-                            </motion.p>
+                            </p>
                         </motion.div>
 
                         {/* Card 2: Investment */}
                         <motion.div
                             variants={itemVariants}
-                            initial={{ opacity: 0.8, scale: 0.95, backgroundColor: "#ffffff", color: "#000000" }}
+                            initial={{ opacity: isDesktop ? 0.8 : 0.2, scale: 0.95, backgroundColor: "#ffffff", color: "#000000" }}
                             whileInView={{
                                 opacity: 1,
-                                scale: 1.03,
-                                backgroundColor: isDesktop ? "#ffffff" : "#000000",
-                                color: isDesktop ? "#000000" : "#ffffff"
+                                scale: 1
                             }}
-                            viewport={isDesktop ? { once: false, amount: 0.5 } : { once: false, amount: 0.3, margin: "-40% 0px -40% 0px" }}
+                            animate={!isDesktop ? {
+                                backgroundColor: activeCard === 'investment' ? "#000000" : "#ffffff",
+                                color: activeCard === 'investment' ? "#ffffff" : "#000000",
+                                scale: activeCard === 'investment' ? 1.05 : 1
+                            } : {}}
+                            viewport={isDesktop ? { once: true } : { once: false, amount: 0.1 }}
                             whileHover={isDesktop ? {
                                 scale: 1.05,
-                                y: -5,
+                                y: -10,
                                 backgroundColor: "#000000",
                                 color: "#ffffff"
-                            } : { scale: 1.05, y: -5 }}
-                            whileTap={{ scale: 0.98 }}
+                            } : {}}
+                            onClick={() => handleCardClick('investment')}
                             transition={{
                                 type: "spring",
-                                stiffness: 260,
+                                stiffness: isDesktop ? 260 : 180,
                                 damping: 20,
-                                backgroundColor: { duration: 0.5 },
-                                scale: { duration: 0.4 }
+                                backgroundColor: { duration: isDesktop ? 0 : 0.3 },
+                                color: { duration: isDesktop ? 0 : 0.3 },
+                                scale: { duration: isDesktop ? 0.3 : 0.4 },
+                                opacity: { duration: 0.4 }
                             }}
-                            className="p-8 md:p-10 rounded-none relative overflow-hidden border border-black/5 shadow-md cursor-pointer"
-                            style={{ willChange: "background-color, color" }}
+                            className="p-8 md:p-10 rounded-none relative overflow-hidden border border-black/5 shadow-md cursor-pointer transition-colors duration-500"
                         >
-                            <motion.h4
-                                className="text-lg md:text-xl font-bold uppercase tracking-[0.2em] mb-6 font-sans"
-                                initial={{ color: "#000000" }}
-                                whileInView={{ color: "inherit" }}
-                                transition={{ duration: 0.5 }}
-                            >
+                            <h4 className="text-lg md:text-xl font-bold uppercase tracking-[0.2em] mb-6 font-sans transition-colors duration-500">
                                 Investment
-                            </motion.h4>
-                            <motion.p
-                                className="text-3xl md:text-5xl font-serif italic mb-6"
-                                initial={{ color: "#000000" }}
-                                whileInView={{ color: "inherit" }}
-                                transition={{ duration: 0.5 }}
-                            >
-                                ₹35L <span className="text-xl font-sans text-zinc-400 not-italic mx-2">-</span> 50L
-                            </motion.p>
-                            <motion.p
-                                className="text-lg font-sans leading-relaxed border-t pt-6 border-current border-opacity-20 transition-colors duration-500"
-                            >
+                            </h4>
+                            <p className="text-3xl md:text-5xl font-serif italic mb-6 transition-colors duration-500">
+                                ₹35L <span className="text-xl font-sans opacity-40 not-italic mx-2">-</span> 50L
+                            </p>
+                            <p className="text-lg font-sans leading-relaxed border-t pt-6 border-current border-opacity-20 transition-colors duration-500">
                                 Total setup cost including license fees, interiors, equipment, and initial stock.
-                            </motion.p>
+                            </p>
                         </motion.div>
 
                         {/* Card 3: Passion */}
                         <motion.div
                             variants={itemVariants}
-                            initial={{ opacity: 0.8, scale: 0.95, backgroundColor: "#ffffff", color: "#000000" }}
+                            initial={{ opacity: isDesktop ? 0.8 : 0.2, scale: 0.95, backgroundColor: "#ffffff", color: "#000000" }}
                             whileInView={{
                                 opacity: 1,
-                                scale: 1.03,
-                                backgroundColor: isDesktop ? "#ffffff" : "#000000",
-                                color: isDesktop ? "#000000" : "#ffffff"
+                                scale: 1
                             }}
-                            viewport={isDesktop ? { once: false, amount: 0.5 } : { once: false, amount: 0.3, margin: "-40% 0px -40% 0px" }}
+                            animate={!isDesktop ? {
+                                backgroundColor: activeCard === 'experience' ? "#000000" : "#ffffff",
+                                color: activeCard === 'experience' ? "#ffffff" : "#000000",
+                                scale: activeCard === 'experience' ? 1.05 : 1
+                            } : {}}
+                            viewport={isDesktop ? { once: true } : { once: false, amount: 0.1 }}
                             whileHover={isDesktop ? {
                                 scale: 1.05,
-                                y: -5,
+                                y: -10,
                                 backgroundColor: "#000000",
                                 color: "#ffffff"
-                            } : { scale: 1.05, y: -5 }}
-                            whileTap={{ scale: 0.98 }}
+                            } : {}}
+                            onClick={() => handleCardClick('experience')}
                             transition={{
                                 type: "spring",
-                                stiffness: 260,
+                                stiffness: isDesktop ? 260 : 180,
                                 damping: 20,
-                                backgroundColor: { duration: 0.5 },
-                                scale: { duration: 0.4 }
+                                backgroundColor: { duration: isDesktop ? 0 : 0.3 },
+                                color: { duration: isDesktop ? 0 : 0.3 },
+                                scale: { duration: isDesktop ? 0.3 : 0.4 },
+                                opacity: { duration: 0.4 }
                             }}
-                            className="p-8 md:p-10 rounded-none relative overflow-hidden border border-black/5 shadow-md cursor-pointer"
-                            style={{ willChange: "background-color, color" }}
+                            className="p-8 md:p-10 rounded-none relative overflow-hidden border border-black/5 shadow-md cursor-pointer transition-colors duration-500"
                         >
-                            <motion.h4
-                                className="text-lg md:text-xl font-bold uppercase tracking-[0.2em] mb-6 font-sans"
-                                initial={{ color: "#000000" }}
-                                whileInView={{ color: "inherit" }}
-                                transition={{ duration: 0.5 }}
-                            >
+                            <h4 className="text-lg md:text-xl font-bold uppercase tracking-[0.2em] mb-6 font-sans transition-colors duration-500">
                                 Experience
-                            </motion.h4>
-                            <motion.p
-                                className="text-3xl md:text-5xl font-serif italic mb-6"
-                                initial={{ color: "#000000" }}
-                                whileInView={{ color: "inherit" }}
-                                transition={{ duration: 0.5 }}
-                            >
+                            </h4>
+                            <p className="text-3xl md:text-5xl font-serif italic mb-6 transition-colors duration-500">
                                 Passion First
-                            </motion.p>
-                            <motion.p
-                                className="text-lg font-sans leading-relaxed border-t pt-6 border-current border-opacity-20 transition-colors duration-500"
-                            >
+                            </p>
+                            <p className="text-lg font-sans leading-relaxed border-t pt-6 border-current border-opacity-20 transition-colors duration-500">
                                 No prior F&B experience needed. A deep commitment to quality and community is mandatory.
-                            </motion.p>
+                            </p>
                         </motion.div>
                     </motion.div>
                 </div>
@@ -640,147 +618,63 @@ const FranchisePage: React.FC = () => {
                     whileInView="visible"
                     viewport={{ once: true }}
                 >
-                    <motion.div
-                        variants={itemVariants}
-                        initial={{ opacity: 0.8, scale: 0.95, backgroundColor: "#ffffff", color: "#000000" }}
-                        whileInView={{
-                            opacity: 1,
-                            scale: 1.03,
-                            backgroundColor: isDesktop ? "#ffffff" : "#000000",
-                            color: isDesktop ? "#000000" : "#ffffff"
-                        }}
-                        viewport={isDesktop ? { once: false, amount: 0.5 } : { once: false, amount: 0.3, margin: "-40% 0px -40% 0px" }}
-                        whileHover={isDesktop ? {
-                            scale: 1.05,
-                            y: -5,
-                            backgroundColor: "#000000",
-                            color: "#ffffff"
-                        } : { scale: 1.05, y: -5 }}
-                        whileTap={{ scale: 0.98 }}
-                        transition={{
-                            type: "spring",
-                            stiffness: 260,
-                            damping: 20,
-                            backgroundColor: { duration: 0.5 },
-                            scale: { duration: 0.4 }
-                        }}
-                        className="border border-black/5 p-12 rounded-none text-center shadow-md cursor-pointer group">
+                    {[
+                        { value: "7%", label: "Royalty", sub: "Monthly Gross Sales", icon: null },
+                        { value: "2%", label: "Ad Fund", sub: "National Marketing", icon: null },
+                        { value: "18-24 Mo.", label: "Estimated ROI", sub: null, icon: TrendingUp }
+                    ].map((item, index) => (
                         <motion.div
-                            className={`w-20 h-20 mx-auto rounded-full border flex items-center justify-center mb-6 transition-colors duration-500 ${isDesktop ? "border-black/10 text-[#A35D36] group-hover:border-white/20 group-hover:text-white" : "border-white/20 text-white"}`}
+                            key={index}
+                            variants={itemVariants}
+                            initial={{
+                                opacity: isDesktop ? 0.8 : 0.2,
+                                scale: 0.95,
+                                backgroundColor: "#ffffff",
+                                color: "#000000"
+                            }}
+                            whileInView={{
+                                opacity: 1,
+                                scale: 1
+                            }}
+                            animate={!isDesktop ? {
+                                backgroundColor: activeCard === `financial-${index}` ? "#000000" : "#ffffff",
+                                color: activeCard === `financial-${index}` ? "#ffffff" : "#000000",
+                                scale: activeCard === `financial-${index}` ? 1.05 : 1
+                            } : {}}
+                            viewport={isDesktop ? { once: true } : { once: false, amount: 0.1 }}
+                            whileHover={isDesktop ? {
+                                scale: 1.05,
+                                y: -10,
+                                backgroundColor: "#000000",
+                                color: "#ffffff"
+                            } : {}}
+                            onClick={() => handleCardClick(`financial-${index}`)}
+                            transition={{
+                                type: "spring",
+                                stiffness: isDesktop ? 300 : 180,
+                                damping: 20,
+                                backgroundColor: { duration: isDesktop ? 0 : 0.3 },
+                                color: { duration: isDesktop ? 0 : 0.3 },
+                                scale: { duration: isDesktop ? 0.3 : 0.4 },
+                                opacity: { duration: 0.4 }
+                            }}
+                            className="border border-black/5 p-12 rounded-none text-center shadow-md cursor-pointer group transition-colors duration-200"
                         >
-                            <span className="text-3xl font-serif font-bold italic">7%</span>
+                            <div className="w-20 h-20 mx-auto rounded-full border border-black/10 flex items-center justify-center mb-6 transition-colors duration-200 group-hover:border-white/20 group-hover:text-white text-[#A35D36]">
+                                {item.icon ? (
+                                    <item.icon className="w-8 h-8" />
+                                ) : (
+                                    <span className="text-3xl font-serif font-bold italic">{item.value}</span>
+                                )}
+                            </div>
+                            <h3 className="text-3xl font-serif italic mb-2 transition-colors duration-200">
+                                {item.label === "Estimated ROI" ? item.value : item.label}
+                            </h3>
+                            <p className="text-xs uppercase tracking-[0.4em] font-bold font-sans opacity-60 transition-colors duration-200">
+                                {item.sub || item.label}
+                            </p>
                         </motion.div>
-                        <motion.h3
-                            className="text-3xl font-serif italic mb-2"
-                            initial={{ color: "#000000" }}
-                            whileInView={{ color: "inherit" }}
-                            transition={{ duration: 0.5 }}
-                        >
-                            Royalty
-                        </motion.h3>
-                        <motion.p
-                            className="text-xs uppercase tracking-[0.4em] font-bold font-sans opacity-60"
-                            initial={{ color: "#000000" }}
-                            whileInView={{ color: "inherit" }}
-                            transition={{ duration: 0.5 }}
-                        >
-                            Monthly Gross Sales
-                        </motion.p>
-                    </motion.div>
-                    <motion.div
-                        variants={itemVariants}
-                        initial={{ opacity: 0.8, scale: 0.95, backgroundColor: "#ffffff", color: "#000000" }}
-                        whileInView={{
-                            opacity: 1,
-                            scale: 1.03,
-                            backgroundColor: isDesktop ? "#ffffff" : "#000000",
-                            color: isDesktop ? "#000000" : "#ffffff"
-                        }}
-                        viewport={isDesktop ? { once: false, amount: 0.5 } : { once: false, amount: 0.3, margin: "-40% 0px -40% 0px" }}
-                        whileHover={isDesktop ? {
-                            scale: 1.05,
-                            y: -5,
-                            backgroundColor: "#000000",
-                            color: "#ffffff"
-                        } : { scale: 1.05, y: -5 }}
-                        whileTap={{ scale: 0.98 }}
-                        transition={{
-                            type: "spring",
-                            stiffness: 260,
-                            damping: 20,
-                            backgroundColor: { duration: 0.5 },
-                            scale: { duration: 0.4 }
-                        }}
-                        className="border border-black/5 p-12 rounded-none text-center shadow-md cursor-pointer group">
-                        <motion.div
-                            className={`w-20 h-20 mx-auto rounded-full border flex items-center justify-center mb-6 transition-colors duration-500 ${isDesktop ? "border-black/10 text-[#A35D36] group-hover:border-white/20 group-hover:text-white" : "border-white/20 text-white"}`}
-                        >
-                            <span className="text-3xl font-serif font-bold italic">2%</span>
-                        </motion.div>
-                        <motion.h3
-                            className="text-3xl font-serif italic mb-2"
-                            initial={{ color: "#000000" }}
-                            whileInView={{ color: "inherit" }}
-                            transition={{ duration: 0.5 }}
-                        >
-                            Ad Fund
-                        </motion.h3>
-                        <motion.p
-                            className="text-xs uppercase tracking-[0.4em] font-bold font-sans opacity-60"
-                            initial={{ color: "#000000" }}
-                            whileInView={{ color: "inherit" }}
-                            transition={{ duration: 0.5 }}
-                        >
-                            National Marketing
-                        </motion.p>
-                    </motion.div>
-                    <motion.div
-                        variants={itemVariants}
-                        initial={{ opacity: 0.8, scale: 0.95, backgroundColor: "#ffffff", color: "#000000" }}
-                        whileInView={{
-                            opacity: 1,
-                            scale: 1.03,
-                            backgroundColor: isDesktop ? "#ffffff" : "#000000",
-                            color: isDesktop ? "#000000" : "#ffffff"
-                        }}
-                        viewport={isDesktop ? { once: false, amount: 0.5 } : { once: false, amount: 0.3, margin: "-40% 0px -40% 0px" }}
-                        whileHover={isDesktop ? {
-                            scale: 1.05,
-                            y: -5,
-                            backgroundColor: "#000000",
-                            color: "#ffffff"
-                        } : { scale: 1.05, y: -5 }}
-                        whileTap={{ scale: 0.98 }}
-                        transition={{
-                            type: "spring",
-                            stiffness: 260,
-                            damping: 20,
-                            backgroundColor: { duration: 0.5 },
-                            scale: { duration: 0.4 }
-                        }}
-                        className="border border-black/5 p-12 rounded-none text-center shadow-md cursor-pointer group">
-                        <motion.div
-                            className={`w-20 h-20 mx-auto rounded-full border flex items-center justify-center mb-6 transition-colors duration-500 ${isDesktop ? "border-black/10 text-[#A35D36] group-hover:border-white/20 group-hover:text-white" : "border-white/20 text-white"}`}
-                        >
-                            <TrendingUp className="w-8 h-8" />
-                        </motion.div>
-                        <motion.h3
-                            className="text-3xl font-serif italic mb-2"
-                            initial={{ color: "#000000" }}
-                            whileInView={{ color: "inherit" }}
-                            transition={{ duration: 0.5 }}
-                        >
-                            18-24 Mo.
-                        </motion.h3>
-                        <motion.p
-                            className="text-xs uppercase tracking-[0.4em] font-bold font-sans opacity-60"
-                            initial={{ color: "#000000" }}
-                            whileInView={{ color: "inherit" }}
-                            transition={{ duration: 0.5 }}
-                        >
-                            Estimated ROI
-                        </motion.p>
-                    </motion.div>
+                    ))}
                 </motion.div>
             </section >
 
@@ -830,44 +724,62 @@ const FranchisePage: React.FC = () => {
                                 <motion.div
                                     variants={itemVariants}
                                     key={i}
-                                    initial={{ opacity: 0.8, scale: 0.95, backgroundColor: "#ffffff", color: "#000000" }}
+                                    initial={{
+                                        opacity: isDesktop ? 0.8 : 0.8,
+                                        scale: 0.95,
+                                        backgroundColor: isDesktop ? "#000000" : "#000000",
+                                        color: isDesktop ? "#ffffff" : "#ffffff",
+                                        borderColor: isDesktop ? "rgba(255,255,255,0.1)" : "rgba(255,255,255,0.1)"
+                                    }}
                                     whileInView={{
                                         opacity: 1,
-                                        scale: 1.03,
-                                        backgroundColor: isDesktop ? "#ffffff" : "#000000",
-                                        color: isDesktop ? "#000000" : "#ffffff"
+                                        scale: 1
                                     }}
-                                    viewport={isDesktop ? { once: false, amount: 0.5 } : { once: false, amount: 0.3, margin: "-40% 0px -40% 0px" }}
+                                    animate={!isDesktop ? {
+                                        backgroundColor: activeCard === `support-${i}` ? "#ffffff" : "#000000",
+                                        color: activeCard === `support-${i}` ? "#000000" : "#ffffff",
+                                        scale: activeCard === `support-${i}` ? 1.05 : 1,
+                                        borderColor: activeCard === `support-${i}` ? "rgba(0,0,0,0.1)" : "rgba(255,255,255,0.1)"
+                                    } : {
+                                        backgroundColor: isDesktop ? "#000000" : "#000000",
+                                        color: isDesktop ? "#ffffff" : "#ffffff",
+                                        scale: 1,
+                                        borderColor: isDesktop ? "rgba(255,255,255,0.1)" : "rgba(255,255,255,0.1)"
+                                    }}
+                                    viewport={isDesktop ? { once: true } : { once: false, amount: 0.1 }}
                                     whileHover={isDesktop ? {
                                         scale: 1.05,
-                                        y: -5,
-                                        backgroundColor: "#000000",
-                                        color: "#ffffff"
-                                    } : { scale: 1.05, y: -5 }}
-                                    whileTap={{ scale: 0.98 }}
+                                        y: -10,
+                                        backgroundColor: "#ffffff",
+                                        color: "#000000",
+                                        borderColor: "rgba(0,0,0,0.05)"
+                                    } : {}}
+                                    onClick={() => handleCardClick(`support-${i}`)}
                                     transition={{
                                         type: "spring",
-                                        stiffness: 260,
+                                        stiffness: isDesktop ? 300 : 180,
                                         damping: 20,
-                                        backgroundColor: { duration: 0.5 },
-                                        scale: { duration: 0.4 }
+                                        backgroundColor: { duration: isDesktop ? 0 : 0.3 },
+                                        color: { duration: isDesktop ? 0 : 0.3 },
+                                        borderColor: { duration: isDesktop ? 0 : 0.3 },
+                                        scale: { duration: isDesktop ? 0.3 : 0.4 },
+                                        opacity: { duration: 0.4 }
                                     }}
-                                    className="flex gap-5 p-5 border border-black/5 rounded-none shadow-md cursor-pointer"
-                                    style={{ willChange: "background-color, color" }}
+                                    className="flex gap-5 p-5 border border-black/5 rounded-none shadow-md cursor-pointer transition-colors duration-200 group"
                                 >
                                     <div
-                                        className="w-12 h-12 rounded-full flex items-center justify-center shrink-0 border border-current border-opacity-10 transition-colors duration-500"
+                                        className="w-12 h-12 rounded-full flex items-center justify-center shrink-0 border border-current border-opacity-10 transition-colors duration-200 group-hover:border-black/20"
                                     >
                                         <item.icon className="w-5 h-5" />
                                     </div>
                                     <div>
                                         <h4
-                                            className="font-bold font-serif italic mb-2 text-2xl transition-colors duration-500"
+                                            className="font-bold font-serif italic mb-2 text-2xl transition-colors duration-200"
                                         >
                                             {item.title}
                                         </h4>
                                         <p
-                                            className="text-xs font-sans tracking-wide leading-relaxed opacity-80 transition-colors duration-500"
+                                            className="text-xs font-sans tracking-wide leading-relaxed opacity-80 transition-colors duration-200"
                                         >
                                             {item.desc}
                                         </p>
@@ -898,7 +810,7 @@ const FranchisePage: React.FC = () => {
                     ) : (
                         <div className="space-y-6">
                             {faqs.map((item, index) => (
-                                <div key={item.id} className="border border-black/5 overflow-hidden rounded-2xl bg-white shadow-lg">
+                                <div key={item.id} className="border border-black/5 overflow-hidden rounded-none bg-white shadow-lg">
                                     <button
                                         onClick={() => toggleFaq(index)}
                                         className={`w-full flex items-center justify-between py-5 px-6 md:px-8 text-left transition-all duration-300 ${activeFaq === index ? 'bg-black/[0.02]' : 'hover:bg-black/[0.02]'}`}

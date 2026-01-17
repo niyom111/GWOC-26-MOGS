@@ -154,7 +154,7 @@ const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-8 pt-10 pb-6 flex flex-col md:grid md:grid-cols-3 items-center border-t border-white/10 text-xs font-sans tracking-[0.2em] text-zinc-400 uppercase space-y-4 md:space-y-0">
+      <div className="max-w-7xl mx-auto px-8 pt-10 pb-32 md:pb-6 flex flex-col md:grid md:grid-cols-3 items-center border-t border-white/10 text-xs font-sans tracking-[0.2em] text-zinc-400 uppercase space-y-4 md:space-y-0">
         <button
           onClick={scrollToTop}
           className="flex items-center space-x-3 mb-6 md:mb-0 hover:text-white transition-colors duration-700 ease-out font-bold group md:col-start-3 md:justify-self-end md:row-start-1"
