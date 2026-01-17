@@ -33,7 +33,7 @@ interface MenuCategory {
 }
 
 // NOTE: static MENU_CATEGORIES kept only as reference; live data now comes from MenuContext.
-const MENU_CATEGORIES: MenuCategory[] = [
+const MENU_CATEGORIES: Partial<MenuCategory>[] = [
   {
     id: 'robusta-cold-non-milk',
     label: 'Robusta Specialty (Cold - Non Milk)',
