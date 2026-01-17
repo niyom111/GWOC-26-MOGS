@@ -309,10 +309,13 @@ interface DataContextValue {
 const DataContext = createContext<DataContextValue | undefined>(undefined);
 
 export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [menuItems, setMenuItems] = useState<CoffeeAdminItem[]>([]);
-  const [artItems, setArtItems] = useState<ArtAdminItem[]>([]);
-  const [workshops, setWorkshops] = useState<WorkshopAdminItem[]>([]);
-  const [orders, setOrders] = useState<Order[]>([]);
+  // Initialize with default/local data to ensure UI isn't empty on load/fail
+  const initialData = loadInitialData();
+  const [menuItems, setMenuItems] = useState<CoffeeAdminItem[]>(initialData.menuItems);
+  const [artItems, setArtItems] = useState<ArtAdminItem[]>(initialData.artItems);
+  const [workshops, setWorkshops] = useState<WorkshopAdminItem[]>(initialData.workshops);
+  const [orders, setOrders] = useState<Order[]>(initialData.orders);
+
   const [orderSettings, setOrderSettings] = useState<OrderSettings>({
     id: 1,
     art_orders_enabled: true,

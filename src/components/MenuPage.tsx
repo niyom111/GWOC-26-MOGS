@@ -343,8 +343,8 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
   );
 
   const JainIcon = () => (
-    <div className="inline-flex items-center justify-center border border-yellow-500 p-[1px] w-3 h-3 mr-1.5 align-middle">
-      <div className="w-1.5 h-1.5 rounded-full bg-yellow-500"></div>
+    <div className="inline-flex items-center justify-center bg-yellow-500 w-3.5 h-3.5 mr-2 align-middle rounded-[2px] shrink-0">
+      <span className="text-[10px] font-bold text-white leading-none">J</span>
     </div>
   );
 
@@ -513,29 +513,23 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
     };
   };
   // -----------------------------
+  // -----------------------------
 
   // Calculate Levenshtein distance for string similarity
   const levenshteinDistance = (a: string, b: string): number => {
-    const matrix = [];
+    const matrix = Array.from({ length: b.length + 1 }, () => Array(a.length + 1).fill(0));
 
-    for (let i = 0; i <= b.length; i++) {
-      matrix[i] = [i];
-    }
-
-    for (let j = 0; j <= a.length; j++) {
-      matrix[0][j] = j;
-    }
+    for (let i = 0; i <= b.length; i++) matrix[i][0] = i;
+    for (let j = 0; j <= a.length; j++) matrix[0][j] = j;
 
     for (let i = 1; i <= b.length; i++) {
       for (let j = 1; j <= a.length; j++) {
-        if (b.charAt(i - 1) === a.charAt(j - 1)) {
-          matrix[i][j] = matrix[i - 1][j - 1];
-        } else {
-          matrix[i][j] = Math.min(
-            matrix[i - 1][j - 1] + 1,
-            Math.min(matrix[i][j - 1] + 1, matrix[i - 1][j] + 1)
-          );
-        }
+        const cost = b.charAt(i - 1) === a.charAt(j - 1) ? 0 : 1;
+        matrix[i][j] = Math.min(
+          matrix[i - 1][j] + 1,      // deletion
+          matrix[i][j - 1] + 1,      // insertion
+          matrix[i - 1][j - 1] + cost // substitution
+        );
       }
     }
 
@@ -546,13 +540,13 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
     const longer = s1.length > s2.length ? s1 : s2;
     const shorter = s1.length > s2.length ? s2 : s1;
     const longerLength = longer.length;
-    if (longerLength === 0) {
-      return 1.0;
-    }
-    return (longerLength - levenshteinDistance(longer, shorter)) / parseFloat(longerLength.toString());
+    if (longerLength === 0) return 1.0;
+
+    return (longerLength - levenshteinDistance(longer, shorter)) / longerLength;
   };
 
   const handleCategoryClick = (id: string) => {
+
     setSearch('');
     setActiveCategoryId(id);
 
@@ -568,53 +562,17 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
   };
 
 
-
-
-  // Fuzzy search helper - checks if query is similar to text (handles typos and multi-words)
+  // Simple search helper - checks if query words are present in text
   const fuzzyMatch = (text: string, query: string): boolean => {
-    // Normalize: remove accents and lowercase
-    const normalize = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-
-    const t = normalize(text);
-    const q = normalize(query);
+    if (!query) return true;
+    const t = text.toLowerCase();
+    const q = query.toLowerCase();
 
     const queryWords = q.split(/\s+/).filter(w => w.length > 0);
-    if (queryWords.length === 0) return false;
+    if (queryWords.length === 0) return true;
 
-    // Create a version with only alphanumeric and spaces for easy word logic
-    const tClean = t.replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ');
-    const tWords = tClean.split(/\s+/).filter(w => w.length > 0);
-
-    // 1. Exact phrase match at word boundaries (e.g., "iced latte")
-    const escapedQ = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const phraseRegex = new RegExp(`\\b${escapedQ}\\b`);
-    if (phraseRegex.test(tClean)) return true;
-
-    // 2. Multi-word AND logic (check each word of query)
-    return queryWords.every(qw => {
-      // For very short query words (1-2 chars), only allow exact word match
-      if (qw.length < 3) {
-        return tWords.includes(qw);
-      }
-
-      // Check for exact word match or prefix match
-      // This allows "tea" to match "tea" or "teapot" but NOT "instead" or "steamed"
-      const hasPrefixMatch = tWords.some(tw => tw === qw || tw.startsWith(qw));
-      if (hasPrefixMatch) return true;
-
-      // 3. Fuzzy match for longer words (allow small typos)
-      if (qw.length >= 4) {
-        return tWords.some(tw => {
-          // Words must be somewhat similar in length
-          if (Math.abs(tw.length - qw.length) > 2) return false;
-          // Only match if they share the same first 2 letters to avoid false positives
-          if (tw.substring(0, 2) !== qw.substring(0, 2)) return false;
-          return getSimilarity(tw, qw) > 0.8;
-        });
-      }
-
-      return false;
-    });
+    // Check if ALL query words are present in text (AND logic)
+    return queryWords.every(word => t.includes(word));
   };
 
   // ALL CATEGORIES (for Sidebar) - independent of search
@@ -719,6 +677,8 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
   }, [menuItems]);
 
   // Set default category to Coffee (or first available)
+  const [didYouMean, setDidYouMean] = useState<string | null>(null);
+
   useEffect(() => {
     if (!activeCategoryId && allCategories.length > 0) {
       const coffee = allCategories.find(c => c.label.toUpperCase().includes('COFFEE'));
@@ -730,7 +690,8 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
     }
   }, [allCategories, activeCategoryId]);
 
-  const [didYouMean, setDidYouMean] = useState<string | null>(null);
+
+
 
   const filteredCategories = useMemo(() => {
     const query = (search || '').trim().toLowerCase();
@@ -742,7 +703,10 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
 
     // 1. First, select the base categories (either all or specific active one)
     let baseCategories = allCategories;
-    if (activeCategoryId && activeCategoryId !== 'all') { // Added 'all' check just in case
+
+    // Only filter by active category if NOT searching. 
+    // If searching, we want to search EVERYTHING.
+    if (!query && activeCategoryId && activeCategoryId !== 'all') { // Added 'all' check just in case
       baseCategories = allCategories.filter(c => c.id === activeCategoryId);
     }
 
@@ -809,9 +773,13 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
 
   }, [allCategories, menuItems, search, sortBy, activeCategoryId]);
 
+
   // Effect for "Did You Mean"
   useEffect(() => {
     const query = search.trim().toLowerCase();
+
+    // Debug log
+    // console.log('Search:', query, 'Results:', filteredCategories.length);
 
     // If we have exact results, or search is empty, don't suggested
     if (!query || filteredCategories.length > 0) {
@@ -825,18 +793,27 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
 
     menuItems.forEach(item => {
       const name = (item.name || '').toLowerCase();
-      // Calculate similarity
-      const sim = getSimilarity(name, query);
+      // 1. Calculate similarity with full name
+      let score = getSimilarity(name, query);
 
-      if (sim > highestSimilarity) {
-        highestSimilarity = sim;
+      // 2. Calculate max similarity with individual words (for cases like "fij" -> "Ginger Fizz")
+      const words = name.split(/\s+/);
+      for (const word of words) {
+        if (word.length < 3) continue; // Skip small words
+        const wordSim = getSimilarity(word, query);
+        if (wordSim > score) {
+          score = wordSim;
+        }
+      }
+
+      if (score > highestSimilarity) {
+        highestSimilarity = score;
         bestMatch = item.name;
       }
     });
 
-    // User requirement: "at least 40% of them right". 
-    // We use >= 0.4 threshold.
-    if (highestSimilarity >= 0.4 && highestSimilarity < 1.0) {
+    // User requirement: "at least 40% of them right" -> Relaxed to 0.35
+    if (highestSimilarity >= 0.35 && highestSimilarity < 1.0) {
       setDidYouMean(bestMatch);
     } else {
       setDidYouMean(null);
@@ -844,20 +821,12 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
 
   }, [search, filteredCategories, menuItems]);
 
+
+
   return (
     <motion.div
-      initial="hidden"
-      animate="visible"
-      variants={{
-        hidden: { opacity: 0 },
-        visible: {
-          opacity: 1,
-          transition: {
-            staggerChildren: 0.1,
-            delayChildren: 0.1
-          }
-        }
-      }}
+      initial={{ opacity: 1 }}
+      animate={{ opacity: 1 }}
       className="pt-24 md:pt-32 pb-40 px-6 md:px-8 bg-[#F3EFE0] min-h-screen"
     >
       <div className="max-w-7xl mx-auto">
@@ -932,6 +901,13 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
               );
             })}
           </div>
+
+          {/* Scroll Hint */}
+          <div className="md:hidden flex justify-center mt-2">
+            <span className="text-[10px] uppercase tracking-widest text-black/40 font-sans flex items-center gap-2">
+              <span className="animate-pulse">←</span> SCROLL <span className="animate-pulse">→</span>
+            </span>
+          </div>
         </motion.div>
 
 
@@ -965,31 +941,33 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
                 </button>
 
                 {/* 2. Dietary Key & Cafe Special */}
-                <div className="flex items-center gap-4 text-xs font-sans text-black uppercase tracking-widest border-l border-black/10 pl-0 md:pl-8 xl:border-l-0 xl:pl-0">
-                  <span className="hidden md:inline text-black">Key:</span>
+                <div className="flex items-center gap-4 text-xs font-sans text-black uppercase tracking-widest md:border-l md:border-black/10 md:pl-8">
+                  <span className="hidden md:inline text-black font-semibold">Key:</span>
 
-                  <div className="flex items-center gap-1.5" title="Jain">
-                    <span className="inline-flex items-center justify-center bg-[#E69F31] text-white w-5 h-5 text-[10px] font-bold rounded-[2px] shrink-0">J</span>
-                    <span className="hidden lg:inline">Jain</span>
-                  </div>
-
-                  <div className="flex items-center gap-1.5" title="Vegetarian">
-                    <div className="inline-flex items-center justify-center border border-green-600 p-[2px] w-5 h-5 rounded-[2px] shrink-0">
-                      <div className="w-2.5 h-2.5 rounded-full bg-green-600"></div>
+                  <div className="flex flex-wrap md:flex-nowrap items-center gap-x-6 gap-y-3 md:gap-x-4 md:gap-y-0">
+                    <div className="flex items-center gap-2" title="Jain">
+                      <span className="inline-flex items-center justify-center bg-[#E69F31] text-white w-5 h-5 text-[10px] font-bold rounded-[2px] shrink-0">J</span>
+                      <span className="text-sm font-medium text-zinc-600">Jain</span>
                     </div>
-                    <span className="hidden lg:inline">Veg</span>
-                  </div>
 
-                  <div className="flex items-center gap-1.5" title="Non-Vegetarian">
-                    <div className="inline-flex items-center justify-center border border-red-600 p-[2px] w-5 h-5 rounded-[2px] shrink-0">
-                      <div className="w-2.5 h-2.5 rounded-full bg-red-600"></div>
+                    <div className="flex items-center gap-2" title="Vegetarian">
+                      <div className="inline-flex items-center justify-center border border-green-600 p-[2px] w-5 h-5 rounded-[2px] shrink-0">
+                        <div className="w-2.5 h-2.5 rounded-full bg-green-600"></div>
+                      </div>
+                      <span className="text-sm font-medium text-zinc-600">Veg</span>
                     </div>
-                    <span className="hidden lg:inline whitespace-nowrap">Non-Veg</span>
-                  </div>
 
-                  <div className="flex items-center gap-1.5" title="Cafe Special">
-                    <Star className="w-5 h-5 text-[#FFD700] fill-[#FFD700]" />
-                    <span className="hidden lg:inline whitespace-nowrap font-medium text-[#B5693E]">Cafe Special</span>
+                    <div className="flex items-center gap-2" title="Non-Vegetarian">
+                      <div className="inline-flex items-center justify-center border border-red-600 p-[2px] w-5 h-5 rounded-[2px] shrink-0">
+                        <div className="w-2.5 h-2.5 rounded-full bg-red-600"></div>
+                      </div>
+                      <span className="text-sm font-medium text-zinc-600 whitespace-nowrap">Non-Veg</span>
+                    </div>
+
+                    <div className="flex items-center gap-2" title="Cafe Special">
+                      <Star className="w-5 h-5 text-[#FFD700] fill-[#FFD700]" />
+                      <span className="text-sm font-medium text-[#B5693E] whitespace-nowrap">Cafe Special</span>
+                    </div>
                   </div>
                 </div>
 
@@ -1075,7 +1053,7 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
                         {/* Bottom Row: Icon + Description */}
                         <div className="flex items-start text-base md:text-lg text-black font-sans font-light leading-relaxed">
                           <span className="inline-flex shrink-0 translate-y-[5px] mr-2">
-                            {isVeg ? <VegIcon /> : <NonVegIcon />}
+                            <DietIcon pref={item.diet_pref} />
                           </span>
                           <p>
                             {item.notes} • Based on your taste
@@ -1160,10 +1138,10 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
 
                         {/* Bottom Row: Icon + Description */}
                         {/* Bottom Row: Icon + Description */}
-                        <div className="flex items-start text-base md:text-lg text-black font-sans font-light leading-relaxed">
-                          <span className="inline-flex shrink-0 translate-y-[5px] mr-2">
-                            {isVeg ? <VegIcon /> : <NonVegIcon />}
-                          </span>
+                        <div className="flex items-start gap-1 text-base md:text-lg text-black font-sans font-light leading-snug">
+                          <div className="pt-1.5 shrink-0">
+                            <DietIcon pref={(item as any).diet_pref} />
+                          </div>
                           <p>
                             {item.description || item.category || 'Popular choice'}
                           </p>
@@ -1173,6 +1151,12 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
                   })}
                 </div>
               </section>
+            )}
+            {filteredCategories.length === 0 && !search && (
+              <div className="flex flex-col items-center justify-center py-20">
+                <p className="text-xl font-serif italic text-black/50">Loading menu directory...</p>
+                <p className="text-sm font-sans text-black/30 mt-2">If this persists, please check your network connection.</p>
+              </div>
             )}
             {filteredCategories.map(category => (
               <section
@@ -1239,7 +1223,7 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
                                 {/* Bottom Row: Icon + Description */}
                                 <div className="flex items-start text-base md:text-lg text-black font-sans font-light leading-relaxed">
                                   <span className="inline-flex shrink-0 translate-y-[5px] mr-2">
-                                    {isVeg ? <VegIcon /> : <NonVegIcon />}
+                                    <DietIcon pref={fullItem.diet_pref} />
                                   </span>
                                   <p>
                                     {description}
@@ -1293,10 +1277,10 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
                                 </button>
                               </div>
                             </div>
-                            <div className="flex items-start text-base md:text-lg text-black font-sans font-light leading-relaxed">
-                              <span className="inline-flex shrink-0 translate-y-[5px] mr-2">
-                                {isVeg ? <VegIcon /> : <NonVegIcon />}
-                              </span>
+                            <div className="flex items-start gap-1 text-sm text-zinc-500 font-sans font-light leading-snug">
+                              <div className="pt-[3px] shrink-0">
+                                <DietIcon pref={fullItem.diet_pref} />
+                              </div>
                               <p>{description}</p>
                             </div>
                           </div>

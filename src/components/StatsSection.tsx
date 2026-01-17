@@ -65,6 +65,18 @@ const StatBlock: React.FC<{
 }> = ({ value, label, sub, index }) => {
     const ref = useRef(null);
     const isInView = useInView(ref, { once: false, margin: "-100px" });
+    // Strict center focus for mobile styling: only active when in the middle slice of screen
+    const isCenter = useInView(ref, { margin: "-45% 0px -45% 0px" });
+    const [isMobile, setIsMobile] = useState(false);
+
+    useEffect(() => {
+        const checkMobile = () => setIsMobile(window.innerWidth < 768);
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
+
+    const showActive = isMobile && isCenter;
 
     return (
         <motion.div
@@ -72,39 +84,39 @@ const StatBlock: React.FC<{
             initial={{ opacity: 0, y: 30 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.8, delay: index * 0.15, ease: "easeOut" }}
-            className="group relative flex flex-col justify-between p-6 lg:p-14 border-b border-black/10 md:border-b-0 md:border-r last:border-r-0 hover:bg-[#EEE8D5] transition-colors duration-500 min-h-[50vh]"
+            className="group relative flex flex-col justify-between px-6 py-16 lg:p-14 border-b border-black/10 md:border-b-0 md:border-r last:border-r-0 hover:bg-[#EEE8D5] transition-colors duration-500 min-h-[50vh]"
         >
             {/* Top Label */}
             <div className="flex items-center gap-3 mb-12">
-                <div className="w-2 h-2 rounded-full bg-zinc-300 group-hover:bg-[#CE2029] transition-colors duration-300 ring-2 ring-transparent group-hover:ring-red-100" />
-                <span className="text-sm font-sans uppercase tracking-[0.2em] text-zinc-900 group-hover:text-black transition-colors duration-300 font-medium">
+                <div className={`w-2 h-2 rounded-full transition-colors duration-300 ring-2 ring-transparent ${showActive ? 'bg-[#CE2029] ring-red-100' : 'bg-zinc-300 group-hover:bg-[#CE2029] group-hover:ring-red-100'}`} />
+                <span className={`text-sm font-sans uppercase tracking-[0.2em] transition-colors duration-300 font-medium ${showActive ? 'text-black' : 'text-zinc-900 group-hover:text-black'}`}>
                     {label}
                 </span>
             </div>
 
             <div className="mb-12 relative flex justify-center">
-                <div className="text-[5rem] lg:text-[7.5rem] font-bold font-serif text-[#1A1A1A] tracking-tighter leading-[0.9] group-hover:translate-x-2 transition-transform duration-500">
+                <div className={`text-[5rem] lg:text-[7.5rem] font-bold font-serif text-[#1A1A1A] tracking-tighter leading-[0.9] transition-transform duration-500 ${showActive ? 'translate-x-2' : 'group-hover:translate-x-2'}`}>
                     <AnimatedValue value={value} isInView={isInView} />
                 </div>
             </div>
 
             {/* Bottom Description */}
             <div className="mt-auto">
-                <div className="w-full h-[1px] bg-black/10 mb-6 origin-left scale-x-50 group-hover:scale-x-100 group-hover:bg-[#CE2029] transition-all duration-500" />
-                <p className="text-xl font-sans text-zinc-900 leading-relaxed max-w-[90%] group-hover:text-black transition-colors duration-500">
+                <div className={`w-full h-[1px] mb-6 origin-left transition-all duration-500 ${showActive ? 'scale-x-100 bg-[#CE2029]' : 'bg-black/10 scale-x-50 group-hover:scale-x-100 group-hover:bg-[#CE2029]'}`} />
+                <p className={`text-xl font-sans leading-relaxed max-w-[90%] transition-colors duration-500 ${showActive ? 'text-black' : 'text-zinc-900 group-hover:text-black'}`}>
                     {sub}
                 </p>
             </div>
 
             {/* Hover Gradient Overlay */}
-            <div className="absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-transparent via-[#CE2029] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+            <div className={`absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-transparent via-[#CE2029] to-transparent transition-opacity duration-700 ${showActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`} />
         </motion.div>
     );
 };
 
 const StatsSection: React.FC = () => {
     return (
-        <section className="bg-[#F3EFE0] text-black border-y border-black/10 overflow-hidden text-[10px]">
+        <section className="bg-[#F3EFE0] text-black border-y border-black/10 overflow-hidden text-[10px] mt-24 md:mt-0">
             <div className="grid grid-cols-1 md:grid-cols-3">
                 <StatBlock
                     index={0}

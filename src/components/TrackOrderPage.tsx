@@ -130,7 +130,7 @@ const TrackOrderPage: React.FC<TrackOrderPageProps> = ({ onNavigate }) => {
           className="w-full h-full object-cover"
           onCanPlay={() => setVideoLoaded(true)}
         >
-          <source src="/coffeeaesthetic.mp4" type="video/mp4" />
+          <source src="/media/coffeeaesthetic.mp4" type="video/mp4" />
         </video>
         <div className="absolute inset-0 bg-black/60" />
       </div>

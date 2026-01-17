@@ -6,8 +6,7 @@
     "type": "module",
     "scripts": {
         "start": "node index.js",
-        "dev": "node --watch index.js",
-        "migrate": "node migrations/migrate.js"
+        "dev": "node --watch index.js"
     },
     "dependencies": {
         "@google/generative-ai": "^0.24.1",
@@ -18,7 +17,6 @@
         "fuse.js": "^7.1.0",
         "groq-sdk": "^0.37.0",
         "multer": "^2.0.2",
-        "razorpay": "^2.9.6",
-        "sqlite3": "^5.1.7"
+        "razorpay": "^2.9.6"
     }
 }

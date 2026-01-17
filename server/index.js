@@ -166,7 +166,8 @@ app.post('/api/chat', async (req, res) => {
         const { data: menuItemsData } = await db.from('menu_items').select(`*, categories (name)`);
         const menuItems = (menuItemsData || []).map(item => ({
             ...item,
-            category: item.categories?.name || item.category_legacy || 'Other'
+            category: item.categories?.name || item.category_legacy || 'Other',
+            tags: item.tags || item.tags_legacy || ''
         }));
 
         const { data: workshops } = await db.from('workshops').select('*');
@@ -192,7 +193,8 @@ app.get('/api/menu', async (req, res) => {
         ...item,
         category: item.categories?.name || item.category_legacy,
         category_name: item.categories?.name || item.category_legacy,
-        sub_category_name: item.sub_categories?.name || null
+        sub_category_name: item.sub_categories?.name || null,
+        tags: item.tags || item.tags_legacy || ''
     }));
     res.json(flatData);
 });
@@ -331,15 +333,11 @@ app.get('/api/orders', async (req, res) => {
 // Helper function to decrement art item stock
 async function decrementArtItemStock(artId, quantity = 1) {
     try {
-        // Normalize the art ID to string and trim
         const artIdStr = String(artId).trim();
         const decrementAmount = parseInt(String(quantity)) || 1;
 
-        if (!artIdStr) {
-            return { success: false, message: 'Invalid art item ID' };
-        }
+        if (!artIdStr) return { success: false, message: 'Invalid art item ID' };
 
-        // Get current stock - use .maybeSingle() to avoid error if not found
         const { data: artItem, error: fetchError } = await db
             .from('art_items')
             .select('id, stock, status')
@@ -351,29 +349,21 @@ async function decrementArtItemStock(artId, quantity = 1) {
             return { success: false, message: fetchError.message };
         }
 
-        // If item doesn't exist in art_items, it's not an art item - that's OK
         if (!artItem) {
             return { success: false, message: 'Item not found in art_items table' };
         }
 
         const currentStock = parseInt(String(artItem.stock)) || 0;
-
-        // Can't decrement if already at 0
         if (currentStock <= 0) {
             return { success: false, message: 'Item already out of stock' };
         }
 
-        // Calculate new stock
         const newStock = Math.max(0, currentStock - decrementAmount);
         const newStatus = newStock > 0 ? 'Available' : 'Sold';
 
-        // Update stock and status - use update() without select first for better performance
         const { error: updateError } = await db
             .from('art_items')
-            .update({
-                stock: newStock,
-                status: newStatus
-            })
+            .update({ stock: newStock, status: newStatus })
             .eq('id', artIdStr);
 
         if (updateError) {
@@ -381,20 +371,7 @@ async function decrementArtItemStock(artId, quantity = 1) {
             return { success: false, message: updateError.message };
         }
 
-        // Verify the update worked by fetching the updated item
-        const { data: verifiedItem } = await db
-            .from('art_items')
-            .select('stock, status')
-            .eq('id', artIdStr)
-            .single();
-
-        if (verifiedItem && parseInt(String(verifiedItem.stock)) === newStock) {
-            console.log(`[STOCK] Successfully decremented stock for art item ${artIdStr}: ${currentStock} -> ${newStock}`);
-            return { success: true, oldStock: currentStock, newStock };
-        } else {
-            console.error(`[STOCK] Stock verification mismatch for ${artIdStr}. Expected: ${newStock}, Got: ${verifiedItem?.stock}`);
-            return { success: false, message: 'Stock update verification failed' };
-        }
+        return { success: true, oldStock: currentStock, newStock };
     } catch (error) {
         console.error(`[STOCK] Unexpected error decrementing stock for art item ${artId}:`, error);
         return { success: false, message: error.message };
@@ -406,7 +383,12 @@ app.post('/api/orders', async (req, res) => {
         const { id, customer, items, total, pickupTime, paymentMethod } = req.body;
         const orderDate = getISTTime();
         const { data, error } = await db.from('orders').insert({
-            id, customer, items, total, date: orderDate, pickupTime,
+            id,
+            customer: JSON.stringify(customer),
+            items: JSON.stringify(items),
+            total,
+            date: orderDate,
+            pickupTime,
             payment_status: 'PENDING_PAYMENT',
             payment_method: paymentMethod || 'Paid at Counter',
             status: 'placed'

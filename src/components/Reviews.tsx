@@ -118,17 +118,19 @@ const Reviews: React.FC = () => {
 
   return (
     <section className="relative text-white py-32 px-6 md:px-12 overflow-hidden bg-black">
-      {/* Background video - slightly darker overlay for readability */}
+      {/* Background video - sticky to reduce zoom on tall mobile content */}
       <div className="absolute inset-0 z-0">
-        <video
-          className="w-full h-full object-cover opacity-60"
-          src="/media/rating-background.mp4"
-          autoPlay
-          loop
-          muted
-          playsInline
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-black/80" />
+        <div className="sticky top-0 h-screen w-full overflow-hidden">
+          <video
+            className="w-full h-full object-cover opacity-100 scale-100"
+            src="/media/rating-background.mp4"
+            autoPlay
+            loop
+            muted
+            playsInline
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-black/40" />
+        </div>
       </div>
 
       <div className="relative z-10 max-w-7xl mx-auto">
@@ -167,8 +169,42 @@ const Reviews: React.FC = () => {
           </div>
         </div>
 
-        {/* Reviews grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12">
+        {/* Mobile Auto-Scroll Marquee */}
+        <div className="md:hidden overflow-hidden w-screen relative left-1/2 -translate-x-1/2">
+          <motion.div
+            className="flex w-max gap-4"
+            animate={{ x: "-50%" }}
+            transition={{ duration: 25, ease: "linear", repeat: Infinity }}
+          >
+            {[...reviews, ...reviews, ...reviews, ...reviews].map((review, idx) => (
+              <div
+                key={`mobile-rev-${idx}`}
+                className="w-[85vw] flex-shrink-0 bg-zinc-900/40 backdrop-blur-sm rounded-3xl p-8 flex flex-col gap-6 border border-white/5 mr-0 pr-0"
+              >
+                <div className="flex items-center gap-5">
+                  <div
+                    className={`w-14 h-14 rounded-full flex items-center justify-center text-lg font-bold text-black shadow-lg ${review.avatarClass}`}
+                  >
+                    {review.initial}
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-lg font-serif tracking-wide text-white">{review.name}</span>
+                    <div className="flex items-center gap-1 opacity-80">
+                      <StarRating rating={review.rating} className="w-3.5 h-3.5" />
+                    </div>
+                  </div>
+                </div>
+
+                <p className="text-lg leading-relaxed text-zinc-300 font-sans font-light line-clamp-6">
+                  "{review.text}"
+                </p>
+              </div>
+            ))}
+          </motion.div>
+        </div>
+
+        {/* Desktop Grid (Hidden on Mobile) */}
+        <div className="hidden md:grid grid-cols-3 gap-12">
           {reviews.map((review, idx) => (
             <motion.article
               key={idx}
@@ -176,7 +212,7 @@ const Reviews: React.FC = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: false }}
               transition={{ duration: 0.8, delay: idx * 0.1 }}
-              className="bg-zinc-900/40 backdrop-blur-sm rounded-3xl p-10 flex flex-col gap-6 hover:bg-zinc-900/60 transition-colors duration-500 h-full"
+              className="bg-zinc-900/40 backdrop-blur-sm rounded-3xl p-10 flex flex-col gap-6 hover:bg-zinc-900/60 transition-colors duration-500 h-full border border-white/5"
             >
               <div className="flex items-center gap-5">
                 <div
@@ -198,8 +234,8 @@ const Reviews: React.FC = () => {
             </motion.article>
           ))}
         </div>
-      </div>
-    </section>
+      </div >
+    </section >
   );
 };
 

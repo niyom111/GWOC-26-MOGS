@@ -21,7 +21,7 @@ const EMAIL_CONFIG_HOSTING = {
   ADMIN_EMAIL: 'robustecafe@gmail.com'
 };
 
-import Toast from './Toast';
+
 
 const WorkshopPage: React.FC = () => {
   const { workshops, updateWorkshop } = useDataContext();
@@ -40,15 +40,12 @@ const WorkshopPage: React.FC = () => {
     if (missingKeys.length > 0) {
       console.warn('⚠️ [Workshops] Missing EmailJS Configuration Keys:', missingKeys.join(', '));
       console.warn('   Please check your .env file.');
-    } else {
-      console.log('✅ [Workshops] EmailJS Configuration loaded successfully.');
     }
   }, []);
 
   const [reservationEmails, setReservationEmails] = useState<{ [key: string]: string }>({});
   const [reservingId, setReservingId] = useState<string | null>(null);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const toastTimeoutRef = React.useRef<number | null>(null);
+
 
   // Updated Host Form State
   const [hostForm, setHostForm] = useState({
@@ -128,10 +125,7 @@ const WorkshopPage: React.FC = () => {
         setReservingId(null);
         setReservationEmails(prev => ({ ...prev, [workshopId]: '' }));
 
-        // Show Toast
-        setToastMessage(`Reservation Request Sent for ${workshop.title}`);
-        if (toastTimeoutRef.current) window.clearTimeout(toastTimeoutRef.current);
-        toastTimeoutRef.current = window.setTimeout(() => setToastMessage(null), 2000);
+
 
         // Show Confirmation
         setModalContent({
@@ -164,10 +158,7 @@ const WorkshopPage: React.FC = () => {
         setIsHosting(false);
         setHostForm({ contact_email: '', preferred_date: '', workshop_details: '' });
 
-        // Show Toast
-        setToastMessage("Proposal Received");
-        if (toastTimeoutRef.current) window.clearTimeout(toastTimeoutRef.current);
-        toastTimeoutRef.current = window.setTimeout(() => setToastMessage(null), 2000);
+
 
         setModalContent({
           title: "Proposal Received.",
@@ -405,8 +396,6 @@ const WorkshopPage: React.FC = () => {
         </AnimatePresence>,
         document.body
       )}
-
-      <Toast message={toastMessage} />
     </div>
   );
 };

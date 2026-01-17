@@ -22,7 +22,7 @@ const GalleryTeaser: React.FC<GalleryTeaserProps> = ({ onNavigate }) => {
   const [activeVideo, setActiveVideo] = React.useState<1 | 2>(1);
   const [isFading, setIsFading] = React.useState(false);
 
-  const videoSrc = "/5009000-uhd_2160_3840_25fps.mp4";
+  const videoSrc = "/media/5009000-uhd_2160_3840_25fps.mp4";
   const CROSSFADE_DURATION = 1; // Seconds
 
   const handleTimeUpdate = (e: React.SyntheticEvent<HTMLVideoElement, Event>, videoId: 1 | 2) => {

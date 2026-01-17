@@ -1,4 +1,5 @@
-import React, { useRef } from 'react';
+
+import React, { useRef, useState, useEffect } from 'react';
 import { motion, useScroll, useTransform, useInView } from 'framer-motion';
 import { Page } from '../types';
 
@@ -24,6 +25,7 @@ const StarIcon = ({ className = "" }) => (
     </svg>
 );
 
+
 interface SectionProps {
     children: React.ReactNode;
     className?: string;
@@ -46,6 +48,141 @@ const Section: React.FC<SectionProps> = ({ children, className = "" }) => {
     );
 };
 
+
+// Extracted Card Component to handle Intersection Observer more cleanly
+interface TrifectaCardProps {
+    item: any;
+    index: number;
+    onNavigate: (page: Page) => void;
+}
+
+const TrifectaCard: React.FC<TrifectaCardProps> = ({ item, index, onNavigate }) => {
+    const ref = useRef(null);
+    const [isActive, setIsActive] = useState(false);
+
+    useEffect(() => {
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                // If it's intersecting the center area (defined by rootMargin below)
+                setIsActive(entry.isIntersecting);
+            },
+            {
+                root: null,
+                // Shrink the intersection area to a thin strip in the center of the viewport
+                // 50% from top, 50% from bottom (approx)
+                // Actually creating a 10px high window in the center
+                rootMargin: '-50% 0px -50% 0px',
+                threshold: 0
+            }
+        );
+
+        if (ref.current) {
+            observer.observe(ref.current);
+        }
+
+        return () => {
+            if (ref.current) {
+                observer.unobserve(ref.current);
+            }
+        };
+    }, []);
+
+    // Helper to conditionally apply classes based on active state OR hover (for desktop)
+    const iconColorClass = isActive ? 'text-black scale-110' : 'text-zinc-300 group-hover:text-black group-hover:scale-110';
+    const buttonClass = isActive
+        ? 'bg-black text-white border-black'
+        : 'bg-zinc-50 text-black border-zinc-200 hover:bg-black hover:text-white hover:border-black';
+
+    return (
+        <motion.div
+            ref={ref}
+            whileHover={{ y: -8 }}
+            // We only want the scroll trigger on mobile, but it's fine if it triggers on desktop too as long as it looks good.
+            // However, 'isActive' logic is mainly for mobile scroll. On desktop, hover still works.
+            className={`bg-white p-10 border border-zinc-100 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col items-center text-center group h-full justify-between ${isActive ? 'shadow-xl -translate-y-2' : ''}`}
+        >
+            <div className="flex flex-col items-center">
+                <div className={`mb-6 transition-all transform duration-300 ${iconColorClass}`}>
+                    {index === 1 ? <StarIcon className="w-12 h-12" /> : item.icon}
+                </div>
+                <h3 className="text-xl font-bold uppercase tracking-widest mb-4 text-black">{item.title}</h3>
+                <p className="text-zinc-600 text-sm leading-relaxed mb-8 max-w-xs">
+                    {item.desc}
+                </p>
+            </div>
+
+            <button
+                onClick={() => onNavigate(item.target)}
+                className={`px-6 py-3 text-[10px] uppercase tracking-[0.25em] font-bold border transition-all duration-300 ${buttonClass}`}
+            >
+                {item.action}
+            </button>
+        </motion.div>
+    );
+};
+
+
+// Extracted Story Card Component
+interface StoryCardProps {
+    year: string;
+    title: string;
+    children: React.ReactNode;
+    delay?: number;
+}
+
+const StoryCard: React.FC<StoryCardProps> = ({ year, title, children, delay = 0 }) => {
+    const ref = useRef(null);
+    const [isActive, setIsActive] = useState(false);
+
+    useEffect(() => {
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                setIsActive(entry.isIntersecting);
+            },
+            {
+                root: null,
+                rootMargin: '-50% 0px -50% 0px',
+                threshold: 0
+            }
+        );
+
+        if (ref.current) {
+            observer.observe(ref.current);
+        }
+
+        return () => {
+            if (ref.current) {
+                observer.unobserve(ref.current);
+            }
+        };
+    }, []);
+
+    return (
+        <motion.div
+            ref={ref}
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-5%" }}
+            transition={{ duration: 0.7, ease: "easeOut", delay }}
+            whileHover={{ y: -8 }}
+            className={`bg-white p-10 md:p-12 border border-black/5 shadow-sm transition-all duration-500 group h-full flex flex-col ${isActive ? 'shadow-xl -translate-y-2' : 'hover:shadow-xl'}`}
+        >
+            <div className="flex items-center justify-between mb-8 border-b border-black/5 pb-4">
+                <span className={`text-xs uppercase tracking-[0.25em] font-bold transition-colors ${isActive ? 'text-black' : 'text-zinc-400 group-hover:text-black'}`}>
+                    {year}
+                </span>
+            </div>
+            <h3 className="text-4xl md:text-6xl font-serif italic leading-none text-black mb-6">
+                {title}
+            </h3>
+            <div className="space-y-6 text-zinc-600 text-lg leading-relaxed font-light">
+                {children}
+            </div>
+        </motion.div>
+    );
+};
+
+
 interface AwarenessPageProps {
     onNavigate: (page: Page) => void;
 }
@@ -58,123 +195,161 @@ const AwarenessPage: React.FC<AwarenessPageProps> = ({ onNavigate }) => {
     return (
         <div className="bg-[#F9F8F4] text-[#1A1A1A] overflow-hidden font-sans selection:bg-black selection:text-[#F9F8F4] relative">
 
-            {/* Decorative Background Pattern */}
-            <div className="fixed inset-0 pointer-events-none opacity-[0.03] z-0 flex flex-wrap gap-16 p-8 justify-center items-center overflow-hidden">
-                {Array.from({ length: 30 }).map((_, i) => (
-                    <div key={i} className="transform rotate-45">
-                        {i % 3 === 0 ? <CoffeeBeanIcon className="w-12 h-12" /> :
-                            i % 3 === 1 ? <CoffeeCupIcon className="w-12 h-12" /> :
-                                <StarIcon className="w-8 h-8" />}
-                    </div>
-                ))}
-            </div>
-
             {/* Progress Bar */}
             <motion.div
                 className="fixed top-0 left-0 right-0 h-1 bg-[#1A1A1A] origin-left z-50"
                 style={{ scaleX: scrollYProgress }}
             />
 
-            {/* Main Content Container */}
-            <div className="max-w-7xl mx-auto px-6 md:px-20 relative z-10 pt-32 pb-12">
+            {/* FULL SCREEN HERO SECTION */}
+            <div className="relative h-screen w-full overflow-hidden flex items-center justify-center">
+                {/* Video Background */}
+                <video
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    className="absolute inset-0 w-full h-full object-cover"
+                >
+                    <source src="/media/philosphy.mp4" type="video/mp4" />
+                </video>
 
-                {/* Hero Section - Editorial Sandwich */}
+                {/* Dark Overlay for Readability */}
+                <div className="absolute inset-0 bg-black/50" />
+
+                {/* Hero Content - Centered */}
                 <motion.div
                     style={{ opacity: heroOpacity, scale: heroScale }}
-                    className="flex flex-col items-center justify-center mb-32 relative"
+                    className="relative z-10 flex flex-col items-center justify-center p-4 -mt-24"
                 >
                     {/* Top Text */}
                     <motion.h1
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.8 }}
-                        className="text-6xl md:text-9xl font-serif italic tracking-tighter leading-[0.9] text-black relative z-10 text-center"
+                        className="text-7xl md:text-[11rem] font-serif italic tracking-tighter leading-[0.85] text-[#F9F8F4] text-center"
                     >
                         More Than
                     </motion.h1>
-
-
 
                     {/* Bottom Text */}
                     <motion.h1
                         initial={{ opacity: 0, y: -20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.8, delay: 0.4 }}
-                        className="text-6xl md:text-9xl font-serif italic tracking-tighter leading-[0.9] text-black relative z-10 text-center"
+                        className="text-7xl md:text-[11rem] font-serif italic tracking-tighter leading-[0.85] text-[#F9F8F4] text-center"
                     >
                         A Buzz.
                     </motion.h1>
-
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.8, delay: 0.6 }}
-                        className="mt-12 flex flex-col items-center gap-4"
-                    >
-                        <div className="flex gap-4">
-                            <StarIcon className="w-4 h-4 text-zinc-400" />
-                            <StarIcon className="w-4 h-4 text-zinc-400" />
-                            <StarIcon className="w-4 h-4 text-zinc-400" />
-                        </div>
-                        <p className="text-xs md:text-sm text-zinc-500 uppercase tracking-[0.3em] font-medium border-b border-zinc-200 pb-2">
-                            Discipline meets Decadence
-                        </p>
-                    </motion.div>
                 </motion.div>
 
+                {/* Bottom Text - Pinned to Viewport Bottom */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.8, delay: 0.6 }}
+                    className="absolute bottom-24 left-0 right-0 z-20 flex flex-col items-center gap-4 pb-8"
+                >
+                    <div className="flex gap-4 text-zinc-300">
+                        <StarIcon className="w-4 h-4" />
+                        <StarIcon className="w-4 h-4" />
+                        <StarIcon className="w-4 h-4" />
+                    </div>
+                    <p className="text-xs md:text-sm text-zinc-300 uppercase tracking-[0.3em] font-medium border-b border-zinc-200/50 pb-2">
+                        Discipline meets Decadence
+                    </p>
+                </motion.div>
+            </div>
 
-                {/* SECTION 1: The Name */}
-                <Section className="grid grid-cols-1 md:grid-cols-2 gap-16 items-center border border-[#1A1A1A]/5 p-10 md:p-16 hover:border-[#1A1A1A]/20 transition-colors duration-500 bg-white/50 backdrop-blur-sm">
-                    <div className="order-2 md:order-1">
-                        <h2 className="text-4xl md:text-6xl font-serif italic tracking-tight mb-6 text-black">
-                            The Name: <span className="underline decoration-1 underline-offset-8 decoration-zinc-300">Rabuste</span>
+            {/* SECTION 1: The Name - Reverted to Grid Layout */}
+            <Section className="min-h-screen w-full flex items-center justify-center bg-[#F9F8F4] px-6 md:px-20">
+                <div className="w-full max-w-7xl grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+                    {/* Left Side: Text */}
+                    <motion.div
+                        initial={{ opacity: 0, y: 30 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true, margin: "-10%" }}
+                        transition={{ duration: 0.8, ease: "easeOut" }}
+                        className="order-1 md:order-1 md:pl-12"
+                    >
+                        <h2 className="text-4xl md:text-7xl font-serif italic tracking-tight mb-8 text-black leading-[0.9]">
+                            The Name: <br />
+                            <span className="underline decoration-1 underline-offset-8 decoration-zinc-300">Rabuste</span>
                         </h2>
-                        <div className="flex items-center gap-4 mb-6">
-                            <div className="h-px w-12 bg-black" />
-                            <CoffeeBeanIcon className="w-5 h-5 text-black" />
-                            <div className="h-px w-12 bg-black" />
-                        </div>
-                        <p className="text-base md:text-xl text-zinc-800 leading-relaxed font-light">
+
+                        <p className="text-base md:text-xl text-zinc-800 leading-relaxed font-light text-balance max-w-xl">
                             A deliberate distortion of <span className="font-semibold text-black">Robusta</span>.
                             While others softened coffee into comfort, we leaned into the power.
-                            <span className="block mt-6 text-zinc-400 text-sm uppercase tracking-widest font-medium">
+                            It is a declaration of strength in every sip, rejecting the diluted and the mundane.
+                            <br /><br />
+                            We source beans that fight for their place in the cup, delivering a caffeine punch that wakes the soul, not just the body.
+                            <br /><br />
+                            <span className="block text-zinc-900 text-sm uppercase tracking-widest font-medium">
                                 Intensity is not to be diluted.
                             </span>
                         </p>
-                    </div>
-                    <div className="order-1 md:order-2 flex justify-center">
-                        <div className="relative w-40 h-40 md:w-56 md:h-56 rounded-full border border-black p-3 animate-[spin_10s_linear_infinite]">
-                            <div className="w-full h-full border border-dashed border-zinc-400 rounded-full" />
-                            <div className="absolute inset-0 flex items-center justify-center">
-                                <span className="font-serif italic text-4xl md:text-5xl">R</span>
-                            </div>
-                        </div>
-                    </div>
-                </Section>
+                    </motion.div>
 
-
-                {/* Decorative Divider */}
-                <div className="flex justify-center py-16">
-                    <div className="w-px h-24 bg-zinc-300" />
+                    {/* Right Side: Video */}
+                    <div className="order-2 md:order-2 flex justify-center md:justify-end w-full md:pr-24">
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            whileInView={{ opacity: 1, scale: 1 }}
+                            viewport={{ once: true, margin: "-10%" }}
+                            transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
+                            className="relative w-full max-w-lg aspect-[3/4] rounded-lg overflow-hidden shadow-2xl"
+                        >
+                            <video
+                                autoPlay
+                                loop
+                                muted
+                                playsInline
+                                className="w-full h-full object-cover"
+                            >
+                                <source src="/media/philosphy1.mp4" type="video/mp4" />
+                            </video>
+                        </motion.div>
+                    </div>
                 </div>
+            </Section>
+
+
+            {/* Main Content Container for Remaining Sections */}
+            <div className="max-w-7xl mx-auto px-6 md:px-20 relative z-10 pb-12">
+
+
+
+
+
+
 
 
                 {/* SECTION 2: The Sourcing */}
-                <Section className="relative pt-12">
-
+                <Section className="relative pt-8">
                     <div className="relative z-10 grid grid-cols-1 md:grid-cols-12 gap-12 items-center">
-                        <div className="md:col-span-5">
-                            <div className="aspect-[4/5] relative p-1 border border-zinc-200 mt-6 md:mt-0">
+                        <div className="md:col-span-6 flex justify-start">
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                whileInView={{ opacity: 1, scale: 1 }}
+                                viewport={{ once: true, margin: "-10%" }}
+                                transition={{ duration: 0.8, ease: "easeOut" }}
+                                className="aspect-[3/4] relative w-full max-w-lg rounded-lg overflow-hidden shadow-2xl mt-6 md:mt-0 md:-ml-12"
+                            >
                                 <img
                                     src="/media/rabuste1.jpeg"
                                     alt="Source"
                                     className="w-full h-full object-cover contrast-125"
                                 />
-                            </div>
+                            </motion.div>
                         </div>
-                        <div className="md:col-span-7 md:pl-10 space-y-8">
-                            <div className="flex items-center gap-3 text-xs uppercase tracking-[0.2em] text-zinc-400 font-bold">
-                                <CoffeeBeanIcon className="w-4 h-4" />
+                        <motion.div
+                            initial={{ opacity: 0, x: 30 }}
+                            whileInView={{ opacity: 1, x: 0 }}
+                            viewport={{ once: true, margin: "-10%" }}
+                            transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
+                            className="md:col-span-6 md:pl-10 space-y-8"
+                        >
+                            <div className="flex items-center gap-3 text-xs uppercase tracking-[0.2em] text-zinc-900 font-bold">
                                 <span>The Sourcing</span>
                             </div>
                             <h2 className="text-5xl md:text-7xl font-serif italic leading-none text-black">
@@ -185,11 +360,11 @@ const AwarenessPage: React.FC<AwarenessPageProps> = ({ onNavigate }) => {
                             </p>
 
                             <div className="grid grid-cols-2 gap-6 pt-6">
-                                <div className="bg-white p-6 border border-zinc-100 text-center shadow-sm">
+                                <div className="bg-[#F9F8F4] p-6 border border-zinc-200 text-center shadow-sm">
                                     <span className="block text-2xl md:text-3xl font-serif italic text-black">2x</span>
                                     <span className="text-[10px] md:text-xs uppercase tracking-widest text-zinc-400">Caffeine</span>
                                 </div>
-                                <div className="bg-white p-6 border border-zinc-100 text-center shadow-sm">
+                                <div className="bg-[#F9F8F4] p-6 border border-zinc-200 text-center shadow-sm">
                                     <span className="block text-2xl md:text-3xl font-serif italic text-black">High</span>
                                     <span className="text-[10px] md:text-xs uppercase tracking-widest text-zinc-400">Altitude</span>
                                 </div>
@@ -201,93 +376,104 @@ const AwarenessPage: React.FC<AwarenessPageProps> = ({ onNavigate }) => {
                             >
                                 Read The Deep Dive
                             </button>
-                        </div>
+                        </motion.div>
                     </div>
                 </Section>
 
 
-                {/* Decorative Divider */}
-                <div className="flex justify-center py-20 gap-3">
-                    <div className="w-1.5 h-1.5 rounded-full bg-zinc-300" />
-                    <div className="w-1.5 h-1.5 rounded-full bg-zinc-300" />
-                    <div className="w-1.5 h-1.5 rounded-full bg-zinc-300" />
+
+
+
+                {/* SECTION 3: The Visionary (Widened) */}
+                <div className="w-[120%] -ml-[10%]">
+                    <Section className="bg-[#F9F8F4] p-12 md:p-24 border border-[#1A1A1A]/5 shadow-sm">
+                        <div className="grid grid-cols-1 md:grid-cols-12 gap-16 items-center">
+                            <motion.div
+                                initial={{ opacity: 0, x: -30 }}
+                                whileInView={{ opacity: 1, x: 0 }}
+                                viewport={{ once: true, margin: "-10%" }}
+                                transition={{ duration: 0.8, ease: "easeOut" }}
+                                className="md:col-span-7 order-2 md:order-1"
+                            >
+                                <div className="flex items-center gap-3 text-sm uppercase tracking-[0.2em] text-zinc-900 font-bold mb-8">
+                                    <span>The Visionary</span>
+                                </div>
+                                <blockquote className="text-4xl md:text-6xl font-serif italic leading-tight text-black mb-10">
+                                    "We didn't build Rabuste to compete with the coffee shop next door. We built it to compete with your comfort zone."
+                                </blockquote>
+                                <div className="flex items-center gap-4">
+                                    <div className="w-16 h-px bg-zinc-300" />
+                                    <cite className="not-italic text-base uppercase tracking-widest text-zinc-900 font-semibold flex flex-col">
+                                        Vaibhav Sutaria
+                                        <span className="text-[10px] text-zinc-600 tracking-[0.2em] mt-1 font-medium">Founder</span>
+                                    </cite>
+                                </div>
+                            </motion.div>
+                            <div className="md:col-span-5 order-1 md:order-2">
+                                <motion.div
+                                    initial={{ opacity: 0, scale: 0.95 }}
+                                    whileInView={{ opacity: 1, scale: 1 }}
+                                    viewport={{ once: true, margin: "-10%" }}
+                                    transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
+                                    className="aspect-square relative max-w-[550px] mx-auto"
+                                >
+                                    <div className="absolute inset-0 border border-black translate-x-6 translate-y-6" />
+                                    <img
+                                        src="/media/founder.jpeg"
+                                        alt="Founder"
+                                        className="w-full h-full object-cover relative z-10 border border-white"
+                                    />
+                                </motion.div>
+                            </div>
+                        </div>
+                    </Section>
                 </div>
 
 
-                {/* SECTION 3: The Visionary */}
-                <Section className="bg-white p-10 md:p-16 border border-[#1A1A1A]/5 shadow-sm">
-                    <div className="grid grid-cols-1 md:grid-cols-12 gap-12 items-center">
-                        <div className="md:col-span-8 order-2 md:order-1">
-                            <div className="flex items-center gap-3 text-xs uppercase tracking-[0.2em] text-zinc-400 font-bold mb-6">
-                                <CoffeeCupIcon className="w-4 h-4" />
-                                <span>The Visionary</span>
-                            </div>
-                            <blockquote className="text-3xl md:text-5xl font-serif italic leading-tight text-black mb-8">
-                                "We didn't build Rabuste to compete with the coffee shop next door. We built it to compete with your comfort zone."
-                            </blockquote>
-                            <div className="flex items-center gap-4">
-                                <div className="w-12 h-px bg-zinc-300" />
-                                <cite className="not-italic text-sm uppercase tracking-widest text-zinc-500 font-semibold">
-                                    Vaibhav Sutaria
-                                </cite>
-                            </div>
-                        </div>
-                        <div className="md:col-span-4 order-1 md:order-2">
-                            <div className="aspect-square relative max-w-[240px] mx-auto">
-                                <div className="absolute inset-0 border border-black translate-x-3 translate-y-3" />
-                                <img
-                                    src="/media/founder.jpeg"
-                                    alt="Founder"
-                                    className="w-full h-full object-cover relative z-10 border border-white"
-                                />
-                            </div>
-                        </div>
-                    </div>
-                </Section>
 
-                {/* SECTION 3.5: The Story (New) */}
-                <Section className="py-12 relative overflow-hidden">
-                    {/* Background decoration */}
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80%] h-[80%] border border-zinc-100 rounded-full opacity-50 z-0" />
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-16 items-start relative z-10 font-serif border-y border-zinc-100 py-12">
-                        <div className="text-right space-y-6 md:pr-12 md:border-r border-zinc-100 py-4">
-                            <div className="flex items-center justify-end gap-3 mb-2">
-                                <span className="text-xs uppercase tracking-[0.25em] text-zinc-400 font-bold">Est. 2024</span>
-                                <StarIcon className="w-4 h-4 text-zinc-300" />
-                            </div>
-                            <h3 className="text-4xl md:text-5xl italic leading-none text-black">
-                                The Genesis.
-                            </h3>
-                            <p className="text-zinc-800 text-sm md:text-base leading-relaxed font-sans text-balance font-medium">
-                                The Rabuste journey began in 2024 with a clear and simple vision. Our founder, Vaibhav, saw something special in the Robusta coffee bean that many others ignored. While most shops focus only on Arabica, Vaibhav loved the strong, bold taste of Robusta and wanted to share its true quality with the world. He believed that if you treat this bean with care and respect, it creates a coffee experience that is full of flavor and character, perfect for those who want something real.
+                {/* SECTION 3.5: The Story (Revamped) */}
+                <Section className="py-20">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-16 items-stretch relative z-10">
+                        {/* Card 1: The Genesis */}
+                        <StoryCard year="Est. 2024" title="The Genesis.">
+                            <p>
+                                The Rabuste journey began in 2024 with a clear and simple vision. While the world chased Arabica, our founder <strong className="text-black font-medium">Vaibhav</strong> saw the untamed potential of the ignored bean.
                             </p>
-                        </div>
-
-                        <div className="text-left space-y-6 md:pl-12 py-4">
-                            <div className="flex items-center justify-start gap-3 mb-2">
-                                <CoffeeCupIcon className="w-4 h-4 text-zinc-300" />
-                                <span className="text-xs uppercase tracking-[0.25em] text-zinc-400 font-bold">Curated Space</span>
-                            </div>
-                            <h3 className="text-4xl md:text-5xl italic leading-none text-black">
-                                The Gallery.
-                            </h3>
-                            <p className="text-zinc-800 text-sm md:text-base leading-relaxed font-sans text-balance font-medium">
-                                For us, a cafe is not just a place to drink coffee, but a place to feel inspired. Vaibhav has always had a deep love for art and creativity, and he wanted Rabuste to reflect that passion. This is why our space doubles as a living art gallery. We don't just hang pictures on the wall for decoration; we carefully choose meaningful pieces to share with you. When you visit us, you are stepping into a space where great coffee and beautiful art come together to spark your imagination.
+                            <p>
+                                He didn't just want to brew coffee; he wanted to <strong className="text-black font-medium">challenge the palate</strong>. By treating Robusta with the respect usually reserved for fine wine, we unlocked a flavor profile that is bold, unapologetic, and <em className="text-black not-italic border-b border-black/20">impossible to ignore</em>.
                             </p>
-                        </div>
+                        </StoryCard>
+
+                        {/* Card 2: The Gallery */}
+                        <StoryCard year="Curated Space" title="The Gallery." delay={0.2}>
+                            <p>
+                                A cafe should be more than a caffeine stop; it should be a place of <strong className="text-black font-medium">provocation</strong>. Vaibhav's deep love for art shaped Rabuste into a living gallery.
+                            </p>
+                            <p>
+                                We don't use art as decoration. We curate pieces that <strong className="text-black font-medium">spark conversation</strong>. When you step inside, you aren't just drinking coffee—you are entering a space where flavor and visual creativity collide to wake up your imagination.
+                            </p>
+                        </StoryCard>
                     </div>
                 </Section>
 
 
                 {/* SECTION 4: The Trifecta */}
                 <Section className="mt-8 px-6">
-                    <div className="text-center mb-16">
-                        <h2 className="text-5xl md:text-7xl font-serif italic text-black mb-4">
+                    <motion.div
+                        initial={{ opacity: 0, y: 30 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true, margin: "-10%" }}
+                        transition={{ duration: 0.8, ease: "easeOut" }}
+                        className="text-center mb-16"
+                    >
+                        <h2 className="text-5xl md:text-7xl font-serif italic text-black mb-6">
                             The Trifecta.
                         </h2>
-                        <div className="h-px w-24 bg-black mx-auto" />
-                    </div>
+                        <div className="h-px w-24 bg-black mx-auto mb-8" />
+                        <p className="text-zinc-600 text-lg md:text-xl font-light leading-relaxed max-w-3xl mx-auto text-balance">
+                            Rabuste is built on three unshakeable pillars. We believe that true coffee culture goes beyond the cup—it is an immersion of the senses. By fusing high-grade Robusta, avant-garde art, and expert-led education, we create an ecosystem where flavor, creativity, and knowledge converge. This is our holy trinity; an experience designed not just to be consumed, but to be felt.
+                        </p>
+                    </motion.div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                         {[
@@ -313,37 +499,12 @@ const AwarenessPage: React.FC<AwarenessPageProps> = ({ onNavigate }) => {
                                 target: Page.WORKSHOPS
                             }
                         ].map((item, i) => (
-                            <motion.div
-                                key={i}
-                                whileHover={{ y: -8 }}
-                                className="bg-white p-10 border border-zinc-100 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col items-center text-center group h-full justify-between"
-                            >
-                                <div className="flex flex-col items-center">
-                                    <div className="mb-6 text-zinc-300 group-hover:text-black transition-colors transform group-hover:scale-110 duration-300">
-                                        {i === 1 ? <StarIcon className="w-12 h-12" /> : item.icon}
-                                    </div>
-                                    <h3 className="text-xl font-bold uppercase tracking-widest mb-4 text-black">{item.title}</h3>
-                                    <p className="text-zinc-600 text-sm leading-relaxed mb-8 max-w-xs">
-                                        {item.desc}
-                                    </p>
-                                </div>
-
-                                <button
-                                    onClick={() => onNavigate(item.target)}
-                                    className="px-6 py-3 bg-zinc-50 text-black text-[10px] uppercase tracking-[0.25em] font-bold border border-zinc-200 hover:bg-black hover:text-white hover:border-black transition-all duration-300"
-                                >
-                                    {item.action}
-                                </button>
-                            </motion.div>
+                            <TrifectaCard key={i} item={item} index={i} onNavigate={onNavigate} />
                         ))}
                     </div>
                 </Section>
 
-                {/* Footer - Spacing Reduced */}
-                <div className="mt-12 text-center border-t border-zinc-200 pt-6 flex flex-col items-center gap-4">
-                    <CoffeeBeanIcon className="w-5 h-5 text-zinc-300" />
-                    <p className="text-[10px] uppercase tracking-[0.3em] text-zinc-300">Rabuste © 2026</p>
-                </div>
+
 
             </div>
         </div>

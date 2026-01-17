@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { motion as motionBase, useScroll, useTransform } from 'framer-motion';
+import { motion as motionBase, useScroll, useTransform, useInView, useAnimation } from 'framer-motion';
 
 // Fix for framer-motion type mismatch in the current environment
 const motion = motionBase as any;
@@ -13,26 +13,23 @@ interface StickySectionProps {
 
 const StickySection: React.FC<StickySectionProps> = ({ onNavigate }) => {
   const containerRef = React.useRef(null);
-  const [shouldAnimate, setShouldAnimate] = React.useState(true);
+  const isInView = useInView(containerRef, { once: true, amount: 0.1 });
+  const mainControls = useAnimation();
 
   React.useEffect(() => {
-    const hasViewed = sessionStorage.getItem('hasViewedStory');
-    if (hasViewed) {
-      setShouldAnimate(false);
-    } else {
-      sessionStorage.setItem('hasViewedStory', 'true');
+    if (isInView) {
+      mainControls.start("visible");
     }
-  }, []);
+  }, [isInView]);
 
   return (
-    <section ref={containerRef} id="standard" className="relative min-h-[180vh] bg-[#F3EFE0] pt-10 md:pt-14 pb-24 md:pb-28 px-6 md:px-16">
-      <div className="max-w-6xl mx-auto flex flex-col lg:flex-row gap-28">
+    <section ref={containerRef} id="standard" className="relative min-h-0 lg:min-h-[80vh] bg-[#F3EFE0] pt-10 md:pt-14 pb-0 md:pb-14 px-6 md:px-16">
+      <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-28 lg:gap-40">
         {/* Left Sticky Content */}
         <div className="lg:w-[46%] lg:sticky lg:top-20 h-fit self-start z-10 pt-10">
           <motion.div
-            initial={shouldAnimate ? "hidden" : "visible"}
-            whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
+            initial="hidden"
+            animate={mainControls}
             variants={{
               hidden: { opacity: 0 },
               visible: {
@@ -114,7 +111,7 @@ const StickySection: React.FC<StickySectionProps> = ({ onNavigate }) => {
         <div className="lg:w-[54%] lg:pl-24 xl:pl-32 pt-10 lg:pt-32 grid grid-cols-2 gap-4 lg:flex lg:flex-col lg:gap-16 items-start lg:items-end justify-center">
           <motion.div
             style={{ willChange: 'transform, opacity' }}
-            initial={shouldAnimate ? { opacity: 0, x: -50 } : { opacity: 1, x: 0 }}
+            initial={{ opacity: 0, x: -50 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.8 }}
@@ -129,7 +126,7 @@ const StickySection: React.FC<StickySectionProps> = ({ onNavigate }) => {
 
           <motion.div
             style={{ willChange: 'transform, opacity' }}
-            initial={shouldAnimate ? { opacity: 0, x: 50 } : { opacity: 1, x: 0 }}
+            initial={{ opacity: 0, x: 50 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.8 }}
@@ -144,7 +141,7 @@ const StickySection: React.FC<StickySectionProps> = ({ onNavigate }) => {
 
           <motion.div
             style={{ willChange: 'transform, opacity' }}
-            initial={shouldAnimate ? { opacity: 0, y: 50 } : { opacity: 1, y: 0 }}
+            initial={{ opacity: 0, y: 50 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.8 }}

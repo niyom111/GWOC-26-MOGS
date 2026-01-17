@@ -326,7 +326,7 @@ const FranchisePage: React.FC = () => {
                         playsInline
                         className="w-full h-full object-cover"
                     >
-                        <source src="/franchiseheropage3.mp4" type="video/mp4" />
+                        <source src="/media/franchiseheropage3.mp4" type="video/mp4" />
                     </motion.video>
                     {/* Unified Overlay for Text Readability */}
                     <div className="absolute inset-0 bg-black/30 pointer-events-none" />
@@ -657,7 +657,7 @@ const FranchisePage: React.FC = () => {
                         playsInline
                         className="w-full h-full object-cover"
                     >
-                        <source src="/forestaesthetic.mp4" type="video/mp4" />
+                        <source src="/media/forestaesthetic.mp4" type="video/mp4" />
                     </video>
                 </div>
                 {/* Enhanced gradient for better blending with footer */}

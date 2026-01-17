@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion as motionBase, AnimatePresence as AnimatePresenceBase, useScroll, useMotionValueEvent, useTransform, useAnimation } from 'framer-motion';
+import { motion as motionBase, AnimatePresence as AnimatePresenceBase, useScroll, useMotionValueEvent, useTransform } from 'framer-motion';
 import { ShoppingBag, Menu, X } from 'lucide-react';
 import { Page } from '../types';
 
@@ -34,21 +34,13 @@ const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage, cartCount }) =
 
   const isHome = currentPage === Page.HOME;
   const isFranchise = currentPage === Page.FRANCHISE;
-  const isDarkBg = currentPage === Page.HOME || currentPage === Page.TRACK_ORDER;
+  // GLOBAL ADAPTIVE COLORS:
+  // We use mix-blend-difference on the header so icons invert based on background.
+  // This requires the icons themselves to be white (or light) to contrast properly when inverted.
+  const textColorClass = 'text-[#F3EFE0]';
+  const logoFilterClass = 'brightness-100';
 
-  // --- EXPLICIT COLOR MODES ---
-  // FRANCHISE: Beige Text, but entire header gets mix-blend-difference (handled in return)
-  // HOME / TRACK ORDER: Fixed Beige
-  // OTHERS: Fixed Black
-  const isBeigeText = isDarkBg || isFranchise;
-  const textColorClass = isBeigeText ? 'text-[#F3EFE0]' : 'text-[#0a0a0a]';
 
-  // LOGO FILTER:
-  const logoFilterClass = isBeigeText ? 'brightness-100' : 'brightness-0';
-
-  // MENU BUTTON BACKGROUND:
-  // Brand brown for mobile visibility (as requested) -> Changed to Beige for Adaptive Filtering
-  const menuButtonBg = 'bg-[#F3EFE0] border-[#F3EFE0] text-black';
 
   // --- SCROLL VISIBILITY LOGIC ---
   const { scrollY } = useScroll();
@@ -64,16 +56,14 @@ const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage, cartCount }) =
 
   return (
     <>
-      {/* HEADER CONTAINER (Logo & Cart Only) */}
+      {/* LOGO CONTAINER (Absolute - Scrolls with page) */}
       <motion.header
-        className="fixed top-0 left-0 w-full z-40 pointer-events-none transition-all duration-700 mix-blend-difference"
+        initial={{ y: -100 }}
+        animate={{ y: 0 }}
+        className="absolute top-0 left-0 w-full z-50 pointer-events-none transition-all duration-700 mix-blend-difference"
       >
-        <div
-          className={`relative flex items-center justify-between px-6 ${isHome ? 'py-1' : 'pt-2 pb-3'
-            }`}
-        >
+        <div className={`relative flex items-center justify-between px-6 ${isHome ? 'py-1' : 'pt-2 pb-3'}`}>
           {/* LOGO (Inner Pages Only - or Conditional) */}
-          {/* We show logo on inner pages to navigate home, but hide it on Admin AND Find Store (as requested). */}
           {!isHome && currentPage !== Page.ADMIN && currentPage !== Page.FIND_STORE && (
             <button
               onClick={() => handleNavigate(Page.HOME)}
@@ -82,46 +72,48 @@ const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage, cartCount }) =
               <img
                 src="/media/logo.png"
                 alt="Rabuste Logo"
-                className="h-16 md:h-20 w-30 object-contain brightness-0 invert"
+                className={`h-16 md:h-20 w-30 object-contain ${logoFilterClass}`}
               />
             </button>
           )}
-
-          {/* RIGHT SIDE ICONS */}
-          {currentPage !== Page.ADMIN && (
-            <div className="fixed top-4 right-4 md:top-8 md:right-12 z-50 flex items-center space-x-4 md:space-x-6 pointer-events-auto text-[#F3EFE0]">
-              {/* Cart Button */}
-              <button
-                onClick={() => handleNavigate(Page.CART)}
-                className="relative cursor-pointer opacity-100 hover:opacity-70 transition-opacity"
-              >
-                <ShoppingBag className="w-5 h-5 md:w-6 md:h-6" />
-                {cartCount > 0 && (
-                  <motion.span
-                    initial={{ scale: 0, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    // Badge Colors Flipped for Contrast
-                    className={`absolute -top-2 -right-2 text-[9px] w-4 h-4 flex items-center justify-center rounded-full font-black ${(isDarkBg || isFranchise) ? 'bg-[#F3EFE0] text-black' : 'bg-black text-[#F3EFE0]'}`}
-                  >
-                    {cartCount}
-                  </motion.span>
-                )}
-              </button>
-
-              {/* Hamburger Menu Button */}
-              <button
-                onClick={() => setMenuOpen(true)}
-                className="relative cursor-pointer hover:opacity-80 transition-opacity md:hidden"
-                aria-label="Open navigation menu"
-              >
-                <span className={`inline-flex h-10 w-10 items-center justify-center rounded-full border ${menuButtonBg}`}>
-                  <Menu className="w-5 h-5 text-white" />
-                </span>
-              </button>
-            </div>
-          )}
         </div>
       </motion.header>
+
+      {/* RIGHT SIDE ICONS (Fixed - Sticky) */}
+      {currentPage !== Page.ADMIN && (
+        <motion.div
+          initial={{ y: -100 }}
+          animate={{ y: 0 }}
+          className={`fixed top-4 right-4 md:top-8 md:right-12 z-50 flex items-center space-x-4 md:space-x-6 pointer-events-auto ${textColorClass} mix-blend-difference`}
+        >
+          {/* Cart Button */}
+          <button
+            onClick={() => handleNavigate(Page.CART)}
+            className="relative cursor-pointer opacity-100 hover:opacity-70 transition-opacity"
+          >
+            <ShoppingBag className="w-5 h-5 md:w-6 md:h-6" />
+            {cartCount > 0 && (
+              <motion.span
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                // Badge Colors Flipped for Contrast
+                className="absolute -top-2 -right-2 text-[9px] w-4 h-4 flex items-center justify-center rounded-full font-black bg-[#F3EFE0] text-black"
+              >
+                {cartCount}
+              </motion.span>
+            )}
+          </button>
+
+          {/* Hamburger Menu Button */}
+          <button
+            onClick={() => setMenuOpen(true)}
+            className="relative cursor-pointer hover:opacity-80 transition-opacity md:hidden p-2"
+            aria-label="Open navigation menu"
+          >
+            <Menu className="w-6 h-6" />
+          </button>
+        </motion.div>
+      )}
 
       {/* HORIZONTAL FOOTER NAVIGATION (Desktop Only) */}
       {currentPage !== Page.ADMIN && (
@@ -143,7 +135,7 @@ const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage, cartCount }) =
                     className={`
                       relative px-5 py-3 rounded-full text-[10px] md:text-xs uppercase tracking-[0.15em] font-bold whitespace-nowrap transition-all duration-300
                       ${isActive
-                        ? 'bg-[#B5693E] text-white shadow-md'
+                        ? 'bg-[#F3EFE0] text-black shadow-md'
                         : 'text-white hover:bg-white/10'
                       }
                     `}

@@ -11,6 +11,32 @@ interface FooterProps {
 
 const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
   const { orderSettings } = useDataContext();
+  const [isFooterLogoActive, setIsFooterLogoActive] = React.useState(false);
+  const footerLogoTimeoutRef = React.useRef<number | null>(null);
+
+  const handleFooterLogoClick = () => {
+    // If already active, clear timeout and deactivate immediately (toggle off)
+    if (isFooterLogoActive) {
+      if (footerLogoTimeoutRef.current) {
+        window.clearTimeout(footerLogoTimeoutRef.current);
+        footerLogoTimeoutRef.current = null;
+      }
+      setIsFooterLogoActive(false);
+      return;
+    }
+
+    // Activate
+    setIsFooterLogoActive(true);
+
+    // Auto-deactivate after 3 seconds
+    if (footerLogoTimeoutRef.current) {
+      window.clearTimeout(footerLogoTimeoutRef.current);
+    }
+    footerLogoTimeoutRef.current = window.setTimeout(() => {
+      setIsFooterLogoActive(false);
+      footerLogoTimeoutRef.current = null;
+    }, 3000);
+  };
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -18,11 +44,16 @@ const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
   return (
     <footer className="bg-black text-white">
       {/* Centerpiece Wordmark: Reduced by 33% and specifically using logo2.png */}
-      <div className="relative flex items-center justify-center h-[25vh] md:h-[40vh] overflow-hidden group border-b border-white/5">
+      {/* Centerpiece Wordmark: Reduced by 33% and specifically using logo2.png */}
+      <div
+        className="relative flex items-center justify-center h-[25vh] md:h-[40vh] overflow-hidden group border-b border-white/5 cursor-pointer"
+        onClick={handleFooterLogoClick}
+      >
         <img
           src="/media/logo2.png"
           alt="Rabuste Mark"
-          className="w-[66%] object-contain opacity-20 group-hover:opacity-100 transition-all duration-[1500ms]"
+          className={`w-[66%] object-contain transition-all duration-[1500ms] ${isFooterLogoActive ? 'opacity-100' : 'opacity-20 md:group-hover:opacity-100'
+            }`}
         />
         <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-black via-transparent to-black/10" />
       </div>

@@ -33,33 +33,35 @@ const CartPage: React.FC<CartPageProps> = ({
   const { placeOrder, refreshArtItems, orderSettings } = useDataContext();
 
   // EmailJS configuration (must be VITE_ prefixed in .env)
-  const EMAILJS_SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID as string;
-  const EMAILJS_TEMPLATE_ID_COUNTER = import.meta.env.VITE_EMAILJS_TEMPLATE_ID_COUNTER as string;
-  const EMAILJS_TEMPLATE_ID_ONLINE = import.meta.env.VITE_EMAILJS_TEMPLATE_ID_ONLINE as string;
-  const EMAILJS_PUBLIC_KEY = import.meta.env.VITE_EMAILJS_PUBLIC_KEY as string;
+  // --- EMAILJS CONFIGURATION ---
+  const EMAIL_CONFIG = {
+    GRAB_GO: {
+      SERVICE_ID: import.meta.env.VITE_EMAILJS_GRAB_GO_SERVICE_ID,
+      TEMPLATE_ID_COUNTER: import.meta.env.VITE_EMAILJS_GRAB_GO_TEMPLATE_ID_COUNTER,
+      TEMPLATE_ID_ONLINE: import.meta.env.VITE_EMAILJS_GRAB_GO_TEMPLATE_ID_ONLINE,
+      PUBLIC_KEY: import.meta.env.VITE_EMAILJS_GRAB_GO_PUBLIC_KEY,
+    },
+    INSTANT_ORDER: {
+      SERVICE_ID: import.meta.env.VITE_EMAILJS_INSTANT_ORDER_SERVICE_ID,
+      TEMPLATE_ID_COUNTER: import.meta.env.VITE_EMAILJS_INSTANT_ORDER_TEMPLATE_ID_COUNTER,
+      TEMPLATE_ID_ONLINE: import.meta.env.VITE_EMAILJS_INSTANT_ORDER_TEMPLATE_ID_ONLINE,
+      PUBLIC_KEY: import.meta.env.VITE_EMAILJS_INSTANT_ORDER_PUBLIC_KEY,
+    }
+  };
 
   // Log missing config
   useEffect(() => {
     const missingKeys: string[] = [];
-    if (!EMAILJS_SERVICE_ID) missingKeys.push('VITE_EMAILJS_SERVICE_ID');
-    if (!EMAILJS_TEMPLATE_ID_COUNTER) missingKeys.push('VITE_EMAILJS_TEMPLATE_ID_COUNTER');
-    if (!EMAILJS_TEMPLATE_ID_ONLINE) missingKeys.push('VITE_EMAILJS_TEMPLATE_ID_ONLINE');
-    if (!EMAILJS_PUBLIC_KEY) missingKeys.push('VITE_EMAILJS_PUBLIC_KEY');
+    if (!EMAIL_CONFIG.GRAB_GO.SERVICE_ID) missingKeys.push('VITE_EMAILJS_GRAB_GO_SERVICE_ID');
+    if (!EMAIL_CONFIG.INSTANT_ORDER.SERVICE_ID) missingKeys.push('VITE_EMAILJS_INSTANT_ORDER_SERVICE_ID');
 
     if (missingKeys.length > 0) {
       console.warn('⚠️ [Cart] Missing EmailJS Configuration Keys:', missingKeys.join(', '));
-      console.warn('   Please check your .env file.');
     } else {
       console.log('✅ [Cart] EmailJS Configuration loaded successfully.');
     }
   }, []);
 
-  // Initialize EmailJS once
-  useEffect(() => {
-    if (EMAILJS_PUBLIC_KEY) {
-      emailjs.init(EMAILJS_PUBLIC_KEY);
-    }
-  }, []);
 
   const subtotal = cart.reduce((acc, item) => {
     const price = item.price ?? 0;
@@ -221,11 +223,15 @@ const CartPage: React.FC<CartPageProps> = ({
 
           console.log('[Cart] Sending EmailJS with params:', templateParams);
 
+          // Determine Configuration
+          const config = orderType === 'order-from-store' ? EMAIL_CONFIG.INSTANT_ORDER : EMAIL_CONFIG.GRAB_GO;
+          const templateId = config.TEMPLATE_ID_COUNTER;
+
           await emailjs.send(
-            EMAILJS_SERVICE_ID,
-            EMAILJS_TEMPLATE_ID_COUNTER,
+            config.SERVICE_ID,
+            templateId,
             templateParams,
-            EMAILJS_PUBLIC_KEY
+            config.PUBLIC_KEY
           );
           console.log('[Cart] Email sent successfully');
         } catch (emailError: any) {
@@ -381,11 +387,16 @@ const CartPage: React.FC<CartPageProps> = ({
 
               console.log('[Payment] Sending EmailJS with params:', templateParams);
 
+              // Determine Configuration
+              const config = orderData.pickupTime === 'Dine-in' ? EMAIL_CONFIG.INSTANT_ORDER : EMAIL_CONFIG.GRAB_GO;
+              // Note: orderData.pickupTime is set to 'Dine-in' for Instant Order in logic above
+              const templateId = config.TEMPLATE_ID_ONLINE;
+
               await emailjs.send(
-                EMAILJS_SERVICE_ID,
-                EMAILJS_TEMPLATE_ID_ONLINE,
+                config.SERVICE_ID,
+                templateId,
                 templateParams,
-                EMAILJS_PUBLIC_KEY
+                config.PUBLIC_KEY
               );
               console.log('[PAYMENT] Email receipt sent successfully');
             } catch (emailError) {

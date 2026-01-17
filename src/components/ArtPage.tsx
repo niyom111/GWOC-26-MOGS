@@ -152,6 +152,7 @@ const ArtPage: React.FC<ArtPageProps> = ({ onAddToCart, cart, artItems }) => {
         </div>
       </div>
 
+      <Toast message={toastMessage} />
     </div >
   );
 };

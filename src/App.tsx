@@ -262,7 +262,7 @@ const AppContent: React.FC = () => {
 
   return (
     <DataProvider>
-      <div className="min-h-screen font-sans bg-[#F9F8F4] text-[#1A1A1A]">
+      <div className="min-h-screen font-sans bg-[#F9F8F4] text-[#1A1A1A] overflow-visible">
         {currentPage !== Page.ADMIN && currentPage !== Page.EMPLOYEE && (
           <Header onNavigate={navigateTo} currentPage={currentPage} cartCount={cartCount} />
         )}
@@ -270,15 +270,16 @@ const AppContent: React.FC = () => {
         <AnimatePresence mode="wait" onExitComplete={handleExitComplete}>
           <motion.div
             key={currentPage}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
             transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
             onAnimationComplete={() => {
               // Vital for position: fixed/sticky to work
-              document.body.style.overflowX = 'hidden';
+              document.body.style.overflowX = 'clip';
             }}
             id="page-transition-wrapper"
+            className="w-full overflow-visible relative"
           >
             {/* ScrollToTop removed */}
             {currentPage === Page.HOME && (
@@ -328,7 +329,7 @@ const AppContent: React.FC = () => {
             )}
 
             {currentPage === Page.ROBUSTA_STORY && (
-              <RobustaStory onBack={() => navigateTo(Page.PHILOSOPHY)} />
+              <RobustaStory onBack={navigateTo} />
             )}
 
             {currentPage === Page.FAQ && (

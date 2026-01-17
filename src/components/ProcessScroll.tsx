@@ -14,13 +14,9 @@ const ProcessCard: React.FC<{
     // We Map global scroll 0-1 to a shift in image position
     const imageX = useTransform(containerScroll, [0, 1], ["0%", "20%"]);
 
-    // 3D Rotation based on position (simulation)
-    // In a real horizontal scroll, we'd need element position, 
-    // but here we can add a subtle constant rotation or hover effect
-
     return (
         <motion.div
-            className="relative h-[60vh] w-[85vw] md:h-[70vh] md:w-[40vw] flex-shrink-0 overflow-hidden bg-[#F3EFE0] border-r border-black/10 group perspective-1000"
+            className="relative h-[65vh] w-[85vw] md:h-[70vh] md:w-[40vw] flex-shrink-0 overflow-hidden bg-[#F3EFE0] border-r border-black/10 group perspective-1000"
         >
             {/* Parallax Image Content */}
             <div className="absolute inset-0 w-full h-full">
@@ -40,22 +36,26 @@ const ProcessCard: React.FC<{
                     0{step.id}
                 </span>
 
-                <div className="overflow-hidden relative z-10">
+                <div className="overflow-visible relative z-10">
                     <motion.h3
-                        initial={{ y: "100%" }}
-                        whileInView={{ y: 0 }}
-                        transition={{ delay: 0.1, duration: 0.5 }}
-                        className="text-4xl md:text-7xl text-white font-serif mb-8 italic"
+                        initial={{ y: 20, opacity: 0 }}
+                        whileInView={{ y: 0, opacity: 1 }}
+                        viewport={{ once: false, amount: 0.1 }}
+                        transition={{ delay: 0.1, duration: 0.6, ease: "easeOut" }}
+                        style={{ willChange: "transform, opacity" }}
+                        className="text-4xl md:text-7xl text-white font-serif mb-4 italic"
                     >
                         {step.title}
                     </motion.h3>
                 </div>
 
-                <div className="overflow-hidden relative z-10">
+                <div className="overflow-visible relative z-10">
                     <motion.p
-                        initial={{ y: "100%" }}
-                        whileInView={{ y: 0 }}
-                        transition={{ delay: 0.2, duration: 0.5 }}
+                        initial={{ y: 20, opacity: 0 }}
+                        whileInView={{ y: 0, opacity: 1 }}
+                        viewport={{ once: false, amount: 0.1 }}
+                        transition={{ delay: 0.2, duration: 0.6, ease: "easeOut" }}
+                        style={{ willChange: "transform, opacity" }}
                         className="text-zinc-300 font-sans text-sm md:text-lg max-w-md mx-auto leading-relaxed"
                     >
                         {step.desc}
@@ -70,7 +70,14 @@ const ProcessScroll: React.FC = () => {
     const targetRef = useRef<HTMLDivElement>(null);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const [scrollRange, setScrollRange] = React.useState(0);
-    const [viewportWidth, setViewportWidth] = React.useState(0);
+    const [isMobile, setIsMobile] = React.useState(false);
+
+    useEffect(() => {
+        const check = () => setIsMobile(window.innerWidth < 768);
+        check();
+        window.addEventListener('resize', check);
+        return () => window.removeEventListener('resize', check);
+    }, []);
 
     // Measure the width of the horizontal content to determine exact scroll distance
     useEffect(() => {
@@ -84,7 +91,6 @@ const ProcessScroll: React.FC = () => {
                 const newRange = scrollWidth - clientWidth;
                 // Only update if dimensions actually changed significantly to avoid loops
                 setScrollRange(current => Math.abs(current - newRange) > 1 ? newRange : current);
-                setViewportWidth(clientWidth);
             }
         };
 
@@ -115,13 +121,15 @@ const ProcessScroll: React.FC = () => {
         offset: ["start start", "end end"]
     });
 
-    // Map vertical scroll (0 to 1) to horizontal translation (0 to -scrollRange in px)
-    // We scroll exactly the "excess" width so the last item aligns with the right edge
-    // Finishes 90% of the way through to give a moment of "pause" on the last slide
-    const x = useTransform(scrollYProgress, [0, 0.9], [0, -scrollRange]);
+    // Smooth spring physics for desktop "professional" feel
+    // On mobile, use direct scrollYProgress to remove "lag/float" feeling. Desktop gets spring.
+    const springProgress = useSpring(scrollYProgress, { stiffness: 100, damping: 30, restDelta: 0.001 });
+    const activeProgress = isMobile ? scrollYProgress : springProgress;
 
-    // Smoother spring physics removed to prevent lag on mobile
-    // const springX = useSpring(x, { stiffness: 60, damping: 30, mass: 1 });
+    // Start scrolling only after 15% of the section is consumed
+    // End scrolling at 85% to create a "buffer" at the end where it stays on the last slide
+    // before the user scrolls out to the next section.
+    const x = useTransform(activeProgress, [0.15, 0.85], [0, -scrollRange]);
 
     const steps = [
         {
@@ -151,13 +159,14 @@ const ProcessScroll: React.FC = () => {
     ];
 
     return (
-        // Height controls the "speed" of the scroll. 300vh allows enough scroll distance to feel natural.
-        <section ref={targetRef} className="relative h-[500vh] md:h-[400vh] bg-[#F3EFE0]">
-            <div className="sticky top-0 flex h-screen items-center overflow-hidden bg-[#F3EFE0] text-[#1A1A1A]">
+        // Height controls the "speed" of the scroll. Increased to 800vh on mobile to slow it down (absorb more scroll).
+        <section ref={targetRef} className="relative h-[800vh] md:h-[400vh] bg-[#F3EFE0] overflow-visible">
+            {/* Sticky container uses 100dvh for better mobile dynamic viewport support */}
+            <div className="sticky top-0 z-10 flex h-[100dvh] md:h-screen items-start pt-16 md:items-center md:pt-0 overflow-hidden bg-[#F3EFE0] text-[#1A1A1A]">
 
                 {/* Horizontal Moving Container using ref for measurement */}
-                <motion.div ref={scrollContainerRef} style={{ x }} className="flex">
-                    <div className="flex-shrink-0 w-[80vw] md:w-[50vw] h-screen flex flex-col justify-center px-10 md:px-24 border-r border-black/10">
+                <motion.div ref={scrollContainerRef} style={{ x, willChange: "transform" }} className="flex items-center">
+                    <div className="flex-shrink-0 w-[85vw] md:w-[50vw] h-auto flex flex-col justify-center px-8 md:px-24">
                         <motion.span
                             initial={{ opacity: 0 }}
                             whileInView={{ opacity: 1 }}
@@ -165,7 +174,7 @@ const ProcessScroll: React.FC = () => {
                         >
                             The Ritual
                         </motion.span>
-                        <h2 className="text-7xl md:text-[8rem] font-serif leading-[0.85] tracking-tighter mb-12">
+                        <h2 className="text-6xl md:text-[8rem] font-serif leading-[0.85] tracking-tighter mb-12">
                             From<br />
                             Bean To<br />
                             <span className="italic text-[#A35D36]">Cup.</span>
@@ -181,29 +190,22 @@ const ProcessScroll: React.FC = () => {
                     </div>
 
                     {steps.map((step, index) => (
-                        <ProcessCard
-                            key={step.id}
-                            step={step}
-                            index={index}
-                            x={x}
-                            // Pass raw scrollYProgress for parallax internal to card if needed
-                            containerScroll={scrollYProgress}
-                            onImageLoad={() => {
-                                // Force a recalculation when image loads
-                                window.dispatchEvent(new Event('resize'));
-                            }}
-                        />
+                        <div key={step.id} className="h-auto flex-shrink-0 flex flex-col justify-center md:pt-0">
+                            <ProcessCard
+                                step={step}
+                                index={index}
+                                x={x}
+                                // Pass raw scrollYProgress for parallax internal to card if needed
+                                containerScroll={scrollYProgress}
+                                onImageLoad={() => {
+                                    // Force a recalculation when image loads
+                                    window.dispatchEvent(new Event('resize'));
+                                }}
+                            />
+                        </div>
                     ))}
 
                 </motion.div>
-
-                {/* Progress Bar */}
-                <div className="absolute bottom-0 left-0 w-full h-2 bg-black/10">
-                    <motion.div
-                        style={{ scaleX: scrollYProgress }}
-                        className="h-full bg-[#A35D36] origin-left"
-                    />
-                </div>
             </div>
         </section>
     );
