@@ -83,6 +83,13 @@ const BrewDeskPopup: React.FC<BrewDeskPopupProps> = ({ onClose, onAddToCart }) =
         }
     };
 
+    // Auto-update effect: functionality to update recommendation when selection changes
+    useEffect(() => {
+        if (result && selectedActivityKey && selectedMoodKey) {
+            handleSubmit();
+        }
+    }, [selectedActivityKey, selectedMoodKey]);
+
     const handleAddToCartWithQuantity = (item: CoffeeItem, quantity: number, itemName: string) => {
         for (let i = 0; i < quantity; i++) {
             onAddToCart(item);
@@ -105,14 +112,18 @@ const BrewDeskPopup: React.FC<BrewDeskPopupProps> = ({ onClose, onAddToCart }) =
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-8 bg-black/20 backdrop-blur-sm">
             {/* Main Card Container - Wide & Centered */}
-            <div
-                className="relative w-full max-w-[1120px] bg-[#F9F8F4] rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+            <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }} // smooth easeOut
+                className="relative w-full max-w-[1120px] bg-[#F3EFE0] rounded-none shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
                 style={{ height: 'auto', minHeight: '600px' }} // Target height range
             >
                 {/* Close Button - absolute top right */}
                 <button
                     onClick={onClose}
-                    className="absolute top-6 right-6 z-10 text-xs uppercase tracking-[0.2em] text-zinc-400 hover:text-[#B5693E] transition-colors"
+                    className="absolute top-6 right-6 z-10 text-xs uppercase tracking-[0.2em] text-zinc-400 hover:text-black transition-colors"
                 >
                     Close
                 </button>
@@ -136,7 +147,7 @@ const BrewDeskPopup: React.FC<BrewDeskPopupProps> = ({ onClose, onAddToCart }) =
                         {/* Column 1: Activity */}
                         <div className="flex flex-col">
                             <div className="flex items-center gap-3 mb-6 border-b border-zinc-200 pb-2">
-                                <span className="text-[10px] font-bold text-[#B5693E] uppercase tracking-widest">01</span>
+                                <span className="text-[10px] font-bold text-black uppercase tracking-widest">01</span>
                                 <span className="text-xs font-medium text-zinc-400 uppercase tracking-[0.2em]">Select Activity</span>
                             </div>
 
@@ -150,10 +161,10 @@ const BrewDeskPopup: React.FC<BrewDeskPopupProps> = ({ onClose, onAddToCart }) =
                                         key={opt.key}
                                         onClick={() => setSelectedActivityKey(opt.key)}
                                         className={`
-                                        w-full text-left p-4 md:p-5 rounded-lg transition-all duration-300 group
+                                        w-full text-left p-4 md:p-5 rounded-none transition-all duration-300 group
                                         ${selectedActivityKey === opt.key
-                                                ? 'bg-[#B5693E] text-white shadow-lg translate-x-1'
-                                                : 'bg-white hover:bg-zinc-50 text-zinc-600 border border-transparent hover:border-zinc-200'
+                                                ? 'bg-black text-white shadow-lg translate-x-1'
+                                                : 'bg-white hover:bg-zinc-50 text-zinc-600 border border-black/60 hover:border-black'
                                             }
                                     `}
                                     >
@@ -176,7 +187,7 @@ const BrewDeskPopup: React.FC<BrewDeskPopupProps> = ({ onClose, onAddToCart }) =
                         {/* Column 2: Mood */}
                         <div className="flex flex-col">
                             <div className="flex items-center gap-3 mb-6 border-b border-zinc-200 pb-2">
-                                <span className="text-[10px] font-bold text-[#B5693E] uppercase tracking-widest">02</span>
+                                <span className="text-[10px] font-bold text-black uppercase tracking-widest">02</span>
                                 <span className="text-xs font-medium text-zinc-400 uppercase tracking-[0.2em]">Select Mood</span>
                             </div>
 
@@ -190,10 +201,10 @@ const BrewDeskPopup: React.FC<BrewDeskPopupProps> = ({ onClose, onAddToCart }) =
                                         key={opt.key}
                                         onClick={() => setSelectedMoodKey(opt.key)}
                                         className={`
-                                        w-full text-left p-4 md:p-5 rounded-lg transition-all duration-300 group
+                                        w-full text-left p-4 md:p-5 rounded-none transition-all duration-300 group
                                         ${selectedMoodKey === opt.key
-                                                ? 'bg-[#B5693E] text-white shadow-lg translate-x-1'
-                                                : 'bg-white hover:bg-zinc-50 text-zinc-600 border border-transparent hover:border-zinc-200'
+                                                ? 'bg-black text-white shadow-lg translate-x-1'
+                                                : 'bg-white hover:bg-zinc-50 text-zinc-600 border border-black/60 hover:border-black'
                                             }
                                     `}
                                     >
@@ -232,11 +243,11 @@ const BrewDeskPopup: React.FC<BrewDeskPopupProps> = ({ onClose, onAddToCart }) =
                                     <div className="bg-white p-6 rounded-xl border border-zinc-100 shadow-sm flex flex-col md:flex-row gap-6 items-center hover:shadow-md transition-shadow">
                                         <div className="flex-1">
                                             <div className="flex items-center gap-2 mb-2">
-                                                <span className="text-[10px] font-bold text-[#B5693E] uppercase tracking-widest"> Ideally Suited</span>
+                                                <span className="text-[10px] font-bold text-black uppercase tracking-widest"> Ideally Suited</span>
                                             </div>
                                             <h3 className="font-serif text-2xl italic text-[#27272a] mb-1">{result.coffee.name}</h3>
                                             <p className="text-zinc-500 text-xs mb-4">Perfect match for your mood.</p>
-                                            <span className="text-lg font-serif italic text-[#B5693E]">₹{result.coffee.price}</span>
+                                            <span className="text-lg font-serif italic text-black">₹{result.coffee.price}</span>
                                         </div>
 
                                         <div className="flex flex-col items-center gap-3 min-w-[120px]">
@@ -257,7 +268,7 @@ const BrewDeskPopup: React.FC<BrewDeskPopupProps> = ({ onClose, onAddToCart }) =
                                                     description: result.coffee.description || result.coffee.category || result.coffee.name,
                                                     diet_pref: result.coffee.diet_pref
                                                 }, coffeeQuantity, result.coffee.name)}
-                                                className="w-full py-2 px-4 bg-[#B5693E] hover:bg-[#a05530] text-white text-[10px] uppercase tracking-widest font-bold rounded-lg transition-colors shadow-sm"
+                                                className="w-full py-2 px-4 bg-white border border-black/20 hover:bg-black hover:text-white text-black text-[10px] uppercase tracking-widest font-bold rounded-lg transition-colors shadow-sm"
                                             >
                                                 Add
                                             </button>
@@ -270,11 +281,11 @@ const BrewDeskPopup: React.FC<BrewDeskPopupProps> = ({ onClose, onAddToCart }) =
                                     <div className="bg-white p-6 rounded-xl border border-zinc-100 shadow-sm flex flex-col md:flex-row gap-6 items-center hover:shadow-md transition-shadow">
                                         <div className="flex-1">
                                             <div className="flex items-center gap-2 mb-2">
-                                                <span className="text-[10px] font-bold text-[#B5693E] uppercase tracking-widest">Accompaniment</span>
+                                                <span className="text-[10px] font-bold text-black uppercase tracking-widest">Accompaniment</span>
                                             </div>
                                             <h3 className="font-serif text-2xl italic text-[#27272a] mb-1">{result.snack.name}</h3>
                                             <p className="text-zinc-500 text-xs mb-4">Pairs beautifully.</p>
-                                            <span className="text-lg font-serif italic text-[#B5693E]">₹{result.snack.price}</span>
+                                            <span className="text-lg font-serif italic text-black">₹{result.snack.price}</span>
                                         </div>
 
                                         <div className="flex flex-col items-center gap-3 min-w-[120px]">
@@ -295,7 +306,7 @@ const BrewDeskPopup: React.FC<BrewDeskPopupProps> = ({ onClose, onAddToCart }) =
                                                     description: result.snack.description || result.snack.category || result.snack.name,
                                                     diet_pref: result.snack.diet_pref
                                                 }, snackQuantity, result.snack.name)}
-                                                className="w-full py-2 px-4 bg-[#B5693E] hover:bg-[#a05530] text-white text-[10px] uppercase tracking-widest font-bold rounded-lg transition-colors shadow-sm"
+                                                className="w-full py-2 px-4 bg-white border border-black/20 hover:bg-black hover:text-white text-black text-[10px] uppercase tracking-widest font-bold rounded-lg transition-colors shadow-sm"
                                             >
                                                 Add
                                             </button>
@@ -313,7 +324,7 @@ const BrewDeskPopup: React.FC<BrewDeskPopupProps> = ({ onClose, onAddToCart }) =
                                 className={`
                                 group relative px-8 py-3 rounded-full overflow-hidden transition-all duration-500
                                 ${canSubmit
-                                        ? 'bg-[#27272a] hover:bg-black text-white shadow-lg cursor-pointer transform hover:-translate-y-1'
+                                        ? 'bg-black hover:bg-black/90 text-white shadow-lg cursor-pointer transform hover:-translate-y-1'
                                         : 'bg-zinc-100 text-zinc-300 cursor-not-allowed'
                                     }
                             `}
@@ -328,7 +339,7 @@ const BrewDeskPopup: React.FC<BrewDeskPopupProps> = ({ onClose, onAddToCart }) =
 
                 {/* Toast Notification */}
                 <Toast message={toastMessage} />
-            </div>
+            </motion.div>
         </div>
     );
 };
