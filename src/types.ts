@@ -8,6 +8,7 @@ export interface CoffeeItem {
   image: string;
   price: number;
   description: string;
+  diet_pref?: string;
 }
 
 export interface CartItem extends CoffeeItem {

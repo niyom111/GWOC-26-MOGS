@@ -785,9 +785,9 @@ app.post('/api/recommendations/context', async (req, res) => {
                 caffeine_mg: bestCoffee.caffeine_mg,
                 calories: bestCoffee.calories,
                 tags: [
-                    bestCoffee.strengthLabel ? bestCoffee.strengthLabel.charAt(0).toUpperCase() + bestCoffee.strengthLabel.slice(1) : '',
                     bestCoffee.trending ? 'Trending' : ''
                 ].filter(Boolean),
+                diet_pref: bestCoffee.diet_pref,
                 reason: `Matches your ${mood} mood for ${activity}`
             } : null,
             snack: bestSnack ? {
@@ -798,7 +798,8 @@ app.post('/api/recommendations/context', async (req, res) => {
                 image: bestSnack.image,
                 calories: bestSnack.calories,
                 shareable: bestSnack.shareable,
-                tags: [bestSnack.shareable ? 'Shareable' : 'Single', bestSnack.trending ? 'Trending' : ''].filter(Boolean)
+                tags: [bestSnack.shareable ? 'Shareable' : 'Single', bestSnack.trending ? 'Trending' : ''].filter(Boolean),
+                diet_pref: bestSnack.diet_pref
             } : null
         });
 

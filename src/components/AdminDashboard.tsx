@@ -485,6 +485,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
       shareable: 0,
       intensity_level: null,
       status: 'DRAFT',
+      diet_pref: 'veg',
     });
     // Fetch sub-categories for first category
     if (categories[0]?.id) {
@@ -644,10 +645,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
 
     console.log("Saving menu item", { coffeeDraft, categoryId, subCategoryId, selectedTags });
 
+    // Get the category name for legacy fallback
+    const categoryName = categories.find(c => c.id === categoryId)?.name || (coffeeDraft.category_id === '__NEW__' ? newCategoryName : '');
+
     const itemData: any = {
       name: draftName,
       category_id: categoryId,
       sub_category_id: subCategoryId || null,
+      category_legacy: categoryName, // Populate legacy column to avoid NOT NULL constraint error
       price: Number(coffeeDraft.price),
       caffeine: coffeeDraft.caffeine || 'High',
       caffeine_mg: itemKind === 'beverage' ? (coffeeDraft.caffeine_mg ?? null) : null,
@@ -656,8 +661,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
       intensity_level: coffeeDraft.intensity_level ?? null,
       image: coffeeDraft.image || '/media/pic1.jpeg',
       description: coffeeDraft.description || '',
-      tag_ids: selectedTags.map(t => t.id),
       status: coffeeDraft.status || 'DRAFT',
+      diet_pref: coffeeDraft.diet_pref || 'veg',
     };
 
     try {
@@ -1372,6 +1377,20 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
                   </div>
                 </div>
 
+                {/* Dietary Preference */}
+                <div>
+                  <label className="block text-[12px] font-semibold text-[#333] uppercase tracking-[0.05em] mb-3">Dietary Preference</label>
+                  <select
+                    value={coffeeDraft.diet_pref || 'veg'}
+                    onChange={e => handleCoffeeDraftChange('diet_pref', e.target.value)}
+                    className="w-full h-[46px] px-4 text-[14px] text-[#111] border border-[#DDD] outline-none focus:border-[#111] bg-white cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2012%2012%22%3E%3Cpath%20fill%3D%22%23666%22%20d%3D%22M2%204l4%204%204-4%22%2F%3E%3C%2Fsvg%3E')] bg-[length:12px] bg-[right_16px_center] bg-no-repeat transition-colors"
+                  >
+                    <option value="veg">Veg</option>
+                    <option value="non-veg">Non-Veg</option>
+                    <option value="jain">Jain</option>
+                  </select>
+                </div>
+
                 {/* Divider */}
                 <div className="border-t border-[#F0F0F0]" />
 
@@ -1958,8 +1977,9 @@ const CoffeeTable: React.FC<{
           <th className="px-6 py-3 font-semibold">Item</th>
           <th className="px-6 py-3 font-semibold">Category</th>
           <th className="px-6 py-3 font-semibold">Price (₹)</th>
+          <th className="px-6 py-3 font-semibold">Diet</th>
           <th className="px-6 py-3 font-semibold">Status</th>
-          <th className="px-6 py-3 font-semibold">Actions</th>
+          <th className="px-6 py-3 font-semibold text-right">Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -1975,6 +1995,14 @@ const CoffeeTable: React.FC<{
               {item.category}
             </td>
             <td className="px-6 py-4 text-sm font-semibold">₹{item.price}</td>
+            <td className="px-6 py-4">
+              <span className={`px-2 py-0.5 text-[9px] uppercase tracking-wider font-bold border ${item.diet_pref === 'non-veg' ? 'bg-red-50 text-red-600 border-red-100' :
+                item.diet_pref === 'jain' ? 'bg-orange-50 text-orange-600 border-orange-100' :
+                  'bg-emerald-50 text-emerald-600 border-emerald-100'
+                }`}>
+                {item.diet_pref || 'veg'}
+              </span>
+            </td>
             <td className="px-6 py-4">
               <button
                 onClick={() => onToggleStatus(item)}

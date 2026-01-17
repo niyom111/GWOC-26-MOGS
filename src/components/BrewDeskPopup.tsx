@@ -265,7 +265,8 @@ const BrewDeskPopup: React.FC<BrewDeskPopupProps> = ({ onClose, onAddToCart }) =
                                                     intensity: 4,
                                                     image: result.coffee.image || '/media/menu-placeholder.jpg',
                                                     price: result.coffee.price,
-                                                    description: result.coffee.description || result.coffee.category || result.coffee.name
+                                                    description: result.coffee.description || result.coffee.category || result.coffee.name,
+                                                    diet_pref: result.coffee.diet_pref
                                                 }, coffeeQuantity, result.coffee.name)}
                                                 className="w-full py-2 px-4 bg-white border border-black/20 hover:bg-black hover:text-white text-black text-[10px] uppercase tracking-widest font-bold rounded-lg transition-colors shadow-sm"
                                             >
@@ -302,7 +303,8 @@ const BrewDeskPopup: React.FC<BrewDeskPopupProps> = ({ onClose, onAddToCart }) =
                                                     intensity: 1,
                                                     image: result.snack.image || '/media/menu-placeholder.jpg',
                                                     price: result.snack.price,
-                                                    description: result.snack.description || result.snack.category || result.snack.name
+                                                    description: result.snack.description || result.snack.category || result.snack.name,
+                                                    diet_pref: result.snack.diet_pref
                                                 }, snackQuantity, result.snack.name)}
                                                 className="w-full py-2 px-4 bg-white border border-black/20 hover:bg-black hover:text-white text-black text-[10px] uppercase tracking-widest font-bold rounded-lg transition-colors shadow-sm"
                                             >
