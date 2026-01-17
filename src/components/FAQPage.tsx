@@ -1,78 +1,146 @@
-import React from 'react';
-import { motion as motionBase } from 'framer-motion';
+import React, { useState } from 'react';
+import { motion as motionBase, AnimatePresence } from 'framer-motion';
+import { ChevronDown } from 'lucide-react';
 
-// Fix for framer-motion type mismatch in the current environment
+// Fix for framer-motion type mismatch
 const motion = motionBase as any;
 
-const faqItems = [
+interface FAQItem {
+  question: string;
+  answer: string;
+  category: string;
+}
+
+const faqItems: FAQItem[] = [
+  // --- ORIGINAL ITEMS ---
   {
-    question: 'Account',
+    category: 'General',
+    question: 'what is robusta?',
+    answer:
+      'Robusta is a bold coffee bean known for its deep, intense character. It carries higher caffeine, a fuller body, and earthy, chocolate-forward notes—often finished with a lingering strength that stays with you. Where some coffees whisper, Robusta speaks with clarity and confidence.',
+  },
+  {
+    category: 'General',
+    question: 'do i need an account?',
     answer:
       'No login is required to experience Rabuste. Browse our coffees, artworks, and workshops freely. When you are ready to purchase or reserve a spot, you can check out in just a few clicks—no mandatory account walls.',
   },
+  // --- NEW ITEMS (ORDERING & SERVICE) ---
   {
-    question: 'Ordering',
+    category: 'Ordering',
+    question: 'how do I track my order?',
     answer:
-      'We are intentionally built for momentum. Place a pre-order online for "Grab-and-Go" and your drinks or beans will be waiting when you arrive. Seating is limited by design, so we prioritize speed and precision over lingering queues.',
+      'You can track your order by navigating to the "Track Order" page and entering the email address you used during checkout to view real-time status updates.',
   },
   {
-    question: 'Art',
+    category: 'Ordering',
+    question: 'what payment methods are accepted?',
+    answer:
+      'We accept all major credit/debit cards, UPI (valid for 5 minutes), and Net Banking via our secure Razorpay integration. For in-store pickup orders, you may also choose to pay at the counter.',
+  },
+
+  {
+    category: 'Art',
+    question: 'how does art purchase work?',
     answer:
       'Every piece on our walls is available for purchase. We partner directly with local and emerging artists so that each sale flows back to the creator. When you take a piece home, you are investing in the culture that shapes the café.',
-  },
-  {
-    question: 'Workshops',
-    answer:
-      'We host a mix of complimentary community sessions and ticketed deep-dives. From latte art labs to creative residencies and caffeine science nights, there is always a new way to learn, share, and experiment.',
   },
 ];
 
 const FAQPage: React.FC = () => {
-  const [openIndex, setOpenIndex] = React.useState<number | null>(0);
+  // Allow one open at a time
+  const [openIndex, setOpenIndex] = useState<number | null>(0);
 
   return (
-    <div className="pt-24 md:pt-32 pb-40 px-6 md:px-8 bg-[#F3EFE0] text-[#1A1A1A]">
-      <div className="max-w-4xl mx-auto">
-        <header className="mb-8 md:mb-12 text-center">
-          <motion.p
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-[9px] md:text-[10px] uppercase tracking-[0.4em] md:tracking-[0.5em] text-zinc-500 mb-4 font-sans"
-          >
-            Support
-          </motion.p>
+    <div className="min-h-screen bg-[#F9F8F4] pt-32 pb-40 px-6 font-sans">
+      <div className="max-w-3xl mx-auto">
+
+        {/* Header */}
+        <header className="text-center mb-16">
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-4xl md:text-5xl font-serif italic tracking-tight"
+            className="text-6xl md:text-7xl font-serif italic text-black tracking-tight"
+          >
+            FAQs
+          </motion.h1>
+          <motion.p
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="text-sm md:text-base font-serif italic uppercase tracking-[0.1em] text-zinc-600 mt-4"
           >
             Frequently Asked Questions
-          </motion.h1>
+          </motion.p>
         </header>
 
-        <section className="border-t border-black/10 pt-8">
-          <div className="divide-y divide-black/10">
-            {faqItems.map((item, index) => {
-              const isOpen = openIndex === index;
-              return (
-                <div key={item.question}>
-                  <button
-                    onClick={() => setOpenIndex(isOpen ? null : index)}
-                    className="w-full flex items-center justify-between py-4 text-left"
-                  >
-                    <span className="text-sm md:text-base uppercase tracking-[0.3em] text-[#1A1A1A]">
-                      {item.question}
-                    </span>
-                    <span className="text-xs font-mono text-zinc-500">{isOpen ? '−' : '+'}</span>
-                  </button>
-                  {isOpen && (
-                    <div className="pb-6 text-sm md:text-base text-zinc-700 leading-relaxed">{item.answer}</div>
-                  )}
+        {/* List */}
+        <div className="space-y-6">
+          {faqItems.map((item, index) => {
+            const isOpen = openIndex === index;
+
+            return (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+                onClick={() => setOpenIndex(isOpen ? null : index)}
+                className={`
+                  bg-white rounded-xl shadow-sm cursor-pointer overflow-hidden transition-all duration-300
+                  ${isOpen ? 'ring-1 ring-[#9B6833]/20 shadow-md' : 'hover:shadow-md'}
+                `}
+              >
+                {/* Question Header */}
+                <div className="p-6 md:p-8 flex items-center justify-between">
+                  <h3 className={`text-xl md:text-2xl font-serif italic transition-colors duration-300 ${isOpen ? 'text-[#9B6833]' : 'text-[#5C4033]'}`}>
+                    {item.question}
+                  </h3>
+
+                  <div className={`
+                    w-8 h-8 rounded-full flex items-center justify-center transition-all duration-500
+                    ${isOpen ? 'bg-[#9B6833] text-white rotate-180' : 'bg-[#EFEBE0] text-[#5C4033]'}
+                  `}>
+                    <ChevronDown size={18} strokeWidth={2.5} />
+                  </div>
                 </div>
-              );
-            })}
-          </div>
-        </section>
+
+                {/* Animated Answer Body */}
+                <AnimatePresence>
+                  {isOpen && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3, ease: [0.04, 0.62, 0.23, 0.98] }}
+                    >
+                      <div className="px-6 md:px-8 pb-8">
+                        <div className="flex border-l-2 border-[#9B6833] pl-6 py-1">
+                          <p className="text-zinc-600 leading-relaxed text-sm md:text-base font-serif italic text-[#5C4033]/80">
+                            {item.answer}
+                          </p>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
+            );
+          })}
+        </div>
+
+        {/* Footer Note */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.8 }}
+          className="mt-16 text-center"
+        >
+          <p className="text-xs uppercase tracking-[0.2em] text-zinc-400">
+            Still have questions? <a href="mailto:hello@rabuste.com" className="text-[#9B6833] border-b border-[#9B6833]/30 hover:border-[#9B6833]">Email us</a>
+          </p>
+        </motion.div>
+
       </div>
     </div>
   );
