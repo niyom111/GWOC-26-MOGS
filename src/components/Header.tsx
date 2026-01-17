@@ -190,7 +190,7 @@ const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage, cartCount }) =
                   >
                     <span className="relative inline-block">
                       <span className="relative z-10">{link.label}</span>
-                      <span className="absolute right-0 bottom-0 h-px w-0 bg-[#0a0a0a] transition-all duration-300 group-hover:w-full" />
+                      <span className={`absolute right-0 bottom-0 h-px bg-[#0a0a0a] transition-all duration-300 ${currentPage === link.page ? 'w-full' : 'w-0 group-hover:w-full'}`} />
                     </span>
                   </button>
                 ))}

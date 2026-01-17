@@ -2,12 +2,14 @@
 import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion as motionBase, AnimatePresence } from 'framer-motion';
-import { Search, Filter, X, Star } from 'lucide-react';
+import { Search, Filter, X } from 'lucide-react';
+import CustomDropdown from './ui/CustomDropdown';
 import { CoffeeItem } from '../types';
 import { useDataContext } from '../DataContext';
 import BrewDeskPopup from './BrewDeskPopup';
-import { API_BASE_URL } from '../config';
+import StatusPopup from './StatusPopup';
 import Toast from './Toast';
+import { API_BASE_URL } from '../config';
 
 // Fix for framer-motion type mismatch in the current environment
 const motion = motionBase as any;
@@ -254,7 +256,7 @@ interface MenuPageProps {
 }
 
 const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
-  const { menuItems, orderSettings } = useDataContext();
+  const { menuItems, orderSettings, menuLoading } = useDataContext();
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState<'default' | 'price-asc' | 'price-desc'>('default');
   const [activeCategoryId, setActiveCategoryId] = useState<string>('');
@@ -262,13 +264,12 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
   const toastTimeoutRef = useRef<number | null>(null);
   const activeCategoryTimeoutRef = useRef<number | null>(null);
   const [showBrewDesk, setShowBrewDesk] = useState(false);
+  const [isOrderPopupOpen, setIsOrderPopupOpen] = useState(false);
 
   const handleAddToCart = (item: CoffeeItem) => {
     // Check if ordering is enabled
     if (orderSettings && !orderSettings.menu_orders_enabled) {
-      setToastMessage('Ordering is currently paused.');
-      if (toastTimeoutRef.current) window.clearTimeout(toastTimeoutRef.current);
-      toastTimeoutRef.current = window.setTimeout(() => setToastMessage(null), 2000);
+      setIsOrderPopupOpen(true);
       return;
     }
 
@@ -556,7 +557,7 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
       if (element) {
         const yOffset = -180; // Offset for sticky navigation/header
         const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
-        window.scrollTo({ top: y, behavior: 'smooth' });
+        window.scrollTo({ top: y, behavior: 'auto' });
       }
     }, 100);
   };
@@ -822,26 +823,26 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
   }, [search, filteredCategories, menuItems]);
 
 
-
   return (
-    <motion.div
-      initial={{ opacity: 1 }}
-      animate={{ opacity: 1 }}
+    <div
       className="pt-24 md:pt-32 pb-40 px-6 md:px-8 bg-[#F3EFE0] min-h-screen"
     >
       <div className="max-w-7xl mx-auto">
+        {orderSettings && !orderSettings.menu_orders_enabled && (
+          <div className="mb-8 p-4 bg-red-50 border border-red-200 text-red-800 flex items-center justify-center gap-2 rounded-sm">
+            <div className="w-2 h-2 rounded-full bg-red-600" />
+            <span className="text-xs font-bold uppercase tracking-widest">Currently not accepting menu orders</span>
+          </div>
+        )}
         {/* NEW HEADER - Community Style (Wide) */}
-        <motion.header
-          variants={{
-            hidden: { opacity: 0, y: 20 },
-            visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] } }
-          }}
+        <header
           className="mb-20 md:mb-32 flex flex-col md:flex-row justify-between items-end gap-6 md:gap-10"
         >
           <div>
             <motion.p
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
+              transition={{ duration: 0.6 }}
               className="text-[10px] md:text-[13px] uppercase tracking-[0.4em] md:tracking-[0.5em] text-black mb-4 md:mb-6"
             >
               Curated Selections
@@ -849,15 +850,21 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
             <motion.h1
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.2 }}
               className="text-5xl md:text-9xl font-serif italic tracking-tighter leading-none"
             >
               The Menu.
             </motion.h1>
           </div>
-          <p className="max-w-xs text-[14px] md:text-s font-sans text-black uppercase tracking-widest leading-relaxed text-right italic">
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+            className="max-w-xs text-[14px] md:text-s font-sans text-black uppercase tracking-widest leading-relaxed text-right italic"
+          >
             "Flavor is a language, and every dish tells a story of origin and craft."
-          </p>
-        </motion.header>
+          </motion.p>
+        </header>
       </div>
 
       <div className="max-w-7xl mx-auto">
@@ -866,65 +873,96 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
             But Menu is long... let's keep it but make it blend in or cleaner.
         */}
         {/* Mobile Navigation (Sticky Top) - Refined: Smooth Entry, Beige, Unbold, Soft Mask */}
-        <motion.div
-          variants={{
-            hidden: { opacity: 0, y: -10 },
-            visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut", delay: 0.4 } }
-          }}
-          className="sticky top-24 z-30 bg-[#F3EFE0]/85 backdrop-blur-md py-5 mb-12 -mx-6 px-6 md:mx-0 md:px-0"
-        >
-          <div className="flex overflow-x-auto gap-3 pb-2 no-scrollbar snap-x justify-start md:justify-center">
-            {/* Removed All Button */}
-            {allCategories.map(cat => {
-              const isActive = activeCategoryId === cat.id;
-              return (
-                <button
-                  key={cat.id}
-                  onClick={() => handleCategoryClick(cat.id)}
-                  className={`relative shrink-0 px-8 py-3 rounded-full text-base font-bold font-sans border transition-colors snap-start ${isActive
-                    ? 'text-[#F9F8F4] border-[#B5693E]'
-                    : 'bg-white border-black/80 text-black hover:bg-black/5'
-                    }`}
-                >
-                  {isActive && (
-                    <motion.div
-                      layoutId="activeCategory"
-                      className="absolute inset-0 bg-[#B5693E] rounded-full"
-                      initial={false}
-                      transition={{ type: "spring", stiffness: 350, damping: 30 }}
-                    />
-                  )}
-                  <span className="relative z-10 capitalize tracking-wide">
-                    {cat.label.toLowerCase()}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
+        {!menuLoading && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.6 }}
+            className="sticky top-24 z-30 bg-[#F3EFE0]/85 backdrop-blur-md py-5 mb-12 -mx-6 md:mx-0 md:px-0"
+          >
+            <motion.div
+              initial="hidden"
+              animate="visible"
+              variants={{
+                visible: {
+                  transition: {
+                    staggerChildren: 0.08
+                  }
+                }
+              }}
+              className="flex overflow-x-auto gap-3 pb-2 no-scrollbar snap-x scroll-pl-6 justify-start md:justify-center"
+            >
+              <div className="w-6 shrink-0 md:hidden" />
+              {/* Removed All Button */}
+              {allCategories.map((cat) => {
+                const isActive = activeCategoryId === cat.id;
 
-          {/* Scroll Hint */}
-          <div className="md:hidden flex justify-center mt-2">
-            <span className="text-[10px] uppercase tracking-widest text-black/40 font-sans flex items-center gap-2">
-              <span className="animate-pulse">←</span> SCROLL <span className="animate-pulse">→</span>
-            </span>
-          </div>
-        </motion.div>
+                return (
+                  <motion.button
+                    key={cat.id}
+                    variants={{
+                      hidden: { opacity: 0, x: -20 },
+                      visible: { opacity: 1, x: 0 }
+                    }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => handleCategoryClick(cat.id)}
+                    className={`relative shrink-0 py-3 rounded-full text-base font-semibold font-sans border snap-start transition-all duration-300 
+                      px-8
+                      ${isActive
+                        ? 'text-[#F9F8F4] border-[#B5693E]'
+                        : 'bg-white border-black/80 text-black hover:bg-black/5'
+                      }`}
+                  >
+                    {isActive && (
+                      <motion.div
+                        layoutId="activeCategory"
+                        className="absolute inset-0 bg-[#B5693E] rounded-full"
+                        transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                      />
+                    )}
+                    <span className="relative z-10 capitalize tracking-wide">
+                      {cat.label.toLowerCase()}
+                    </span>
+                  </motion.button>
+                );
+              })}
+              <div className="w-6 shrink-0 md:hidden" />
+            </motion.div>
+
+            {/* Scroll Hint */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 1 }}
+              className="md:hidden flex justify-center mt-2"
+            >
+              <span className="text-[10px] uppercase tracking-widest text-black/40 font-sans flex items-center gap-2">
+                <span>←</span> SCROLL <span>→</span>
+              </span>
+            </motion.div>
+          </motion.div>
+        )}
 
 
         {/* Right Content -> Main Content (Centered) */}
         <main>
           {/* Unified Premium Toolbar */}
-          <div className="mb-16 border-b border-black/5 pb-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.8 }}
+            className="mb-16 border-b border-black/5 pb-8"
+          >
             <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-8 xl:gap-12">
 
               {/* Left: Search Bar (Dominant) */}
-              <div className="relative w-full xl:max-w-xl">
-                <Search className="w-5 h-5 text-zinc-400 absolute left-0 top-1/2 -translate-y-1/2 transition-colors group-focus-within:text-black" />
+              <div className="relative w-full xl:max-w-xl group">
+                <Search className="w-5 h-5 text-zinc-400 absolute left-0 top-1/2 -translate-y-1/2 group-focus-within:text-black transition-colors" />
                 <input
                   value={search}
                   onChange={e => setSearch(e.target.value)}
                   placeholder="Search menu..."
-                  className="w-full pl-8 pr-4 py-3 bg-transparent border-b border-black/10 text-lg font-serif italic text-black placeholder:text-black/60 outline-none focus:border-black/40 transition-all"
+                  className="w-full pl-8 pr-4 py-3 bg-transparent border-b border-black/10 text-lg font-serif italic text-black placeholder:text-black/60 outline-none focus:border-black/40 transition-colors"
                 />
               </div>
 
@@ -932,15 +970,17 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
               <div className="flex flex-col md:flex-row md:items-center gap-6 md:gap-8 xl:gap-10">
 
                 {/* 1. CTA Button (Now First) */}
-                <button
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
                   type="button"
                   onClick={() => setShowBrewDesk(true)}
-                  className="px-6 py-3 rounded-full bg-[#B5693E] text-[#F9F8F4] text-[10px] font-bold uppercase tracking-[0.25em] hover:bg-[#a05530] transition-colors shadow-sm hover:shadow-md whitespace-nowrap"
+                  className="px-6 py-3 rounded-full bg-[#B5693E] text-[#F9F8F4] text-[10px] font-bold uppercase tracking-[0.25em] hover:bg-[#a05530] shadow-sm hover:shadow-md whitespace-nowrap transition-all"
                 >
                   Help me choose
-                </button>
+                </motion.button>
 
-                {/* 2. Dietary Key & Cafe Special */}
+                {/* 2. Dietary Key */}
                 <div className="flex items-center gap-4 text-xs font-sans text-black uppercase tracking-widest md:border-l md:border-black/10 md:pl-8">
                   <span className="hidden md:inline text-black font-semibold">Key:</span>
 
@@ -964,31 +1004,27 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
                       <span className="text-sm font-medium text-zinc-600 whitespace-nowrap">Non-Veg</span>
                     </div>
 
-                    <div className="flex items-center gap-2" title="Cafe Special">
-                      <Star className="w-5 h-5 text-[#FFD700] fill-[#FFD700]" />
-                      <span className="text-sm font-medium text-[#B5693E] whitespace-nowrap">Cafe Special</span>
-                    </div>
+
                   </div>
                 </div>
 
                 {/* 3. Sort Dropdown (Now Last) */}
-                <div className="flex items-center gap-3 group cursor-pointer">
-                  <Filter className="w-4 h-4 text-black group-hover:text-black transition-colors" />
-                  <div className="relative">
-                    <select
-                      value={sortBy}
-                      onChange={e => setSortBy(e.target.value as any)}
-                      className="appearance-none bg-transparent py-2 pr-8 text-xs font-sans uppercase tracking-[0.2em] text-black outline-none cursor-pointer group-hover:text-black transition-colors"
-                    >
-                      <option value="default">Sort by</option>
-                      <option value="price-asc">Price: Low to High</option>
-                      <option value="price-desc">Price: High to Low</option>
-                    </select>
-                  </div>
-                </div>
+                {/* 3. Sort Dropdown (Now Last) */}
+                <CustomDropdown
+                  value={sortBy}
+                  onChange={(val) => setSortBy(val as any)}
+                  options={[
+                    { value: 'default', label: 'Sort by' },
+                    { value: 'price-asc', label: 'Price: Low to High' },
+                    { value: 'price-desc', label: 'Price: High to Low' },
+                  ]}
+                  minimal
+                  triggerIcon={<Filter className="w-4 h-4 text-black" />}
+                  className="group"
+                />
               </div>
             </div>
-          </div>
+          </motion.div>
 
           {/* Sections list */}
           <div className="space-y-16">
@@ -1004,20 +1040,44 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
             {/* Recommended Section (Personalized) */}
             {(!search && recommendedItems.length > 0) && (
               <section id="recommended-for-you" className="scroll-mt-36 mb-16">
-                <div className="mb-8 text-center md:text-left">
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: "-10%" }}
+                  transition={{ duration: 0.6 }}
+                  className="mb-8 text-center md:text-left"
+                >
                   <p className="text-[10px] uppercase tracking-[0.4em] text-black font-stardom mb-1">
                     picked for you
                   </p>
                   <h2 className="text-5xl md:text-7xl font-stardom italic tracking-tight text-black">
                     Recommended
                   </h2>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-10">
+                </motion.div>
+                <motion.div
+                  initial="hidden"
+                  whileInView="visible"
+                  viewport={{ once: true, margin: "-5%" }}
+                  variants={{
+                    visible: {
+                      transition: {
+                        staggerChildren: 0.1
+                      }
+                    }
+                  }}
+                  className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-10"
+                >
                   {recommendedItems.map(item => {
                     const isVeg = item.diet_pref === 'veg' || item.diet_pref === 'jain';
                     return (
-                      <div
+                      <motion.div
                         key={`rec-${item.id}`}
+                        variants={{
+                          hidden: { opacity: 0, y: 20 },
+                          visible: { opacity: 1, y: 0 }
+                        }}
+                        whileHover={{ y: -4 }}
+                        transition={{ duration: 0.3 }}
                         className="flex flex-col pb-4 border-b border-black/10 group"
                       >
                         {/* Top Row: Name and Price/Add */}
@@ -1029,40 +1089,33 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
                             <span className="text-xl md:text-2xl font-medium font-sans text-[#1A1A1A]">
                               ₹{item.price}
                             </span>
-                            <button
-                              onClick={() => {
-                                onAddToCart(item);
-                                setToastMessage(`${item.name} added to cart`);
-                                if (toastTimeoutRef.current) {
-                                  window.clearTimeout(toastTimeoutRef.current);
-                                }
-                                toastTimeoutRef.current = window.setTimeout(() => {
-                                  setToastMessage(null);
-                                }, 1500);
-                              }}
+                            <motion.button
+                              whileHover={{ scale: 1.1, rotate: 90 }}
+                              whileTap={{ scale: 0.9 }}
+                              onClick={() => handleAddToCart(item)}
                               className="w-10 h-10 flex items-center justify-center rounded-full border border-[#B5693E] text-[#B5693E] 
-                                         hover:bg-[#B5693E] hover:text-white transition-all duration-300 hover:-translate-y-1 hover:rotate-90"
+                                         hover:bg-[#B5693E] hover:text-white transition-colors duration-300"
                               aria-label="Add to cart"
                             >
                               <span className="text-3xl leading-none mb-1">+</span>
-                            </button>
+                            </motion.button>
                           </div>
                         </div>
 
                         {/* Bottom Row: Icon + Description */}
                         {/* Bottom Row: Icon + Description */}
                         <div className="flex items-start text-base md:text-lg text-black font-sans font-light leading-relaxed">
-                          <span className="inline-flex shrink-0 translate-y-[5px] mr-2">
+                          <span className="inline-flex shrink-0 translate-y-[8px] mr-2">
                             <DietIcon pref={item.diet_pref} />
                           </span>
                           <p>
                             {item.notes} • Based on your taste
                           </p>
                         </div>
-                      </div>
+                      </motion.div>
                     );
                   })}
-                </div>
+                </motion.div>
               </section>
             )}
 
@@ -1072,11 +1125,17 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
                 id="trending-now"
                 className="scroll-mt-36"
               >
-                <div className="mb-8 text-center md:text-left">
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: "-10%" }}
+                  transition={{ duration: 0.6 }}
+                  className="mb-8 text-center md:text-left"
+                >
                   <h2 className="text-5xl md:text-7xl font-stardom italic tracking-tight">
                     Trending Now
                   </h2>
-                </div>
+                </motion.div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-10">
                   {trendingItems.map(item => {
@@ -1117,16 +1176,7 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
                               ₹{item.price}
                             </span>
                             <button
-                              onClick={() => {
-                                onAddToCart(cartItem);
-                                setToastMessage(`${item.name} added to cart`);
-                                if (toastTimeoutRef.current) {
-                                  window.clearTimeout(toastTimeoutRef.current);
-                                }
-                                toastTimeoutRef.current = window.setTimeout(() => {
-                                  setToastMessage(null);
-                                }, 1500);
-                              }}
+                              onClick={() => handleAddToCart(cartItem)}
                               className="w-10 h-10 flex items-center justify-center rounded-full border border-[#B5693E] text-[#B5693E] 
                                          hover:bg-[#B5693E] hover:text-white transition-all duration-300 hover:-translate-y-1 hover:rotate-90"
                               aria-label="Add to cart"
@@ -1165,19 +1215,31 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
                 data-category-id={category.id}
                 className="scroll-mt-36"
               >
-                <div className="mb-6 mt-4 text-center md:text-left">
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: "-10%" }}
+                  transition={{ duration: 0.6 }}
+                  className="mb-6 mt-4 text-center md:text-left"
+                >
                   <h2 className="text-5xl md:text-7xl font-stardom italic tracking-tight">
                     {category.label}
                   </h2>
-                </div>
+                </motion.div>
 
                 <div className="space-y-16">
                   {category.subCategories.length > 0 ? (
                     category.subCategories.map(subCategory => (
                       <div key={subCategory.id}>
-                        <h3 className="text-3xl md:text-4xl font-stardom italic text-[#B5693E] mb-12 capitalize">
+                        <motion.h3
+                          initial={{ opacity: 0, x: -20 }}
+                          whileInView={{ opacity: 1, x: 0 }}
+                          viewport={{ once: true, margin: "-5%" }}
+                          transition={{ duration: 0.5 }}
+                          className="text-3xl md:text-4xl font-stardom italic text-[#B5693E] mb-12 capitalize"
+                        >
                           {subCategory.title}
-                        </h3>
+                        </motion.h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-20">
                           {subCategory.items.map(item => {
                             const fullItem = menuItems.find(m => m.id === item.id) || item as any;
@@ -1196,8 +1258,13 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
                             };
 
                             return (
-                              <div
+                              <motion.div
                                 key={item.id}
+                                initial={{ opacity: 0, y: 20 }}
+                                whileInView={{ opacity: 1, y: 0 }}
+                                viewport={{ once: true, margin: "-10%" }}
+                                transition={{ duration: 0.4 }}
+                                whileHover={{ y: -4 }}
                                 className="flex flex-col pb-4 border-b border-black/10 group"
                               >
                                 {/* Top Row: Name and Price/Add */}
@@ -1209,27 +1276,29 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
                                     <span className="text-xl md:text-2xl font-medium font-sans text-[#1A1A1A]">
                                       ₹{item.price}
                                     </span>
-                                    <button
+                                    <motion.button
+                                      whileHover={{ scale: 1.1, rotate: 90 }}
+                                      whileTap={{ scale: 0.9 }}
                                       onClick={() => handleAddToCart(cartItem)}
                                       className="w-10 h-10 flex items-center justify-center rounded-full border border-[#B5693E] text-[#B5693E] 
-                                                  hover:bg-[#B5693E] hover:text-white transition-all duration-300 hover:-translate-y-1 hover:rotate-90"
+                                                  hover:bg-[#B5693E] hover:text-white transition-colors duration-300"
                                       aria-label="Add to cart"
                                     >
                                       <span className="text-3xl leading-none mb-1">+</span>
-                                    </button>
+                                    </motion.button>
                                   </div>
                                 </div>
 
                                 {/* Bottom Row: Icon + Description */}
                                 <div className="flex items-start text-base md:text-lg text-black font-sans font-light leading-relaxed">
-                                  <span className="inline-flex shrink-0 translate-y-[5px] mr-2">
+                                  <span className="inline-flex shrink-0 translate-y-[8px] mr-2">
                                     <DietIcon pref={fullItem.diet_pref} />
                                   </span>
                                   <p>
                                     {description}
                                   </p>
                                 </div>
-                              </div>
+                              </motion.div>
                             );
                           })}
                         </div>
@@ -1278,7 +1347,7 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
                               </div>
                             </div>
                             <div className="flex items-start gap-1 text-sm text-zinc-500 font-sans font-light leading-snug">
-                              <div className="pt-[3px] shrink-0">
+                              <div className="pt-[6px] shrink-0">
                                 <DietIcon pref={fullItem.diet_pref} />
                               </div>
                               <p>{description}</p>
@@ -1322,8 +1391,17 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
         )
       }
 
+
+      <StatusPopup
+        isOpen={isOrderPopupOpen}
+        onClose={() => setIsOrderPopupOpen(false)}
+        title="We're Closed for Now"
+        message="Our kitchen is currently taking a break. We are not accepting new menu orders at the moment. Please check back soon!"
+        type="info"
+      />
+
       <Toast message={toastMessage} />
-    </motion.div>
+    </div>
   );
 };
 

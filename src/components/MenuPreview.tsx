@@ -1,7 +1,9 @@
-
 import React from 'react';
 import { motion as motionBase, useInView } from 'framer-motion';
 import { CoffeeItem } from '../types';
+import { useDataContext } from '../DataContext';
+import StatusPopup from './StatusPopup';
+import Toast from './Toast';
 
 // Fix for framer-motion type mismatch in the current environment
 const motion = motionBase as any;
@@ -70,35 +72,41 @@ const useIsMobile = () => {
   return isMobile;
 };
 
-// Helper component for individual cards to handle InView logic separately
-const MenuCard: React.FC<{ item: typeof items[0], index: number, onAddToCart: any, onToast: (msg: string) => void }> = ({ item, index, onAddToCart, onToast }) => {
-  // Use a ref locally for this card
+// Helper component for individual cards
+const MenuCard: React.FC<{ item: typeof items[0], index: number, onAddToCart: (item: any) => void }> = ({ item, index, onAddToCart }) => {
   const ref = React.useRef(null);
-  // Use framer-motion's useInView hook. 
-  // margin: "-40% 0px -40% 0px" means it activates when the middle 20% of the element is in the viewport
   const isInView = useInView(ref, { margin: "-40% 0px -40% 0px" });
   const isMobile = useIsMobile();
 
-  // Animation variants defined locally
-  const cardVariants = {
-    hidden: isMobile
-      ? { x: '-100%', y: 0, opacity: 0 }
-      : { y: '-100%', x: 0, opacity: 0 },
+  // Desktop: hidden/visible (inherited from parent stagger)
+  const desktopVariants = {
+    hidden: { y: '-100%', x: 0, opacity: 0 },
     visible: {
-      x: 0,
-      y: 0,
-      opacity: 1,
-      transition: {
-        duration: 1.2,
-        ease: [0.22, 1, 0.36, 1]
-      }
+      y: 0, x: 0, opacity: 1,
+      transition: { duration: 1.2, ease: [0.22, 1, 0.36, 1] }
+    }
+  };
+
+  // Mobile: mobileHidden/mobileVisible (triggered individually by scroll)
+  // We use DIFFERENT keys to break inheritance from parent's 'visible' propagation
+  const mobileVariants = {
+    mobileHidden: { x: -50, opacity: 0 },
+    mobileVisible: {
+      x: 0, y: 0, opacity: 1,
+      transition: { duration: 0.8, ease: "easeOut" }
     }
   };
 
   return (
     <motion.div
       ref={ref}
-      variants={cardVariants}
+      // Select variant set based on device
+      variants={isMobile ? mobileVariants : desktopVariants}
+      // Initial state: uses specific key based on device, or undefined (inherits) for desktop
+      initial={isMobile ? "mobileHidden" : undefined}
+      // Trigger: Mobile -> explicit whileInView. Desktop -> relies on parent propagation (undefined here)
+      whileInView={isMobile ? "mobileVisible" : undefined}
+      viewport={isMobile ? { once: true, amount: 0.1 } : undefined}
       className="group relative w-full h-full overflow-hidden bg-[#0a0a0a] min-h-[80vh] md:min-h-auto"
     >
       {/* Vivid Background Image */}
@@ -156,7 +164,6 @@ const MenuCard: React.FC<{ item: typeof items[0], index: number, onAddToCart: an
                 onClick={(e) => {
                   e.stopPropagation();
                   onAddToCart(item);
-                  onToast(`${item.name} added to cart`);
                 }}
                 className="px-8 py-4 bg-white text-black min-w-[160px] text-[11px] uppercase tracking-[0.3em] font-bold hover:bg-[#A35D36] hover:text-white transition-colors shadow-xl"
               >
@@ -164,18 +171,20 @@ const MenuCard: React.FC<{ item: typeof items[0], index: number, onAddToCart: an
               </button>
             </div>
           </div>
-
         </div>
       </div>
     </motion.div>
   );
 };
 
-import Toast from './Toast';
-
 const MenuPreview: React.FC<MenuPreviewProps> = ({ onAddToCart, onGoToMenu }) => {
   const [toastMessage, setToastMessage] = React.useState<string | null>(null);
   const toastTimeoutRef = React.useRef<number | null>(null);
+  const isMobile = useIsMobile();
+
+  // Get settings for order availability check
+  const { orderSettings } = useDataContext();
+  const [isOrderPopupOpen, setIsOrderPopupOpen] = React.useState(false);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -183,8 +192,33 @@ const MenuPreview: React.FC<MenuPreviewProps> = ({ onAddToCart, onGoToMenu }) =>
     toastTimeoutRef.current = window.setTimeout(() => setToastMessage(null), 2000); // 2s duration for visibility
   };
 
+  const handleAddToCart = (item: CoffeeItem) => {
+    if (orderSettings && !orderSettings.menu_orders_enabled) {
+      setIsOrderPopupOpen(true);
+      return;
+    }
+    onAddToCart(item);
+    showToast(`${item.name} added to cart`);
+  };
+
+  // Parent Variants
+  const parentDesktopVariants = {
+    hidden: {}, // Original code didn't hide parent opacity
+    visible: {
+      transition: { staggerChildren: 0.3 }
+    }
+  };
+
+  // Mobile Parent: Always visible (opacity 1) so it doesn't hide children.
+  // We use same keys 'hidden'/'visible' so we can keep simple props,
+  // but values ensure visibility.
+  const parentMobileVariants = {
+    hidden: { opacity: 1 },
+    visible: { opacity: 1 }
+  };
+
   return (
-    <section className="relative w-full min-h-screen bg-[#111] text-[#F3F3F3] overflow-x-hidden flex flex-col">
+    <section className="relative w-full min-h-0 md:min-h-screen bg-[#111] text-[#F3F3F3] overflow-x-hidden flex flex-col">
       {/* Heading Section - Moved above products */}
       <div className="relative w-full py-20 bg-[#F3EFE0] z-10 text-center border-b border-black/5">
         <motion.div
@@ -193,7 +227,7 @@ const MenuPreview: React.FC<MenuPreviewProps> = ({ onAddToCart, onGoToMenu }) =>
           viewport={{ once: true }}
           transition={{ duration: 0.8 }}
         >
-          <span className="text-[12px] uppercase tracking-[0.5em] text-zinc-600 mb-6 block">
+          <span className="text-[12px] uppercase tracking-[0.5em] text-zinc-900 font-bold mb-6 block">
             Handpicked
           </span>
           <h2 className="text-6xl md:text-8xl font-serif text-[#1A1A1A] tracking-tighter mb-10 italic">
@@ -210,18 +244,26 @@ const MenuPreview: React.FC<MenuPreviewProps> = ({ onAddToCart, onGoToMenu }) =>
 
       {/* Full Screen Vertical Strips */}
       <motion.div
+        // Parent always uses standard keys 'hidden'/'visible'
         initial="hidden"
         whileInView="visible"
         viewport={{ once: true, amount: 0.1 }}
-        variants={{
-          visible: { transition: { staggerChildren: 0.3 } }
-        }}
-        className="w-full flex-1 grid grid-cols-1 md:grid-cols-4 min-h-[600px]"
+        // Swap variant definitions based on device
+        variants={isMobile ? parentMobileVariants : parentDesktopVariants}
+        className="w-full flex-1 grid grid-cols-1 md:grid-cols-4 md:min-h-[600px]"
       >
         {items.map((item, idx) => (
-          <MenuCard key={idx} item={item} index={idx} onAddToCart={onAddToCart} onToast={showToast} />
+          <MenuCard key={idx} item={item} index={idx} onAddToCart={handleAddToCart} />
         ))}
       </motion.div>
+
+      <StatusPopup
+        isOpen={isOrderPopupOpen}
+        onClose={() => setIsOrderPopupOpen(false)}
+        title="We're Closed for Now"
+        message="We are not accepting new menu orders at the moment. Please check back soon!"
+        type="info"
+      />
 
       <Toast message={toastMessage} />
     </section>

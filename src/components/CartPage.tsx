@@ -3,9 +3,11 @@ import { motion as motionBase, AnimatePresence } from 'framer-motion';
 import { createPortal } from 'react-dom';
 import { CartItem } from '../types';
 import { Trash2, Minus, Plus, ArrowLeft, CheckCircle2, X } from 'lucide-react';
+import CustomDropdown from './ui/CustomDropdown';
 import emailjs from '@emailjs/browser';
 import { useDataContext, ArtAdminItem } from '../DataContext';
 import { API_BASE_URL } from '../config';
+import StatusPopup from './StatusPopup';
 
 const motion = motionBase as any;
 
@@ -30,7 +32,7 @@ const CartPage: React.FC<CartPageProps> = ({
   onPaymentFailure,
   artItems = [],
 }) => {
-  const { placeOrder, refreshArtItems, orderSettings } = useDataContext();
+  const { placeOrder, refreshArtItems, orderSettings, checkStoreStatus, isStoreOpenAt } = useDataContext();
 
   // EmailJS configuration (must be VITE_ prefixed in .env)
   // --- EMAILJS CONFIGURATION ---
@@ -78,8 +80,9 @@ const CartPage: React.FC<CartPageProps> = ({
   const [pickupTime, setPickupTime] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<'counter' | 'upi'>('counter');
   const [orderType, setOrderType] = useState<'grab-and-go' | 'order-from-store' | null>(null);
+  const [showTimeError, setShowTimeError] = useState(false);
 
-  const { checkStoreStatus } = useDataContext(); // Destructure checkStoreStatus
+
   const storeStatus = checkStoreStatus ? checkStoreStatus() : { isOpen: true, reason: 'loading' }; // Handle missing function gracefully if context outdated
 
   // Razorpay configuration
@@ -156,11 +159,9 @@ const CartPage: React.FC<CartPageProps> = ({
       }
 
       // Validate pickup time against store hours
-      if (orderSettings.opening_time && orderSettings.closing_time) {
-        if (pickupTime < orderSettings.opening_time || pickupTime > orderSettings.closing_time) {
-          setError(`Pickup time must be between ${orderSettings.opening_time} and ${orderSettings.closing_time}`);
-          return;
-        }
+      if (!isStoreOpenAt(pickupTime)) {
+        setShowTimeError(true);
+        return;
       }
     }
 
@@ -726,8 +727,39 @@ const CartPage: React.FC<CartPageProps> = ({
                               <input
                                 required
                                 type="time"
-                                min="09:30"
-                                max="23:00"
+                                min={(() => {
+                                  // Helper to convert typical 12h time string to 24h format for input min/max
+                                  const to24 = (t?: string) => {
+                                    if (!t) return undefined;
+                                    try {
+                                      if (t.toLowerCase().includes('am') || t.toLowerCase().includes('pm')) {
+                                        const [time, period] = t.split(' ');
+                                        let [h, m] = time.split(':').map(Number);
+                                        if (period.toLowerCase() === 'pm' && h !== 12) h += 12;
+                                        if (period.toLowerCase() === 'am' && h === 12) h = 0;
+                                        return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+                                      }
+                                      return t; // Already 24h or simple
+                                    } catch { return undefined; }
+                                  };
+                                  return to24(orderSettings.opening_time) || "09:00";
+                                })()}
+                                max={(() => {
+                                  const to24 = (t?: string) => {
+                                    if (!t) return undefined;
+                                    try {
+                                      if (t.toLowerCase().includes('am') || t.toLowerCase().includes('pm')) {
+                                        const [time, period] = t.split(' ');
+                                        let [h, m] = time.split(':').map(Number);
+                                        if (period.toLowerCase() === 'pm' && h !== 12) h += 12;
+                                        if (period.toLowerCase() === 'am' && h === 12) h = 0;
+                                        return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+                                      }
+                                      return t;
+                                    } catch { return undefined; }
+                                  };
+                                  return to24(orderSettings.closing_time) || "22:00";
+                                })()}
                                 value={pickupTime}
                                 onChange={(e) => setPickupTime(e.target.value)}
                                 className="w-full bg-white border border-black/20 rounded-none px-3 md:px-4 py-2.5 md:py-3 outline-none focus:border-black text-sm md:text-base"
@@ -737,17 +769,14 @@ const CartPage: React.FC<CartPageProps> = ({
 
                           <div>
                             <label className="block text-[11px] uppercase tracking-[0.25em] mb-1">Payment Method</label>
-                            <select
+                            <CustomDropdown
                               value={paymentMethod}
-                              onChange={(e) => setPaymentMethod(e.target.value as 'counter' | 'upi')}
-                              className="w-full bg-white border border-black/20 rounded-none px-3 md:px-4 py-2.5 md:py-3 outline-none focus:border-black font-sans text-sm md:text-base"
-                              disabled={paymentMethod === 'upi' && !RAZORPAY_KEY_ID}
-                            >
-                              <option value="counter">Pay by cash</option>
-                              <option value="upi" disabled={!RAZORPAY_KEY_ID}>
-                                Pay Online{!RAZORPAY_KEY_ID && ' (Unavailable)'}
-                              </option>
-                            </select>
+                              onChange={(val) => setPaymentMethod(val as 'counter' | 'upi')}
+                              options={[
+                                { value: 'counter', label: 'Pay by cash' },
+                                { value: 'upi', label: RAZORPAY_KEY_ID ? 'Pay Online' : 'Pay Online (Unavailable)', disabled: !RAZORPAY_KEY_ID },
+                              ]}
+                            />
                           </div>
 
                           {error && <p className="text-xs text-red-600">{error}</p>}
@@ -784,6 +813,14 @@ const CartPage: React.FC<CartPageProps> = ({
                 </motion.div>
               </div>
             )}
+
+            <StatusPopup
+              isOpen={showTimeError}
+              onClose={() => setShowTimeError(false)}
+              title="Store Closed"
+              message={`Please select a time between ${orderSettings.opening_time || '10:00 AM'} and ${orderSettings.closing_time || '10:00 PM'}.`}
+              type="error"
+            />
 
             {successOpen && (
               <div key="success-modal" className="fixed inset-0 z-[9999] flex items-center justify-center px-4 font-sans">

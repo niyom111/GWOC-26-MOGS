@@ -289,6 +289,7 @@ interface DataContextValue {
   workshops: WorkshopAdminItem[];
   orders: Order[];
   orderSettings: OrderSettings;
+  menuLoading: boolean;
   addMenuItem: (item: CoffeeAdminItem) => void;
   updateMenuItem: (id: string, updates: Partial<CoffeeAdminItem>) => void;
   deleteMenuItem: (id: string) => void;
@@ -304,6 +305,7 @@ interface DataContextValue {
   setWorkshops: React.Dispatch<React.SetStateAction<WorkshopAdminItem[]>>;
   updateOrderSettings: (settings: Partial<OrderSettings>) => Promise<void>;
   checkStoreStatus: () => { isOpen: boolean; reason: string; openingTime?: string; closingTime?: string };
+  isStoreOpenAt: (timeStr: string) => boolean;
 }
 
 const DataContext = createContext<DataContextValue | undefined>(undefined);
@@ -315,6 +317,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [artItems, setArtItems] = useState<ArtAdminItem[]>(initialData.artItems);
   const [workshops, setWorkshops] = useState<WorkshopAdminItem[]>(initialData.workshops);
   const [orders, setOrders] = useState<Order[]>(initialData.orders);
+  const [menuLoading, setMenuLoading] = useState(true);
 
   const [orderSettings, setOrderSettings] = useState<OrderSettings>({
     id: 1,
@@ -338,6 +341,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           const menuData = await menuRes.json();
           setMenuItems(Array.isArray(menuData) ? menuData : []);
         }
+        setMenuLoading(false); // Menu data loaded
+
         if (artRes.ok) {
           const artData = await artRes.json();
           const items = Array.isArray(artData) ? artData : [];
@@ -365,6 +370,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
       } catch (err) {
         console.error("Failed to fetch data:", err);
+        setMenuLoading(false); // Stop loading even on error
       }
     };
     fetchData();
@@ -653,25 +659,59 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   // --- STORE STATUS LOGIC ---
+
+  // Helper to parse time string (HH:MM or h:mm A) into minutes from midnight
+  const parseTimeToMinutes = (timeStr: string): number | null => {
+    if (!timeStr) return null;
+    try {
+      // Handle 12-hour format with AM/PM
+      if (timeStr.toLowerCase().includes('am') || timeStr.toLowerCase().includes('pm')) {
+        const [time, period] = timeStr.split(' ');
+        let [hours, minutes] = time.split(':').map(Number);
+        if (period.toLowerCase() === 'pm' && hours !== 12) hours += 12;
+        if (period.toLowerCase() === 'am' && hours === 12) hours = 0;
+        return hours * 60 + minutes;
+      }
+      // Handle 24-hour format
+      const [hours, minutes] = timeStr.split(':').map(Number);
+      return hours * 60 + minutes;
+    } catch (e) {
+      console.error("Error parsing time:", timeStr, e);
+      return null;
+    }
+  };
+
+  const isStoreOpenAt = (timeStr: string): boolean => {
+    if (!orderSettings) return true; // Default to open if settings missing (or handle as closed?)
+
+    const checkTime = parseTimeToMinutes(timeStr);
+    const openTime = parseTimeToMinutes(orderSettings.opening_time || '10:00');
+    const closeTime = parseTimeToMinutes(orderSettings.closing_time || '22:00');
+
+    if (checkTime === null || openTime === null || closeTime === null) return true; // Fallback
+
+    return checkTime >= openTime && checkTime <= closeTime;
+  };
+
   const checkStoreStatus = () => {
     if (!orderSettings) return { isOpen: false, reason: 'loading' };
 
     // Get current time in HH:MM format
     const now = new Date();
-    const currentHours = now.getHours().toString().padStart(2, '0');
-    const currentMinutes = now.getMinutes().toString().padStart(2, '0');
-    const currentTime = `${currentHours}:${currentMinutes}`;
+    const currentHours = now.getHours();
+    const currentMinutes = now.getMinutes();
+    const currentTotalMinutes = currentHours * 60 + currentMinutes;
 
-    const openingTime = orderSettings.opening_time || '10:00';
-    const closingTime = orderSettings.closing_time || '22:00';
+    const openTime = parseTimeToMinutes(orderSettings.opening_time || '10:00') ?? 600; // 10:00 AM
+    const closeTime = parseTimeToMinutes(orderSettings.closing_time || '22:00') ?? 1320; // 10:00 PM
 
-    const isWithinHours = currentTime >= openingTime && currentTime <= closingTime;
+    const isWithinHours = currentTotalMinutes >= openTime && currentTotalMinutes <= closeTime;
 
     return {
       isOpen: isWithinHours,
       reason: isWithinHours ? 'time' : 'time',
-      openingTime,
-      closingTime
+      openingTime: orderSettings.opening_time || '10:00',
+      closingTime: orderSettings.closing_time || '22:00'
     };
   };
 
@@ -682,6 +722,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         artItems,
         workshops,
         orders,
+        menuLoading,
         addMenuItem,
         updateMenuItem,
         deleteMenuItem,
@@ -698,7 +739,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setWorkshops,
         orderSettings,
         updateOrderSettings,
-        checkStoreStatus
+        checkStoreStatus,
+        isStoreOpenAt
       }}
     >
       {children}

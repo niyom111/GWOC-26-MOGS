@@ -270,10 +270,10 @@ const AppContent: React.FC = () => {
         <AnimatePresence mode="wait" onExitComplete={handleExitComplete}>
           <motion.div
             key={currentPage}
-            initial={{ opacity: 0 }}
+            initial={currentPage === Page.MENU ? { opacity: 1 } : { opacity: 0 }}
             animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+            exit={currentPage === Page.MENU ? { opacity: 1 } : { opacity: 0 }}
+            transition={currentPage === Page.MENU ? { duration: 0 } : { duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
             onAnimationComplete={() => {
               // Vital for position: fixed/sticky to work
               document.body.style.overflowX = 'clip';

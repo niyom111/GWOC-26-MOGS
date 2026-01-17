@@ -212,6 +212,16 @@ const FranchisePage: React.FC = () => {
     const [formStatus, setFormStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
     const [errorMessage, setErrorMessage] = useState('');
 
+    // Responsive State
+    const [isDesktop, setIsDesktop] = useState(false);
+
+    useEffect(() => {
+        const checkDesktop = () => setIsDesktop(window.innerWidth >= 1024);
+        checkDesktop();
+        window.addEventListener('resize', checkDesktop);
+        return () => window.removeEventListener('resize', checkDesktop);
+    }, []);
+
     // Fetch Data
     useEffect(() => {
         // Fetch Settings
@@ -461,9 +471,19 @@ const FranchisePage: React.FC = () => {
                         <motion.div
                             variants={itemVariants}
                             initial={{ opacity: 0.8, scale: 0.95, backgroundColor: "#ffffff", color: "#000000" }}
-                            whileInView={{ opacity: 1, scale: 1.03, backgroundColor: "#000000", color: "#ffffff" }}
-                            viewport={{ once: false, amount: 0.5 }}
-                            whileHover={{ scale: 1.05, y: -5 }}
+                            whileInView={{
+                                opacity: 1,
+                                scale: 1.03,
+                                backgroundColor: isDesktop ? "#ffffff" : "#000000",
+                                color: isDesktop ? "#000000" : "#ffffff"
+                            }}
+                            viewport={isDesktop ? { once: false, amount: 0.5 } : { once: false, amount: 0.3, margin: "-40% 0px -40% 0px" }}
+                            whileHover={isDesktop ? {
+                                scale: 1.05,
+                                y: -5,
+                                backgroundColor: "#000000",
+                                color: "#ffffff"
+                            } : { scale: 1.05, y: -5 }}
                             whileTap={{ scale: 0.98 }}
                             transition={{
                                 type: "spring",
@@ -479,7 +499,7 @@ const FranchisePage: React.FC = () => {
                             <motion.h4
                                 className="text-lg md:text-xl font-bold uppercase tracking-[0.2em] mb-6 font-sans"
                                 initial={{ color: "#000000" }}
-                                whileInView={{ color: "#ffffff" }}
+                                whileInView={{ color: "inherit" }}
                                 transition={{ duration: 0.5 }}
                             >
                                 Space
@@ -487,23 +507,20 @@ const FranchisePage: React.FC = () => {
                             <motion.p
                                 className="text-3xl md:text-5xl font-serif italic mb-6"
                                 initial={{ color: "#000000" }}
-                                whileInView={{ color: "#ffffff" }}
+                                whileInView={{ color: "inherit" }}
                                 transition={{ duration: 0.5 }}
                             >
                                 1000 <span className="text-xl font-sans text-zinc-400 not-italic mx-2">-</span> 1500 <motion.span
                                     className="text-xs font-sans not-italic block mt-1"
                                     initial={{ color: "#71717a" }}
-                                    whileInView={{ color: "#d4d4d8" }}
+                                    whileInView={{ color: "inherit" }}
                                     transition={{ duration: 0.5 }}
                                 >
                                     sq.ft.
                                 </motion.span>
                             </motion.p>
                             <motion.p
-                                className="text-lg font-sans leading-relaxed border-t pt-6"
-                                initial={{ color: "#000000", borderColor: "rgba(0,0,0,0.1)" }}
-                                whileInView={{ color: "#d4d4d8", borderColor: "rgba(255,255,255,0.2)" }}
-                                transition={{ duration: 0.5 }}
+                                className="text-lg font-sans leading-relaxed border-t pt-6 border-current border-opacity-20 transition-colors duration-500"
                             >
                                 Ideally located in high-street zones or premium commercial hubs with high footfall.
                             </motion.p>
@@ -512,10 +529,20 @@ const FranchisePage: React.FC = () => {
                         {/* Card 2: Investment */}
                         <motion.div
                             variants={itemVariants}
-                            initial={{ opacity: 0.8, scale: 0.95, backgroundColor: "#ffffff" }}
-                            whileInView={{ opacity: 1, scale: 1.03, backgroundColor: "#000000" }}
-                            viewport={{ once: false, amount: 0.5 }}
-                            whileHover={{ scale: 1.05, y: -5 }}
+                            initial={{ opacity: 0.8, scale: 0.95, backgroundColor: "#ffffff", color: "#000000" }}
+                            whileInView={{
+                                opacity: 1,
+                                scale: 1.03,
+                                backgroundColor: isDesktop ? "#ffffff" : "#000000",
+                                color: isDesktop ? "#000000" : "#ffffff"
+                            }}
+                            viewport={isDesktop ? { once: false, amount: 0.5 } : { once: false, amount: 0.3, margin: "-40% 0px -40% 0px" }}
+                            whileHover={isDesktop ? {
+                                scale: 1.05,
+                                y: -5,
+                                backgroundColor: "#000000",
+                                color: "#ffffff"
+                            } : { scale: 1.05, y: -5 }}
                             whileTap={{ scale: 0.98 }}
                             transition={{
                                 type: "spring",
@@ -530,7 +557,7 @@ const FranchisePage: React.FC = () => {
                             <motion.h4
                                 className="text-lg md:text-xl font-bold uppercase tracking-[0.2em] mb-6 font-sans"
                                 initial={{ color: "#000000" }}
-                                whileInView={{ color: "#ffffff" }}
+                                whileInView={{ color: "inherit" }}
                                 transition={{ duration: 0.5 }}
                             >
                                 Investment
@@ -538,16 +565,13 @@ const FranchisePage: React.FC = () => {
                             <motion.p
                                 className="text-3xl md:text-5xl font-serif italic mb-6"
                                 initial={{ color: "#000000" }}
-                                whileInView={{ color: "#ffffff" }}
+                                whileInView={{ color: "inherit" }}
                                 transition={{ duration: 0.5 }}
                             >
                                 ₹35L <span className="text-xl font-sans text-zinc-400 not-italic mx-2">-</span> 50L
                             </motion.p>
                             <motion.p
-                                className="text-lg font-sans leading-relaxed border-t pt-6"
-                                initial={{ color: "#000000", borderColor: "rgba(0,0,0,0.1)" }}
-                                whileInView={{ color: "#d4d4d8", borderColor: "rgba(255,255,255,0.2)" }}
-                                transition={{ duration: 0.5 }}
+                                className="text-lg font-sans leading-relaxed border-t pt-6 border-current border-opacity-20 transition-colors duration-500"
                             >
                                 Total setup cost including license fees, interiors, equipment, and initial stock.
                             </motion.p>
@@ -556,10 +580,20 @@ const FranchisePage: React.FC = () => {
                         {/* Card 3: Passion */}
                         <motion.div
                             variants={itemVariants}
-                            initial={{ opacity: 0.8, scale: 0.95, backgroundColor: "#ffffff" }}
-                            whileInView={{ opacity: 1, scale: 1.03, backgroundColor: "#000000" }}
-                            viewport={{ once: false, amount: 0.5 }}
-                            whileHover={{ scale: 1.05, y: -5 }}
+                            initial={{ opacity: 0.8, scale: 0.95, backgroundColor: "#ffffff", color: "#000000" }}
+                            whileInView={{
+                                opacity: 1,
+                                scale: 1.03,
+                                backgroundColor: isDesktop ? "#ffffff" : "#000000",
+                                color: isDesktop ? "#000000" : "#ffffff"
+                            }}
+                            viewport={isDesktop ? { once: false, amount: 0.5 } : { once: false, amount: 0.3, margin: "-40% 0px -40% 0px" }}
+                            whileHover={isDesktop ? {
+                                scale: 1.05,
+                                y: -5,
+                                backgroundColor: "#000000",
+                                color: "#ffffff"
+                            } : { scale: 1.05, y: -5 }}
                             whileTap={{ scale: 0.98 }}
                             transition={{
                                 type: "spring",
@@ -574,7 +608,7 @@ const FranchisePage: React.FC = () => {
                             <motion.h4
                                 className="text-lg md:text-xl font-bold uppercase tracking-[0.2em] mb-6 font-sans"
                                 initial={{ color: "#000000" }}
-                                whileInView={{ color: "#ffffff" }}
+                                whileInView={{ color: "inherit" }}
                                 transition={{ duration: 0.5 }}
                             >
                                 Experience
@@ -582,7 +616,7 @@ const FranchisePage: React.FC = () => {
                             <motion.p
                                 className="text-3xl md:text-5xl font-serif italic mb-6"
                                 initial={{ color: "#000000" }}
-                                whileInView={{ color: "#ffffff" }}
+                                whileInView={{ color: "inherit" }}
                                 transition={{ duration: 0.5 }}
                             >
                                 Passion First
@@ -598,10 +632,10 @@ const FranchisePage: React.FC = () => {
                         </motion.div>
                     </motion.div>
                 </div>
-            </section>
+            </section >
 
             {/* 4. FINANCIALS - DARK CARDS */}
-            <section className="pt-0 pb-24 px-6 md:px-12 max-w-7xl mx-auto">
+            < section className="pt-0 pb-24 px-6 md:px-12 max-w-7xl mx-auto" >
                 <motion.div
                     className="grid grid-cols-1 md:grid-cols-3 gap-6"
                     variants={containerVariants}
@@ -611,10 +645,20 @@ const FranchisePage: React.FC = () => {
                 >
                     <motion.div
                         variants={itemVariants}
-                        initial={{ opacity: 0.8, scale: 0.95, backgroundColor: "#ffffff" }}
-                        whileInView={{ opacity: 1, scale: 1.03, backgroundColor: "#000000" }}
-                        viewport={{ once: false, amount: 0.5 }}
-                        whileHover={{ scale: 1.05, y: -5 }}
+                        initial={{ opacity: 0.8, scale: 0.95, backgroundColor: "#ffffff", color: "#000000" }}
+                        whileInView={{
+                            opacity: 1,
+                            scale: 1.03,
+                            backgroundColor: isDesktop ? "#ffffff" : "#000000",
+                            color: isDesktop ? "#000000" : "#ffffff"
+                        }}
+                        viewport={isDesktop ? { once: false, amount: 0.5 } : { once: false, amount: 0.3, margin: "-40% 0px -40% 0px" }}
+                        whileHover={isDesktop ? {
+                            scale: 1.05,
+                            y: -5,
+                            backgroundColor: "#000000",
+                            color: "#ffffff"
+                        } : { scale: 1.05, y: -5 }}
                         whileTap={{ scale: 0.98 }}
                         transition={{
                             type: "spring",
@@ -623,27 +667,24 @@ const FranchisePage: React.FC = () => {
                             backgroundColor: { duration: 0.5 },
                             scale: { duration: 0.4 }
                         }}
-                        className="border border-black/5 p-12 rounded-none text-center shadow-md cursor-pointer">
+                        className="border border-black/5 p-12 rounded-none text-center shadow-md cursor-pointer group">
                         <motion.div
-                            className="w-20 h-20 mx-auto rounded-full border flex items-center justify-center mb-6"
-                            initial={{ borderColor: "rgba(0,0,0,0.1)", color: "#A35D36" }}
-                            whileInView={{ borderColor: "rgba(255,255,255,0.2)", color: "#ffffff" }}
-                            transition={{ duration: 0.5 }}
+                            className={`w-20 h-20 mx-auto rounded-full border flex items-center justify-center mb-6 transition-colors duration-500 ${isDesktop ? "border-black/10 text-[#A35D36] group-hover:border-white/20 group-hover:text-white" : "border-white/20 text-white"}`}
                         >
                             <span className="text-3xl font-serif font-bold italic">7%</span>
                         </motion.div>
                         <motion.h3
                             className="text-3xl font-serif italic mb-2"
                             initial={{ color: "#000000" }}
-                            whileInView={{ color: "#ffffff" }}
+                            whileInView={{ color: "inherit" }}
                             transition={{ duration: 0.5 }}
                         >
                             Royalty
                         </motion.h3>
                         <motion.p
-                            className="text-xs uppercase tracking-[0.4em] font-bold font-sans"
-                            initial={{ color: "rgba(0,0,0,0.6)" }}
-                            whileInView={{ color: "#a1a1aa" }}
+                            className="text-xs uppercase tracking-[0.4em] font-bold font-sans opacity-60"
+                            initial={{ color: "#000000" }}
+                            whileInView={{ color: "inherit" }}
                             transition={{ duration: 0.5 }}
                         >
                             Monthly Gross Sales
@@ -651,10 +692,20 @@ const FranchisePage: React.FC = () => {
                     </motion.div>
                     <motion.div
                         variants={itemVariants}
-                        initial={{ opacity: 0.8, scale: 0.95, backgroundColor: "#ffffff" }}
-                        whileInView={{ opacity: 1, scale: 1.03, backgroundColor: "#000000" }}
-                        viewport={{ once: false, amount: 0.5 }}
-                        whileHover={{ scale: 1.05, y: -5 }}
+                        initial={{ opacity: 0.8, scale: 0.95, backgroundColor: "#ffffff", color: "#000000" }}
+                        whileInView={{
+                            opacity: 1,
+                            scale: 1.03,
+                            backgroundColor: isDesktop ? "#ffffff" : "#000000",
+                            color: isDesktop ? "#000000" : "#ffffff"
+                        }}
+                        viewport={isDesktop ? { once: false, amount: 0.5 } : { once: false, amount: 0.3, margin: "-40% 0px -40% 0px" }}
+                        whileHover={isDesktop ? {
+                            scale: 1.05,
+                            y: -5,
+                            backgroundColor: "#000000",
+                            color: "#ffffff"
+                        } : { scale: 1.05, y: -5 }}
                         whileTap={{ scale: 0.98 }}
                         transition={{
                             type: "spring",
@@ -663,27 +714,24 @@ const FranchisePage: React.FC = () => {
                             backgroundColor: { duration: 0.5 },
                             scale: { duration: 0.4 }
                         }}
-                        className="border border-black/5 p-12 rounded-none text-center shadow-md cursor-pointer">
+                        className="border border-black/5 p-12 rounded-none text-center shadow-md cursor-pointer group">
                         <motion.div
-                            className="w-20 h-20 mx-auto rounded-full border flex items-center justify-center mb-6"
-                            initial={{ borderColor: "rgba(0,0,0,0.1)", color: "#A35D36" }}
-                            whileInView={{ borderColor: "rgba(255,255,255,0.2)", color: "#ffffff" }}
-                            transition={{ duration: 0.5 }}
+                            className={`w-20 h-20 mx-auto rounded-full border flex items-center justify-center mb-6 transition-colors duration-500 ${isDesktop ? "border-black/10 text-[#A35D36] group-hover:border-white/20 group-hover:text-white" : "border-white/20 text-white"}`}
                         >
                             <span className="text-3xl font-serif font-bold italic">2%</span>
                         </motion.div>
                         <motion.h3
                             className="text-3xl font-serif italic mb-2"
                             initial={{ color: "#000000" }}
-                            whileInView={{ color: "#ffffff" }}
+                            whileInView={{ color: "inherit" }}
                             transition={{ duration: 0.5 }}
                         >
                             Ad Fund
                         </motion.h3>
                         <motion.p
-                            className="text-xs uppercase tracking-[0.4em] font-bold font-sans"
-                            initial={{ color: "rgba(0,0,0,0.6)" }}
-                            whileInView={{ color: "#a1a1aa" }}
+                            className="text-xs uppercase tracking-[0.4em] font-bold font-sans opacity-60"
+                            initial={{ color: "#000000" }}
+                            whileInView={{ color: "inherit" }}
                             transition={{ duration: 0.5 }}
                         >
                             National Marketing
@@ -691,10 +739,20 @@ const FranchisePage: React.FC = () => {
                     </motion.div>
                     <motion.div
                         variants={itemVariants}
-                        initial={{ opacity: 0.8, scale: 0.95, backgroundColor: "#ffffff" }}
-                        whileInView={{ opacity: 1, scale: 1.03, backgroundColor: "#000000" }}
-                        viewport={{ once: false, amount: 0.5 }}
-                        whileHover={{ scale: 1.05, y: -5 }}
+                        initial={{ opacity: 0.8, scale: 0.95, backgroundColor: "#ffffff", color: "#000000" }}
+                        whileInView={{
+                            opacity: 1,
+                            scale: 1.03,
+                            backgroundColor: isDesktop ? "#ffffff" : "#000000",
+                            color: isDesktop ? "#000000" : "#ffffff"
+                        }}
+                        viewport={isDesktop ? { once: false, amount: 0.5 } : { once: false, amount: 0.3, margin: "-40% 0px -40% 0px" }}
+                        whileHover={isDesktop ? {
+                            scale: 1.05,
+                            y: -5,
+                            backgroundColor: "#000000",
+                            color: "#ffffff"
+                        } : { scale: 1.05, y: -5 }}
                         whileTap={{ scale: 0.98 }}
                         transition={{
                             type: "spring",
@@ -703,37 +761,34 @@ const FranchisePage: React.FC = () => {
                             backgroundColor: { duration: 0.5 },
                             scale: { duration: 0.4 }
                         }}
-                        className="border border-black/5 p-12 rounded-none text-center shadow-md cursor-pointer">
+                        className="border border-black/5 p-12 rounded-none text-center shadow-md cursor-pointer group">
                         <motion.div
-                            className="w-20 h-20 mx-auto rounded-full border flex items-center justify-center mb-6"
-                            initial={{ borderColor: "rgba(0,0,0,0.1)", color: "#A35D36" }}
-                            whileInView={{ borderColor: "rgba(255,255,255,0.2)", color: "#ffffff" }}
-                            transition={{ duration: 0.5 }}
+                            className={`w-20 h-20 mx-auto rounded-full border flex items-center justify-center mb-6 transition-colors duration-500 ${isDesktop ? "border-black/10 text-[#A35D36] group-hover:border-white/20 group-hover:text-white" : "border-white/20 text-white"}`}
                         >
                             <TrendingUp className="w-8 h-8" />
                         </motion.div>
                         <motion.h3
                             className="text-3xl font-serif italic mb-2"
                             initial={{ color: "#000000" }}
-                            whileInView={{ color: "#ffffff" }}
+                            whileInView={{ color: "inherit" }}
                             transition={{ duration: 0.5 }}
                         >
                             18-24 Mo.
                         </motion.h3>
                         <motion.p
-                            className="text-xs uppercase tracking-[0.4em] font-bold font-sans"
-                            initial={{ color: "rgba(0,0,0,0.6)" }}
-                            whileInView={{ color: "#a1a1aa" }}
+                            className="text-xs uppercase tracking-[0.4em] font-bold font-sans opacity-60"
+                            initial={{ color: "#000000" }}
+                            whileInView={{ color: "inherit" }}
                             transition={{ duration: 0.5 }}
                         >
                             Estimated ROI
                         </motion.p>
                     </motion.div>
                 </motion.div>
-            </section>
+            </section >
 
             {/* 5. ROADMAP TIMELINE */}
-            <TimelineSection />
+            < TimelineSection />
 
             <section className="py-24 px-6 md:px-12 max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-16 md:gap-24 items-center">
                 <div ref={supportRef} className="order-2 md:order-1 relative h-[350px] md:h-[600px] rounded-none overflow-hidden shadow-2xl group">
@@ -780,7 +835,7 @@ const FranchisePage: React.FC = () => {
                                     key={i}
                                     initial={{ opacity: 0.8, scale: 0.95, backgroundColor: "#000000" }}
                                     whileInView={{ opacity: 1, scale: 1.03, backgroundColor: "#ffffff" }}
-                                    viewport={{ once: false, amount: 0.5 }}
+                                    viewport={isDesktop ? { once: false, amount: 0.5 } : { once: false, amount: 0.3, margin: "-40% 0px -40% 0px" }}
                                     whileHover={{ scale: 1.05, y: -5 }}
                                     whileTap={{ scale: 0.98 }}
                                     transition={{

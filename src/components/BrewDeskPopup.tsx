@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion as motionBase, AnimatePresence } from 'framer-motion';
 import { CoffeeItem } from '../types';
+import { useDataContext } from '../DataContext';
 import { API_BASE_URL } from '../config';
 
 // Fix for framer-motion type mismatch
@@ -90,7 +91,15 @@ const BrewDeskPopup: React.FC<BrewDeskPopupProps> = ({ onClose, onAddToCart }) =
         }
     }, [selectedActivityKey, selectedMoodKey]);
 
+    const { orderSettings } = useDataContext();
+
     const handleAddToCartWithQuantity = (item: CoffeeItem, quantity: number, itemName: string) => {
+        // Intercept if ordering is disabled to avoid showing the checkout success toast
+        if (orderSettings && !orderSettings.menu_orders_enabled) {
+            onAddToCart(item); // This will trigger the parent's StatusPopup
+            return;
+        }
+
         for (let i = 0; i < quantity; i++) {
             onAddToCart(item);
         }

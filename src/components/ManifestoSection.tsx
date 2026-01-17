@@ -24,40 +24,51 @@ const CaffeineComparison: React.FC = () => {
                 </div>
 
                 {/* Chart Area */}
-                <div className="flex gap-8 items-end h-[240px] mb-8 relative">
-                    {/* Grid Lines */}
-                    <div className="absolute inset-0 flex flex-col justify-between pointer-events-none">
-                        {[0, 1, 2].map(i => (
-                            <div key={i} className="w-full h-px bg-black/5 border-t border-dashed border-black/10" />
-                        ))}
+                <div className="mb-8 relative">
+                    {/* Bars Container */}
+                    <div className="flex gap-8 items-end h-[200px] relative">
+                        {/* Grid Lines */}
+                        <div className="absolute inset-0 flex flex-col justify-between pointer-events-none">
+                            {[0, 1, 2].map(i => (
+                                <div key={i} className="w-full h-px bg-black/5 border-t border-dashed border-black/10" />
+                            ))}
+                        </div>
+
+                        {/* Bar 1: Arabica */}
+                        <div className="w-1/2 flex flex-col gap-1 relative z-10 group justify-end">
+                            <div className="text-right">
+                                <span className="text-2xl font-mono text-black font-bold group-hover:text-black transition-colors">1.2%</span>
+                            </div>
+                            <div className="h-[100px] w-full bg-black relative overflow-hidden">
+                                <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20" />
+                            </div>
+                        </div>
+
+                        {/* Bar 2: Rabuste */}
+                        <div className="w-1/2 flex flex-col gap-1 relative z-10 group justify-end">
+                            <div className="text-right">
+                                <span className="text-4xl font-mono text-[#8B4513] font-bold">2.4%</span>
+                            </div>
+                            <div className="h-[200px] w-full bg-[#A35D36] relative overflow-hidden shadow-[0_0_30px_rgba(163,93,54,0.3)]">
+                                <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20" />
+                                <motion.div
+                                    initial={{ top: "100%" }}
+                                    whileInView={{ top: "-100%" }}
+                                    transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+                                    className="absolute left-0 right-0 h-1/2 bg-gradient-to-b from-transparent via-white/40 to-transparent"
+                                />
+                            </div>
+                        </div>
                     </div>
 
-                    {/* Bar 1: Arabica */}
-                    <div className="w-1/2 flex flex-col gap-4 relative z-10 group">
-                        <div className="text-right">
-                            <span className="text-2xl font-mono text-zinc-900 group-hover:text-black transition-colors">1.2%</span>
+                    {/* Labels Row - Moved outside to prevent messing up bar height alignment */}
+                    <div className="flex gap-8 mt-3">
+                        <div className="w-1/2">
+                            <span className="text-xs uppercase tracking-widest text-black font-extrabold block">Standard Arabica</span>
                         </div>
-                        <div className="h-[100px] w-full bg-black relative overflow-hidden">
-                            <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20" />
+                        <div className="w-1/2">
+                            <span className="text-xs uppercase tracking-widest text-[#8B4513] font-extrabold block">Rabuste Pure</span>
                         </div>
-                        <span className="text-xs uppercase tracking-widest text-zinc-900 font-medium">Standard Arabica</span>
-                    </div>
-
-                    {/* Bar 2: Rabuste */}
-                    <div className="w-1/2 flex flex-col gap-4 relative z-10 group">
-                        <div className="text-right">
-                            <span className="text-4xl font-mono text-[#A35D36] font-bold">2.4%</span>
-                        </div>
-                        <div className="h-[200px] w-full bg-[#A35D36] relative overflow-hidden shadow-[0_0_30px_rgba(163,93,54,0.3)]">
-                            <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20" />
-                            <motion.div
-                                initial={{ top: "100%" }}
-                                whileInView={{ top: "-100%" }}
-                                transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
-                                className="absolute left-0 right-0 h-1/2 bg-gradient-to-b from-transparent via-white/40 to-transparent"
-                            />
-                        </div>
-                        <span className="text-xs uppercase tracking-widest text-[#A35D36] font-bold">Rabuste Pure</span>
                     </div>
                 </div>
 

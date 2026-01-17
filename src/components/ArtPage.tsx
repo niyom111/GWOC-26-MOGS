@@ -4,6 +4,7 @@ import { CoffeeItem, CartItem } from '../types';
 import { useDataContext, ArtAdminItem } from '../DataContext';
 import ArtworkCard from './ArtworkCard';
 import Toast from './Toast';
+import StatusPopup from './StatusPopup';
 import { API_BASE_URL } from '../config';
 
 // Fix for framer-motion type mismatch in the current environment
@@ -21,6 +22,7 @@ const ArtPage: React.FC<ArtPageProps> = ({ onAddToCart, cart, artItems }) => {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const toastTimeoutRef = useRef<number | null>(null);
   const [processingIds, setProcessingIds] = useState<Set<string>>(new Set());
+  const [isOrderPopupOpen, setIsOrderPopupOpen] = useState(false);
 
   useEffect(() => {
     return () => {
@@ -33,9 +35,7 @@ const ArtPage: React.FC<ArtPageProps> = ({ onAddToCart, cart, artItems }) => {
   const handleAddToCart = async (art: ArtAdminItem) => {
     // Check if ordering is enabled
     if (!orderSettings.art_orders_enabled) {
-      setToastMessage('Ordering is currently paused.');
-      if (toastTimeoutRef.current) window.clearTimeout(toastTimeoutRef.current);
-      toastTimeoutRef.current = window.setTimeout(() => setToastMessage(null), 2000);
+      setIsOrderPopupOpen(true);
       return;
     }
 
@@ -151,6 +151,14 @@ const ArtPage: React.FC<ArtPageProps> = ({ onAddToCart, cart, artItems }) => {
           ))}
         </div>
       </div>
+
+      <StatusPopup
+        isOpen={isOrderPopupOpen}
+        onClose={() => setIsOrderPopupOpen(false)}
+        title="Art Orders Paused"
+        message="We are not accepting new art orders at the moment. Please feel free to browse our collection!"
+        type="info"
+      />
 
       <Toast message={toastMessage} />
     </div >

@@ -12,6 +12,7 @@ import { fileURLToPath } from 'url';
 
 // --- FUSE.JS LOGIC FOR OFF-LINE CHAT ---
 import Fuse from 'fuse.js';
+import { knowledge } from './data/knowledge.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -159,9 +160,11 @@ function generateLocalResponse(message, menuItems, workshops, artItems) {
     };
 }
 
+import { getAIResponse, isAIReady } from './ai.js';
+
 // CHAT ENDPOINT
 app.post('/api/chat', async (req, res) => {
-    const { message } = req.body;
+    const { message, context } = req.body; // Extract context
     try {
         const { data: menuItemsData } = await db.from('menu_items').select(`*, categories (name)`);
         const menuItems = (menuItemsData || []).map(item => ({
@@ -173,9 +176,51 @@ app.post('/api/chat', async (req, res) => {
         const { data: workshops } = await db.from('workshops').select('*');
         const { data: artItems } = await db.from('art_items').select('*');
 
-        // Generate Response
-        const response = generateLocalResponse(message || "", menuItems || [], workshops || [], artItems || []);
-        res.json(response);
+        // 1. Generate Local/Regex Response first (Fast, deterministic)
+        const localResponse = generateLocalResponse(message || "", menuItems || [], workshops || [], artItems || []);
+
+        // check if it's the fallback message
+        const isFallback = localResponse.parameters?.message?.includes("I'm not sure about that one");
+
+        if (!isFallback) {
+            console.log(`[CHAT] Local matched: ${localResponse.action}`);
+            return res.json(localResponse);
+        }
+
+
+
+        // 2. If local logic failed, try AI
+        console.log(`[CHAT] Local fallback triggered. Calling AI...`);
+
+        if (!isAIReady) {
+            console.warn("[CHAT] AI is not ready (missing keys).");
+            return res.json({
+                action: "respond",
+                parameters: {
+                    message: "I'm having trouble connecting to my AI brain (Missing API Keys). Please check the server configuration or ask me simple questions about the menu!"
+                }
+            });
+        }
+
+        const history = context?.history || [];
+
+        // Prepare Extra Context
+        const extraContext = {
+            workshops: workshops || [],
+            artItems: artItems || [],
+            knowledge: knowledge || []
+        };
+
+        const aiText = await getAIResponse(message || "", menuItems || [], history, extraContext);
+
+        if (aiText) {
+            console.log(`[CHAT] AI responded.`);
+            return res.json({ action: "respond", parameters: { message: aiText } });
+        }
+
+        console.log(`[CHAT] AI failed or unavailable. Returning local fallback.`);
+        res.json(localResponse);
+
     } catch (error) {
         console.error("Chatbot Error:", error);
         res.status(200).json({ action: 'respond', parameters: { message: "I'm having a little trouble connecting to the barista brain. Please try again! ☕" } });

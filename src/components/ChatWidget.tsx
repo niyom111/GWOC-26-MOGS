@@ -50,7 +50,7 @@ interface ChatWidgetProps {
 export default function ChatWidget({ currentPage }: ChatWidgetProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<{ text: string; isUser: boolean }[]>([
-    { text: "Hi! I'm Labubu AI. Ask me about our menu, calories, or for a recommendation!", isUser: false }
+    { text: "Hi! I'm BrewBot. Ask me about our menu, calories, or for a recommendation!", isUser: false }
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -149,7 +149,7 @@ export default function ChatWidget({ currentPage }: ChatWidgetProps) {
               style={{ backgroundColor: '#A35D36', height: isMobile ? '48px' : '56px', width: 'auto' }}
             >
               <MessageCircle className="text-[#F9F8F4]" size={isMobile ? 20 : 26} />
-              <span className={`text-[#F9F8F4] font-bold whitespace-nowrap ${isMobile ? 'text-sm' : 'text-lg'}`}>Labubu AI</span>
+              <span className={`text-[#F9F8F4] font-bold whitespace-nowrap ${isMobile ? 'text-sm' : 'text-lg'}`}>BrewBot</span>
             </button>
           </motion.div>
         )}
@@ -186,7 +186,7 @@ export default function ChatWidget({ currentPage }: ChatWidgetProps) {
               <div className="flex items-center gap-3 pointer-events-none">
                 <Coffee size={isMobile ? 22 : 28} />
                 <div className="flex flex-col">
-                  <span className={`font-bold leading-tight ${isMobile ? 'text-lg' : 'text-xl'}`}>Labubu</span>
+                  <span className={`font-bold leading-tight ${isMobile ? 'text-lg' : 'text-xl'}`}>BrewBot</span>
                   <span className="text-sm font-normal opacity-90">AI Assistant</span>
                 </div>
               </div>

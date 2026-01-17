@@ -9,12 +9,36 @@ interface GalleryTeaserProps {
 }
 
 const GalleryTeaser: React.FC<GalleryTeaserProps> = ({ onNavigate }) => {
-  const teaserImages = [
+  const [images, setImages] = React.useState<string[]>([
     "https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?auto=format&fit=crop&q=80&w=1945",
     "https://images.unsplash.com/photo-1541963463532-d68292c34b19?auto=format&fit=crop&q=80&w=1976",
     "https://images.unsplash.com/photo-1549490349-8643362247b5?auto=format&fit=crop&q=80&w=1974",
     "https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?auto=format&fit=crop&q=80&w=1974",
-  ];
+  ]);
+
+  // Mobile Check Helper
+  const [isMobile, setIsMobile] = React.useState(false);
+
+  React.useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  React.useEffect(() => {
+    fetch('http://localhost:5000/api/art')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) {
+          const artImages = data.map((item: any) => item.image).filter(Boolean);
+          if (artImages.length > 0) {
+            setImages(artImages);
+          }
+        }
+      })
+      .catch(err => console.error("Failed to fetch gallery teaser images:", err));
+  }, []);
 
   // Crossfade Logic
   const videoRef1 = React.useRef<HTMLVideoElement>(null);
@@ -131,10 +155,10 @@ const GalleryTeaser: React.FC<GalleryTeaserProps> = ({ onNavigate }) => {
           // Item Width (280px) + Gap (24px) = 304px
           // 4 Unique Items * 304px = 1216px
           animate={{ x: [0, -1216] }}
-          transition={{ repeat: Infinity, duration: 60, ease: 'linear' }}
+          transition={{ repeat: Infinity, duration: isMobile ? 10 : 60, ease: 'linear' }}
         >
           {/* Tripled array ensures we always have content filling the screen while scrolling */}
-          {[...teaserImages, ...teaserImages, ...teaserImages].map((img, i) => (
+          {[...images, ...images, ...images].map((img, i) => (
             <div
               key={i}
               className="flex-shrink-0 w-[280px] h-[500px] overflow-hidden transition-all cursor-pointer group"

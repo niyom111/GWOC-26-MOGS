@@ -142,7 +142,7 @@ const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
           <span>Return to Origin</span>
           <ArrowUp className="w-4 h-4 transition-transform duration-700 ease-[0.22,1,0.36,1] group-hover:-translate-y-1" />
         </button>
-        <div className="md:col-start-2 md:justify-self-center md:row-start-1 text-center w-full whitespace-normal md:whitespace-nowrap">© 2024 RABUSTE COFFEE CO. — BUILT FOR INTENTIONALITY</div>
+        <div className="md:col-start-2 md:justify-self-center md:row-start-1 text-center w-full whitespace-normal md:whitespace-nowrap">© 2026 RABUSTE COFFEE CO. — BUILT FOR INTENTIONALITY</div>
       </div>
     </footer>
   );

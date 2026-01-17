@@ -117,7 +117,7 @@ const Reviews: React.FC = () => {
   }, []);
 
   return (
-    <section className="relative text-white py-32 px-6 md:px-12 overflow-hidden bg-black">
+    <section className="relative text-white pt-10 pb-32 md:py-32 px-6 md:px-12 overflow-hidden bg-black">
       {/* Background video - sticky to reduce zoom on tall mobile content */}
       <div className="absolute inset-0 z-0">
         <div className="sticky top-0 h-screen w-full overflow-hidden">
@@ -135,9 +135,9 @@ const Reviews: React.FC = () => {
 
       <div className="relative z-10 max-w-7xl mx-auto">
         {/* Header */}
-        <div className="flex flex-col items-center justify-center gap-10 mb-24 text-center">
+        <div className="flex flex-col items-center justify-center gap-10 mb-24 text-center mt-24 md:mt-0">
 
-          <div className="flex items-center gap-6 bg-white/5 backdrop-blur-xl px-8 py-4 rounded-full border border-white/5">
+          <div className="flex flex-col md:flex-row items-center gap-4 md:gap-6 bg-white/5 backdrop-blur-xl px-6 md:px-8 py-4 md:py-4 rounded-3xl md:rounded-full border border-white/5">
             {/* Google G logo (Standard SVG) */}
             <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform duration-300">
               <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" className="w-7 h-7">
@@ -149,11 +149,11 @@ const Reviews: React.FC = () => {
               </svg>
             </div>
 
-            <div className="flex flex-col items-start gap-1">
+            <div className="flex flex-col items-center md:items-start gap-1">
               <span className="text-[10px] uppercase tracking-[0.3em] text-neutral-400 font-sans group-hover:text-neutral-300 transition-colors">
                 Google Rating
               </span>
-              <div className="flex items-baseline gap-4">
+              <div className="flex items-center md:items-baseline gap-3 md:gap-4">
                 <motion.span
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -170,16 +170,16 @@ const Reviews: React.FC = () => {
         </div>
 
         {/* Mobile Auto-Scroll Marquee */}
-        <div className="md:hidden overflow-hidden w-screen relative left-1/2 -translate-x-1/2">
+        <div className="md:hidden overflow-hidden w-screen">
           <motion.div
-            className="flex w-max gap-4"
+            className="flex w-max gap-4 px-4"
             animate={{ x: "-50%" }}
             transition={{ duration: 25, ease: "linear", repeat: Infinity }}
           >
             {[...reviews, ...reviews, ...reviews, ...reviews].map((review, idx) => (
               <div
                 key={`mobile-rev-${idx}`}
-                className="w-[85vw] flex-shrink-0 bg-zinc-900/40 backdrop-blur-sm rounded-3xl p-8 flex flex-col gap-6 border border-white/5 mr-0 pr-0"
+                className="w-[85vw] flex-shrink-0 bg-zinc-900/40 backdrop-blur-sm rounded-3xl p-8 flex flex-col gap-6 border border-white/5"
               >
                 <div className="flex items-center gap-5">
                   <div
