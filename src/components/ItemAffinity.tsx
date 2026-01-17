@@ -158,10 +158,11 @@ const ItemAffinity: React.FC = () => {
     return (
         <div className="space-y-8 font-sans animate-in fade-in duration-500">
             {/* Header & Controls */}
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+            {/* Header & Controls */}
+            <div className="flex flex-col gap-6">
                 <div className="flex flex-col gap-1">
                     <div className="flex items-center gap-3">
-                        <h2 className="text-3xl font-serif italic tracking-tight text-[#0a0a0a]">
+                        <h2 className="text-6xl font-serif italic tracking-tight text-[#0a0a0a]">
                             Item Affinity Overview
                         </h2>
 
@@ -184,75 +185,77 @@ const ItemAffinity: React.FC = () => {
 
                     </div>
                     <div>
-                        <p className="text-xs uppercase tracking-[0.25em] text-zinc-500 mt-1">
+                        <p className="text-sm uppercase tracking-[0.25em] text-black font-bold mt-1">
                             Discover which items are frequently ordered together across different time periods
                         </p>
                     </div>
                 </div>
 
-                <div className="flex items-center gap-2">
-                    <div className="relative group">
-                        <select
-                            value={timeRange}
-                            onChange={(e) => setTimeRange(e.target.value as TimeRange)}
-                            className="appearance-none bg-white border border-black/10 rounded-md px-4 py-2 pr-8 text-xs uppercase tracking-[0.2em] focus:outline-none focus:border-black/30 cursor-pointer hover:bg-black/5 transition-colors"
-                        >
-                            <option value="today">Today</option>
-                            <option value="this_week">This Week</option>
-                            <option value="last_week">Last Week</option>
-                            <option value="this_month">This Month</option>
-                            <option value="last_month">Last Month</option>
-                            <option value="past_12_months">Past 12 Months</option>
-                            <option value="all_time">All Time</option>
-                        </select>
-                        <CalendarDays className="w-3 h-3 absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
-                    </div>
-
-                    {/* Contextual Help for Timeline */}
-                    <div className="relative group/tooltip z-50">
-                        <button className="p-1 rounded-full text-zinc-400 hover:text-zinc-600 hover:bg-black/5 transition-colors cursor-help">
-                            <div className="w-4 h-4 rounded-full border border-current flex items-center justify-center text-[10px] font-bold font-sans">?</div>
-                        </button>
-
-                        <div className="absolute right-0 top-full mt-2 w-64 bg-white/95 backdrop-blur-sm border border-black/5 rounded-xl shadow-xl p-4 opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-300 transform translate-y-2 group-hover/tooltip:translate-y-0 text-left z-50">
-                            <h4 className="font-serif text-sm font-bold text-zinc-800 mb-2">Adjusting Time Range</h4>
-                            <p className="font-sans text-xs leading-relaxed text-zinc-600 mb-2">
-                                Change the duration to analyze different patterns:
-                            </p>
-                            <ul className="list-disc list-outside pl-4 space-y-1">
-                                <li className="font-sans text-[10px] text-zinc-500"><strong>This/Last Week:</strong> Short-term trends & recent promos.</li>
-                                <li className="font-sans text-[10px] text-zinc-500"><strong>This/Last Month:</strong> Monthly performance reviews.</li>
-                                <li className="font-sans text-[10px] text-zinc-500"><strong>Past 12 Months:</strong> Long-term seasonal preferences.</li>
-                            </ul>
+                <div className="flex flex-col md:flex-row md:items-center justify-start gap-12">
+                    <div className="flex items-center gap-2">
+                        <div className="relative group">
+                            <select
+                                value={timeRange}
+                                onChange={(e) => setTimeRange(e.target.value as TimeRange)}
+                                className="appearance-none bg-white border border-black/10 rounded-md px-4 py-2 pr-8 text-xs uppercase tracking-[0.2em] focus:outline-none focus:border-black/30 cursor-pointer hover:bg-black/5 transition-colors"
+                            >
+                                <option value="today">Today</option>
+                                <option value="this_week">This Week</option>
+                                <option value="last_week">Last Week</option>
+                                <option value="this_month">This Month</option>
+                                <option value="last_month">Last Month</option>
+                                <option value="past_12_months">Past 12 Months</option>
+                                <option value="all_time">All Time</option>
+                            </select>
+                            <CalendarDays className="w-3 h-3 absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
                         </div>
-                    </div>
-                </div>
-                {/* Insight Summary Panel (Sticky) */}
-                <div className="bg-white rounded-xl border border-black/5 shadow-sm overflow-hidden transition-all duration-300">
-                    <div
-                        onClick={() => setIsRecommendationOpen(!isRecommendationOpen)}
-                        className="p-4 flex items-center justify-between cursor-pointer hover:bg-zinc-50 transition-colors"
-                    >
-                        <div className="flex items-center gap-3">
-                            <div className="p-1.5 bg-yellow-50 rounded-full shrink-0">
-                                <Lightbulb className="w-4 h-4 text-yellow-600" />
-                            </div>
-                            <div>
-                                <h3 className="text-xs uppercase tracking-[0.2em] font-bold text-zinc-500">
-                                    Insight Summary
-                                </h3>
-                                <p className="text-sm text-[#0a0a0a] font-serif italic mt-0.5">
-                                    {sortedPairs.length > 0 ? `Top opportunity: Bundle "${sortedPairs[0].itemA} + ${sortedPairs[0].itemB}"` : "No insights available"}
+
+                        {/* Contextual Help for Timeline */}
+                        <div className="relative group/tooltip z-50">
+                            <button className="p-1 rounded-full text-zinc-400 hover:text-zinc-600 hover:bg-black/5 transition-colors cursor-help">
+                                <div className="w-4 h-4 rounded-full border border-current flex items-center justify-center text-[10px] font-bold font-sans">?</div>
+                            </button>
+
+                            <div className="absolute right-0 top-full mt-2 w-64 bg-white/95 backdrop-blur-sm border border-black/5 rounded-xl shadow-xl p-4 opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-300 transform translate-y-2 group-hover/tooltip:translate-y-0 text-left z-50">
+                                <h4 className="font-serif text-sm font-bold text-zinc-800 mb-2">Adjusting Time Range</h4>
+                                <p className="font-sans text-xs leading-relaxed text-zinc-600 mb-2">
+                                    Change the duration to analyze different patterns:
                                 </p>
+                                <ul className="list-disc list-outside pl-4 space-y-1">
+                                    <li className="font-sans text-[10px] text-zinc-500"><strong>This/Last Week:</strong> Short-term trends & recent promos.</li>
+                                    <li className="font-sans text-[10px] text-zinc-500"><strong>This/Last Month:</strong> Monthly performance reviews.</li>
+                                    <li className="font-sans text-[10px] text-zinc-500"><strong>Past 12 Months:</strong> Long-term seasonal preferences.</li>
+                                </ul>
                             </div>
                         </div>
-                        {isRecommendationOpen ? <ChevronUp className="w-4 h-4 text-zinc-400" /> : <ChevronDown className="w-4 h-4 text-zinc-400" />}
                     </div>
+                    {/* Insight Summary Panel (Sticky) */}
+                    <div className="bg-white rounded-xl border border-black/5 shadow-sm overflow-hidden transition-all duration-300 flex-grow md:max-w-xl">
+                        <div
+                            onClick={() => setIsRecommendationOpen(!isRecommendationOpen)}
+                            className="p-4 flex items-center justify-between cursor-pointer hover:bg-zinc-50 transition-colors"
+                        >
+                            <div className="flex items-center gap-3">
+                                <div className="p-1.5 bg-yellow-50 rounded-full shrink-0">
+                                    <Lightbulb className="w-4 h-4 text-yellow-600" />
+                                </div>
+                                <div>
+                                    <h3 className="text-xs uppercase tracking-[0.2em] font-bold text-zinc-500">
+                                        Insight Summary
+                                    </h3>
+                                    <p className="text-sm text-[#0a0a0a] font-serif italic mt-0.5">
+                                        {sortedPairs.length > 0 ? `Top opportunity: Bundle "${sortedPairs[0].itemA} + ${sortedPairs[0].itemB}"` : "No insights available"}
+                                    </p>
+                                </div>
+                            </div>
+                            {isRecommendationOpen ? <ChevronUp className="w-4 h-4 text-zinc-400" /> : <ChevronDown className="w-4 h-4 text-zinc-400" />}
+                        </div>
 
-                    {/* Expanded Content */}
-                    <div className={`overflow-hidden transition-all duration-300 ${isRecommendationOpen ? 'max-h-48 opacity-100 border-t border-black/5' : 'max-h-0 opacity-0'}`}>
-                        <div className="p-4 bg-zinc-50/30 text-sm text-zinc-600 leading-relaxed font-sans">
-                            {recommendationText}
+                        {/* Expanded Content */}
+                        <div className={`overflow-hidden transition-all duration-300 ${isRecommendationOpen ? 'max-h-48 opacity-100 border-t border-black/5' : 'max-h-0 opacity-0'}`}>
+                            <div className="p-4 bg-zinc-50/30 text-sm text-zinc-600 leading-relaxed font-sans">
+                                {recommendationText}
+                            </div>
                         </div>
                     </div>
                 </div>

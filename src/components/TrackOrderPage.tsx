@@ -117,7 +117,7 @@ const TrackOrderPage: React.FC<TrackOrderPageProps> = ({ onNavigate }) => {
   }, [email]);
 
   return (
-    <div className="relative w-full text-[#F3EFE0] overflow-x-hidden min-h-[200vh]">
+    <div className="relative w-full text-[#F3EFE0] overflow-x-hidden min-h-screen">
       {/* Background Video - Fixed to viewport to prevent stretching */}
       <div className={`fixed inset-0 z-0 overflow-hidden bg-black transition-opacity duration-1000 ease-in-out ${videoLoaded ? 'opacity-100' : 'opacity-0'}`}>
         <video
@@ -135,22 +135,17 @@ const TrackOrderPage: React.FC<TrackOrderPageProps> = ({ onNavigate }) => {
         <div className="absolute inset-0 bg-black/60" />
       </div>
 
-      <div className="relative z-10 flex flex-col justify-start min-h-[200vh]">
+      <div className="relative z-10 flex flex-col justify-start min-h-screen">
         <div className="fixed top-0 left-0 right-0 z-50 pt-24 md:pt-32 px-6 md:px-10 bg-gradient-to-b from-black/80 via-black/40 to-transparent pb-8 pointer-events-none">
           {/* Gradient backdrop for header visibility */}
         </div>
 
-        {/* Content */}
-        <div className="w-full flex-1 flex flex-col pt-24 md:pt-32 pb-40">
+        {/* Content - Set min-h-screen to ensure footer is below fold on load */}
+        <div className="w-full flex-1 flex flex-col pt-24 md:pt-32 pb-40 min-h-screen">
           {/* Header & Search */}
           <div className="w-full max-w-4xl mx-auto px-6 md:px-10 mb-8">
             <div className="flex items-center gap-4 mb-8">
-              <button
-                onClick={() => onNavigate(Page.HOME)}
-                className="p-2 hover:bg-white/10 rounded-full transition-colors text-[#F3EFE0]"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </button>
+
               <div>
                 <motion.p
                   initial={{ opacity: 0 }}

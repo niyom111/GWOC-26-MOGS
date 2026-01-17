@@ -114,8 +114,8 @@ const TimelineSection: React.FC = () => {
                                 height: typeof window !== 'undefined' && window.innerWidth >= 768 ? '200px' : 'auto',
                                 minHeight: '200px'
                             }}
-                            initial={{ opacity: 0, y: 30 }}
-                            whileInView={{ opacity: 1, y: 0 }}
+                            initial={{ opacity: 0, y: 50, scale: 0.95 }}
+                            whileInView={{ opacity: 1, y: 0, scale: 1 }}
                             viewport={{ once: true, margin: "-10%" }}
                             transition={{ duration: 0.6, delay: index * 0.1 }}
                         >
@@ -439,8 +439,8 @@ const FranchisePage: React.FC = () => {
                 <div className="max-w-7xl mx-auto px-6 md:px-12">
                     <motion.div
                         className="mb-20 text-center"
-                        initial={{ opacity: 0, y: 30 }}
-                        whileInView={{ opacity: 1, y: 0 }}
+                        initial={{ opacity: 0, y: 50, scale: 0.95 }}
+                        whileInView={{ opacity: 1, y: 0, scale: 1 }}
                         viewport={{ once: true }}
                         transition={{ duration: 0.8 }}
                     >
@@ -458,42 +458,143 @@ const FranchisePage: React.FC = () => {
                         viewport={{ once: true, margin: "-10%" }}
                     >
                         {/* Card 1: Space */}
-                        <motion.div variants={itemVariants}
-                            whileHover={{ scale: 1.02, y: -5 }}
-                            transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                            className="group bg-white p-8 md:p-10 rounded-xl relative overflow-hidden border border-black/5 hover:bg-black hover:shadow-2xl cursor-default"
+                        <motion.div
+                            variants={itemVariants}
+                            initial={{ opacity: 0.8, scale: 0.95, backgroundColor: "#ffffff", color: "#000000" }}
+                            whileInView={{ opacity: 1, scale: 1.03, backgroundColor: "#000000", color: "#ffffff" }}
+                            viewport={{ once: false, amount: 0.5 }}
+                            whileHover={{ scale: 1.05, y: -5 }}
+                            whileTap={{ scale: 0.98 }}
+                            transition={{
+                                type: "spring",
+                                stiffness: 260,
+                                damping: 20,
+                                backgroundColor: { duration: 0.5 },
+                                color: { duration: 0.5 },
+                                scale: { duration: 0.4 }
+                            }}
+                            className="p-8 md:p-10 rounded-none relative overflow-hidden border border-black/5 shadow-md cursor-pointer"
+                            style={{ willChange: "background-color, color" }}
                         >
-                            <h4 className="text-lg md:text-xl font-bold uppercase tracking-[0.2em] text-black group-hover:text-white transition-colors mb-6 font-sans">Space</h4>
-                            <p className="text-3xl md:text-5xl font-serif italic mb-6 group-hover:text-white transition-colors">1000 <span className="text-xl font-sans text-zinc-400 not-italic mx-2">-</span> 1500 <span className="text-xs font-sans text-zinc-500 group-hover:text-zinc-400 not-italic block mt-1">sq.ft.</span></p>
-                            <p className="text-lg text-black group-hover:text-zinc-300 transition-colors font-sans leading-relaxed border-t border-black/10 group-hover:border-white/20 pt-6">
+                            <motion.h4
+                                className="text-lg md:text-xl font-bold uppercase tracking-[0.2em] mb-6 font-sans"
+                                initial={{ color: "#000000" }}
+                                whileInView={{ color: "#ffffff" }}
+                                transition={{ duration: 0.5 }}
+                            >
+                                Space
+                            </motion.h4>
+                            <motion.p
+                                className="text-3xl md:text-5xl font-serif italic mb-6"
+                                initial={{ color: "#000000" }}
+                                whileInView={{ color: "#ffffff" }}
+                                transition={{ duration: 0.5 }}
+                            >
+                                1000 <span className="text-xl font-sans text-zinc-400 not-italic mx-2">-</span> 1500 <motion.span
+                                    className="text-xs font-sans not-italic block mt-1"
+                                    initial={{ color: "#71717a" }}
+                                    whileInView={{ color: "#d4d4d8" }}
+                                    transition={{ duration: 0.5 }}
+                                >
+                                    sq.ft.
+                                </motion.span>
+                            </motion.p>
+                            <motion.p
+                                className="text-lg font-sans leading-relaxed border-t pt-6"
+                                initial={{ color: "#000000", borderColor: "rgba(0,0,0,0.1)" }}
+                                whileInView={{ color: "#d4d4d8", borderColor: "rgba(255,255,255,0.2)" }}
+                                transition={{ duration: 0.5 }}
+                            >
                                 Ideally located in high-street zones or premium commercial hubs with high footfall.
-                            </p>
+                            </motion.p>
                         </motion.div>
 
                         {/* Card 2: Investment */}
-                        <motion.div variants={itemVariants}
-                            whileHover={{ scale: 1.02, y: -5 }}
-                            transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                            className="group bg-white p-8 md:p-10 rounded-xl relative overflow-hidden border border-black/5 hover:bg-black hover:shadow-2xl cursor-default"
+                        <motion.div
+                            variants={itemVariants}
+                            initial={{ opacity: 0.8, scale: 0.95, backgroundColor: "#ffffff" }}
+                            whileInView={{ opacity: 1, scale: 1.03, backgroundColor: "#000000" }}
+                            viewport={{ once: false, amount: 0.5 }}
+                            whileHover={{ scale: 1.05, y: -5 }}
+                            whileTap={{ scale: 0.98 }}
+                            transition={{
+                                type: "spring",
+                                stiffness: 260,
+                                damping: 20,
+                                backgroundColor: { duration: 0.5 },
+                                scale: { duration: 0.4 }
+                            }}
+                            className="p-8 md:p-10 rounded-none relative overflow-hidden border border-black/5 shadow-md cursor-pointer"
+                            style={{ willChange: "background-color, color" }}
                         >
-                            <h4 className="text-lg md:text-xl font-bold uppercase tracking-[0.2em] text-black group-hover:text-white transition-colors mb-6 font-sans">Investment</h4>
-                            <p className="text-3xl md:text-5xl font-serif italic mb-6 group-hover:text-white transition-colors">₹35L <span className="text-xl font-sans text-zinc-400 not-italic mx-2">-</span> 50L</p>
-                            <p className="text-lg text-black group-hover:text-zinc-300 transition-colors font-sans leading-relaxed border-t border-black/10 group-hover:border-white/20 pt-6">
+                            <motion.h4
+                                className="text-lg md:text-xl font-bold uppercase tracking-[0.2em] mb-6 font-sans"
+                                initial={{ color: "#000000" }}
+                                whileInView={{ color: "#ffffff" }}
+                                transition={{ duration: 0.5 }}
+                            >
+                                Investment
+                            </motion.h4>
+                            <motion.p
+                                className="text-3xl md:text-5xl font-serif italic mb-6"
+                                initial={{ color: "#000000" }}
+                                whileInView={{ color: "#ffffff" }}
+                                transition={{ duration: 0.5 }}
+                            >
+                                ₹35L <span className="text-xl font-sans text-zinc-400 not-italic mx-2">-</span> 50L
+                            </motion.p>
+                            <motion.p
+                                className="text-lg font-sans leading-relaxed border-t pt-6"
+                                initial={{ color: "#000000", borderColor: "rgba(0,0,0,0.1)" }}
+                                whileInView={{ color: "#d4d4d8", borderColor: "rgba(255,255,255,0.2)" }}
+                                transition={{ duration: 0.5 }}
+                            >
                                 Total setup cost including license fees, interiors, equipment, and initial stock.
-                            </p>
+                            </motion.p>
                         </motion.div>
 
                         {/* Card 3: Passion */}
-                        <motion.div variants={itemVariants}
-                            whileHover={{ scale: 1.02, y: -5 }}
-                            transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                            className="group bg-white p-8 md:p-10 rounded-xl relative overflow-hidden border border-black/5 hover:bg-black hover:shadow-2xl cursor-default"
+                        <motion.div
+                            variants={itemVariants}
+                            initial={{ opacity: 0.8, scale: 0.95, backgroundColor: "#ffffff" }}
+                            whileInView={{ opacity: 1, scale: 1.03, backgroundColor: "#000000" }}
+                            viewport={{ once: false, amount: 0.5 }}
+                            whileHover={{ scale: 1.05, y: -5 }}
+                            whileTap={{ scale: 0.98 }}
+                            transition={{
+                                type: "spring",
+                                stiffness: 260,
+                                damping: 20,
+                                backgroundColor: { duration: 0.5 },
+                                scale: { duration: 0.4 }
+                            }}
+                            className="p-8 md:p-10 rounded-none relative overflow-hidden border border-black/5 shadow-md cursor-pointer"
+                            style={{ willChange: "background-color, color" }}
                         >
-                            <h4 className="text-lg md:text-xl font-bold uppercase tracking-[0.2em] text-black group-hover:text-white transition-colors mb-6 font-sans">Experience</h4>
-                            <p className="text-3xl md:text-5xl font-serif italic mb-6 group-hover:text-white transition-colors">Passion First</p>
-                            <p className="text-lg text-black group-hover:text-zinc-300 transition-colors font-sans leading-relaxed border-t border-black/10 group-hover:border-white/20 pt-6">
+                            <motion.h4
+                                className="text-lg md:text-xl font-bold uppercase tracking-[0.2em] mb-6 font-sans"
+                                initial={{ color: "#000000" }}
+                                whileInView={{ color: "#ffffff" }}
+                                transition={{ duration: 0.5 }}
+                            >
+                                Experience
+                            </motion.h4>
+                            <motion.p
+                                className="text-3xl md:text-5xl font-serif italic mb-6"
+                                initial={{ color: "#000000" }}
+                                whileInView={{ color: "#ffffff" }}
+                                transition={{ duration: 0.5 }}
+                            >
+                                Passion First
+                            </motion.p>
+                            <motion.p
+                                className="text-lg font-sans leading-relaxed border-t pt-6"
+                                initial={{ color: "#000000", borderColor: "rgba(0,0,0,0.1)" }}
+                                whileInView={{ color: "#d4d4d8", borderColor: "rgba(255,255,255,0.2)" }}
+                                transition={{ duration: 0.5 }}
+                            >
                                 No prior F&B experience needed. A deep commitment to quality and community is mandatory.
-                            </p>
+                            </motion.p>
                         </motion.div>
                     </motion.div>
                 </div>
@@ -508,26 +609,125 @@ const FranchisePage: React.FC = () => {
                     whileInView="visible"
                     viewport={{ once: true }}
                 >
-                    <motion.div variants={itemVariants} className="group bg-white border border-black/5 p-12 rounded-2xl text-center transition-all duration-500 hover:scale-105 hover:-translate-y-2 hover:bg-black hover:shadow-2xl">
-                        <div className="w-20 h-20 mx-auto rounded-full border border-black/10 group-hover:border-white/20 flex items-center justify-center mb-6 text-[#A35D36] group-hover:text-white transition-colors">
+                    <motion.div
+                        variants={itemVariants}
+                        initial={{ opacity: 0.8, scale: 0.95, backgroundColor: "#ffffff" }}
+                        whileInView={{ opacity: 1, scale: 1.03, backgroundColor: "#000000" }}
+                        viewport={{ once: false, amount: 0.5 }}
+                        whileHover={{ scale: 1.05, y: -5 }}
+                        whileTap={{ scale: 0.98 }}
+                        transition={{
+                            type: "spring",
+                            stiffness: 260,
+                            damping: 20,
+                            backgroundColor: { duration: 0.5 },
+                            scale: { duration: 0.4 }
+                        }}
+                        className="border border-black/5 p-12 rounded-none text-center shadow-md cursor-pointer">
+                        <motion.div
+                            className="w-20 h-20 mx-auto rounded-full border flex items-center justify-center mb-6"
+                            initial={{ borderColor: "rgba(0,0,0,0.1)", color: "#A35D36" }}
+                            whileInView={{ borderColor: "rgba(255,255,255,0.2)", color: "#ffffff" }}
+                            transition={{ duration: 0.5 }}
+                        >
                             <span className="text-3xl font-serif font-bold italic">7%</span>
-                        </div>
-                        <h3 className="text-3xl font-serif italic mb-2 group-hover:text-white transition-colors">Royalty</h3>
-                        <p className="text-xs uppercase tracking-[0.4em] text-black/60 group-hover:text-zinc-400 font-bold font-sans transition-colors">Monthly Gross Sales</p>
+                        </motion.div>
+                        <motion.h3
+                            className="text-3xl font-serif italic mb-2"
+                            initial={{ color: "#000000" }}
+                            whileInView={{ color: "#ffffff" }}
+                            transition={{ duration: 0.5 }}
+                        >
+                            Royalty
+                        </motion.h3>
+                        <motion.p
+                            className="text-xs uppercase tracking-[0.4em] font-bold font-sans"
+                            initial={{ color: "rgba(0,0,0,0.6)" }}
+                            whileInView={{ color: "#a1a1aa" }}
+                            transition={{ duration: 0.5 }}
+                        >
+                            Monthly Gross Sales
+                        </motion.p>
                     </motion.div>
-                    <motion.div variants={itemVariants} className="group bg-white border border-black/5 p-12 rounded-2xl text-center transition-all duration-500 hover:scale-105 hover:-translate-y-2 hover:bg-black hover:shadow-2xl">
-                        <div className="w-20 h-20 mx-auto rounded-full border border-black/10 group-hover:border-white/20 flex items-center justify-center mb-6 text-[#A35D36] group-hover:text-white transition-colors">
+                    <motion.div
+                        variants={itemVariants}
+                        initial={{ opacity: 0.8, scale: 0.95, backgroundColor: "#ffffff" }}
+                        whileInView={{ opacity: 1, scale: 1.03, backgroundColor: "#000000" }}
+                        viewport={{ once: false, amount: 0.5 }}
+                        whileHover={{ scale: 1.05, y: -5 }}
+                        whileTap={{ scale: 0.98 }}
+                        transition={{
+                            type: "spring",
+                            stiffness: 260,
+                            damping: 20,
+                            backgroundColor: { duration: 0.5 },
+                            scale: { duration: 0.4 }
+                        }}
+                        className="border border-black/5 p-12 rounded-none text-center shadow-md cursor-pointer">
+                        <motion.div
+                            className="w-20 h-20 mx-auto rounded-full border flex items-center justify-center mb-6"
+                            initial={{ borderColor: "rgba(0,0,0,0.1)", color: "#A35D36" }}
+                            whileInView={{ borderColor: "rgba(255,255,255,0.2)", color: "#ffffff" }}
+                            transition={{ duration: 0.5 }}
+                        >
                             <span className="text-3xl font-serif font-bold italic">2%</span>
-                        </div>
-                        <h3 className="text-3xl font-serif italic mb-2 group-hover:text-white transition-colors">Ad Fund</h3>
-                        <p className="text-xs uppercase tracking-[0.4em] text-black/60 group-hover:text-zinc-400 font-bold font-sans transition-colors">National Marketing</p>
+                        </motion.div>
+                        <motion.h3
+                            className="text-3xl font-serif italic mb-2"
+                            initial={{ color: "#000000" }}
+                            whileInView={{ color: "#ffffff" }}
+                            transition={{ duration: 0.5 }}
+                        >
+                            Ad Fund
+                        </motion.h3>
+                        <motion.p
+                            className="text-xs uppercase tracking-[0.4em] font-bold font-sans"
+                            initial={{ color: "rgba(0,0,0,0.6)" }}
+                            whileInView={{ color: "#a1a1aa" }}
+                            transition={{ duration: 0.5 }}
+                        >
+                            National Marketing
+                        </motion.p>
                     </motion.div>
-                    <motion.div variants={itemVariants} className="group bg-white border border-black/5 p-12 rounded-2xl text-center transition-all duration-500 hover:scale-105 hover:-translate-y-2 hover:bg-black hover:shadow-2xl">
-                        <div className="w-20 h-20 mx-auto rounded-full border border-black/10 group-hover:border-white/20 flex items-center justify-center mb-6 text-[#A35D36] group-hover:text-white transition-colors">
+                    <motion.div
+                        variants={itemVariants}
+                        initial={{ opacity: 0.8, scale: 0.95, backgroundColor: "#ffffff" }}
+                        whileInView={{ opacity: 1, scale: 1.03, backgroundColor: "#000000" }}
+                        viewport={{ once: false, amount: 0.5 }}
+                        whileHover={{ scale: 1.05, y: -5 }}
+                        whileTap={{ scale: 0.98 }}
+                        transition={{
+                            type: "spring",
+                            stiffness: 260,
+                            damping: 20,
+                            backgroundColor: { duration: 0.5 },
+                            scale: { duration: 0.4 }
+                        }}
+                        className="border border-black/5 p-12 rounded-none text-center shadow-md cursor-pointer">
+                        <motion.div
+                            className="w-20 h-20 mx-auto rounded-full border flex items-center justify-center mb-6"
+                            initial={{ borderColor: "rgba(0,0,0,0.1)", color: "#A35D36" }}
+                            whileInView={{ borderColor: "rgba(255,255,255,0.2)", color: "#ffffff" }}
+                            transition={{ duration: 0.5 }}
+                        >
                             <TrendingUp className="w-8 h-8" />
-                        </div>
-                        <h3 className="text-3xl font-serif italic mb-2 text-black group-hover:text-white transition-colors">18-24 Mo.</h3>
-                        <p className="text-xs uppercase tracking-[0.4em] text-black/60 group-hover:text-zinc-400 font-bold font-sans transition-colors">Estimated ROI</p>
+                        </motion.div>
+                        <motion.h3
+                            className="text-3xl font-serif italic mb-2"
+                            initial={{ color: "#000000" }}
+                            whileInView={{ color: "#ffffff" }}
+                            transition={{ duration: 0.5 }}
+                        >
+                            18-24 Mo.
+                        </motion.h3>
+                        <motion.p
+                            className="text-xs uppercase tracking-[0.4em] font-bold font-sans"
+                            initial={{ color: "rgba(0,0,0,0.6)" }}
+                            whileInView={{ color: "#a1a1aa" }}
+                            transition={{ duration: 0.5 }}
+                        >
+                            Estimated ROI
+                        </motion.p>
                     </motion.div>
                 </motion.div>
             </section>
@@ -575,13 +775,54 @@ const FranchisePage: React.FC = () => {
                                 { icon: Users, title: "Operations", desc: "SOPs, inventory management, and staffing guidelines." },
                                 { icon: TrendingUp, title: "Marketing", desc: "Local store marketing plans and digital asset bank." }
                             ].map((item, i) => (
-                                <motion.div variants={itemVariants} key={i} className="flex gap-5 p-5 border border-white/10 rounded-xl bg-black hover:bg-white hover:scale-105 hover:-translate-y-2 hover:shadow-2xl transition-all duration-500 group cursor-pointer">
-                                    <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center shrink-0 group-hover:bg-black/5 group-hover:text-black transition-colors duration-300">
-                                        <item.icon className="w-5 h-5 text-white group-hover:text-black transition-colors" />
-                                    </div>
+                                <motion.div
+                                    variants={itemVariants}
+                                    key={i}
+                                    initial={{ opacity: 0.8, scale: 0.95, backgroundColor: "#000000" }}
+                                    whileInView={{ opacity: 1, scale: 1.03, backgroundColor: "#ffffff" }}
+                                    viewport={{ once: false, amount: 0.5 }}
+                                    whileHover={{ scale: 1.05, y: -5 }}
+                                    whileTap={{ scale: 0.98 }}
+                                    transition={{
+                                        type: "spring",
+                                        stiffness: 260,
+                                        damping: 20,
+                                        backgroundColor: { duration: 0.5 },
+                                        scale: { duration: 0.4 }
+                                    }}
+                                    className="flex gap-5 p-5 border border-white/10 rounded-none shadow-md cursor-pointer"
+                                >
+                                    <motion.div
+                                        className="w-12 h-12 rounded-full flex items-center justify-center shrink-0"
+                                        initial={{ backgroundColor: "rgba(255,255,255,0.1)", color: "#ffffff" }}
+                                        whileInView={{ backgroundColor: "rgba(0,0,0,0.05)", color: "#000000" }}
+                                        transition={{ duration: 0.5 }}
+                                    >
+                                        <motion.div
+                                            initial={{ color: "#ffffff" }}
+                                            whileInView={{ color: "#000000" }}
+                                            transition={{ duration: 0.5 }}
+                                        >
+                                            <item.icon className="w-5 h-5" />
+                                        </motion.div>
+                                    </motion.div>
                                     <div>
-                                        <h4 className="font-bold font-serif italic mb-2 text-2xl text-white group-hover:text-black transition-colors">{item.title}</h4>
-                                        <p className="text-xs text-zinc-400 group-hover:text-zinc-600 font-sans tracking-wide leading-relaxed transition-colors">{item.desc}</p>
+                                        <motion.h4
+                                            className="font-bold font-serif italic mb-2 text-2xl"
+                                            initial={{ color: "#ffffff" }}
+                                            whileInView={{ color: "#000000" }}
+                                            transition={{ duration: 0.5 }}
+                                        >
+                                            {item.title}
+                                        </motion.h4>
+                                        <motion.p
+                                            className="text-xs font-sans tracking-wide leading-relaxed"
+                                            initial={{ color: "#a1a1aa" }}
+                                            whileInView={{ color: "#52525b" }}
+                                            transition={{ duration: 0.5 }}
+                                        >
+                                            {item.desc}
+                                        </motion.p>
                                     </div>
                                 </motion.div>
                             ))}
@@ -607,21 +848,21 @@ const FranchisePage: React.FC = () => {
                     faqs.length === 0 ? (
                         <p className="text-center text-zinc-400 font-sans text-xs uppercase tracking-widest">No FAQs available at the moment.</p>
                     ) : (
-                        <div className="space-y-4">
+                        <div className="space-y-6">
                             {faqs.map((item, index) => (
-                                <div key={item.id} className="border-2 border-black/20 overflow-hidden bg-[#F3EFE0]">
+                                <div key={item.id} className="border border-black/5 overflow-hidden rounded-2xl bg-white shadow-lg">
                                     <button
                                         onClick={() => toggleFaq(index)}
-                                        className={`w-full flex items-center justify-between py-3 px-6 text-left transition-all duration-300 ${activeFaq === index ? 'bg-black/[0.03]' : 'hover:bg-black/[0.03]'}`}
+                                        className={`w-full flex items-center justify-between py-5 px-6 md:px-8 text-left transition-all duration-300 ${activeFaq === index ? 'bg-black/[0.02]' : 'hover:bg-black/[0.02]'}`}
                                     >
-                                        <span className={`font-serif text-lg md:text-xl italic pr-8 tracking-tight transition-colors duration-300 ${activeFaq === index ? 'text-[#A35D36]' : 'text-[#1A1A1A]'}`}>
+                                        <span className={`font-serif text-xl md:text-2xl italic pr-8 tracking-tight transition-colors duration-300 ${activeFaq === index ? 'text-[#A35D36]' : 'text-[#1A1A1A]'}`}>
                                             {item.question}
                                         </span>
                                         <motion.div
                                             animate={{ rotate: activeFaq === index ? 180 : 0 }}
                                             transition={{ duration: 0.3 }}
                                         >
-                                            <ChevronDown className={`w-4 h-4 transition-colors duration-300 ${activeFaq === index ? 'text-[#A35D36]' : 'text-zinc-400'}`} />
+                                            <ChevronDown className={`w-5 h-5 transition-colors duration-300 ${activeFaq === index ? 'text-[#A35D36]' : 'text-zinc-400'}`} />
                                         </motion.div>
                                     </button>
                                     <AnimatePresence>
@@ -630,10 +871,10 @@ const FranchisePage: React.FC = () => {
                                                 initial={{ height: 0, opacity: 0 }}
                                                 animate={{ height: 'auto', opacity: 1 }}
                                                 exit={{ height: 0, opacity: 0 }}
-                                                className="overflow-hidden border-t-2 border-black/20"
+                                                className="overflow-hidden border-t border-black/5"
                                             >
-                                                <div className="p-6 md:p-10 bg-[#F3EFE0]">
-                                                    <p className="font-sans text-sm md:text-base text-zinc-700 leading-relaxed max-w-2xl border-l-2 border-[#A35D36] pl-6 italic">
+                                                <div className="p-6 md:p-8 bg-white">
+                                                    <p className="font-sans text-base md:text-lg text-zinc-700 leading-relaxed max-w-2xl border-l-2 border-[#A35D36] pl-6 italic">
                                                         {item.answer}
                                                     </p>
                                                 </div>
@@ -665,8 +906,8 @@ const FranchisePage: React.FC = () => {
 
                 <div className="relative z-10">
                     <motion.div
-                        initial={{ opacity: 0, y: 30 }}
-                        whileInView={{ opacity: 1, y: 0 }}
+                        initial={{ opacity: 0, y: 50, scale: 0.95 }}
+                        whileInView={{ opacity: 1, y: 0, scale: 1 }}
                         viewport={{ once: true }}
                         transition={{ duration: 0.8 }}
                     >
@@ -691,20 +932,7 @@ const FranchisePage: React.FC = () => {
                 </div>
             </section>
 
-            {/* STICKY BOTTOM BAR (Mobile) */}
-            <motion.div
-                initial={{ y: 100 }}
-                animate={{ y: 0 }}
-                className="fixed bottom-0 left-0 right-0 p-4 bg-white/90 backdrop-blur-md border-t border-black/5 z-40 flex justify-between items-center md:hidden"
-            >
-                <span className="font-serif italic text-lg">Rabuste Franchise</span>
-                <button
-                    onClick={() => setIsModalOpen(true)}
-                    className="px-6 py-3 bg-black text-white text-[10px] font-bold uppercase tracking-[0.25em] rounded-full shadow-lg"
-                >
-                    Apply
-                </button>
-            </motion.div>
+
 
             {/* MODAL (Same as before, preserved) */}
             {
