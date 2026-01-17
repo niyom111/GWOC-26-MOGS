@@ -103,10 +103,10 @@ const TagPerformance: React.FC = () => {
         <div className="space-y-8 font-sans animate-in fade-in duration-500">
             {/* Header */}
             <div>
-                <h2 className="text-3xl font-serif italic tracking-tight text-[#0a0a0a]">
+                <h2 className="text-6xl font-serif italic tracking-tight text-[#0a0a0a]">
                     Tag Performance Overview
                 </h2>
-                <p className="text-xs uppercase tracking-[0.25em] text-zinc-500 mt-1">
+                <p className="text-sm uppercase tracking-[0.25em] text-black font-bold mt-1">
                     Understand how item attributes influence customer orders
                 </p>
             </div>

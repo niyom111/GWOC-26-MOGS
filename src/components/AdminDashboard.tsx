@@ -68,7 +68,17 @@ interface FranchiseFaqItem {
 }
 
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'coffee' | 'orders' | 'art' | 'workshops' | 'manage_categories' | 'franchise_enquiries' | 'franchise_faqs' | 'franchise_settings' | 'sales_trends' | 'tag_performance' | 'settings'>('overview');
+  // TABS PERSISTENCE
+  const [activeTab, setActiveTab] = useState<'overview' | 'coffee' | 'orders' | 'art' | 'workshops' | 'manage_categories' | 'franchise_enquiries' | 'franchise_faqs' | 'franchise_settings' | 'sales_trends' | 'tag_performance' | 'settings'>(() => {
+    // Try to get from localStorage
+    const saved = localStorage.getItem('adminActiveTab');
+    return (saved as any) || 'overview';
+  });
+
+  // Save to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('adminActiveTab', activeTab);
+  }, [activeTab]);
   const [isFranchiseOpen, setIsFranchiseOpen] = useState(false);
   const [isInsightsOpen, setIsInsightsOpen] = useState(false);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('');
@@ -1100,7 +1110,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
               <h1 className="text-5xl md:text-7xl font-serif mb-4 italic tracking-tight">
                 {activeTabLabel}
               </h1>
-              <p className="text-xs md:text-sm uppercase tracking-[0.3em] text-zinc-500 font-sans">
+              <p className="text-sm uppercase tracking-[0.3em] text-black font-sans font-medium">
                 Rabuste Coffee — Internal Console
               </p>
             </div>
@@ -1120,22 +1130,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
                 <span className="text-[10px] font-bold tracking-widest uppercase">MENU: {menuStatus.text}</span>
               </div>
 
-              <button
-                onClick={() => setActiveTab('settings')}
-                className="p-2 hover:bg-black/5 rounded-full transition-colors text-black/40 hover:text-black"
-              >
-                <Settings className="w-5 h-5" />
-              </button>
-              <button
-                onClick={() => {
-                  setIsMobileMenuOpen(false);
-                  onLogout();
-                  onBack();
-                }}
-                className="p-2 hover:bg-black/5 rounded-full transition-colors text-black/40 hover:text-black"
-              >
-                <LogOut className="w-5 h-5" />
-              </button>
+
             </div>
 
             <div className="mt-4 md:mt-0">
@@ -1173,351 +1168,366 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
         )}
 
         {/* Tab content */}
-        {
-          activeTab === 'overview' && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <OverviewCard label="Beverages" value={beverageCount} />
-              <OverviewCard label="Food" value={foodCount} />
-              <OverviewCard label="Artworks" value={artItems.length} />
-              <OverviewCard label="Workshops" value={workshops.length} />
-              <OverviewCard label="Franchise Leads" value={enquiryCount} />
-            </div>
-          )
-        }
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.3 }}
+            className="w-full"
+          >
+            {
+              activeTab === 'overview' && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <OverviewCard label="Beverages" value={beverageCount} />
+                  <OverviewCard label="Food" value={foodCount} />
+                  <OverviewCard label="Artworks" value={artItems.length} />
+                  <OverviewCard label="Workshops" value={workshops.length} />
+                  <OverviewCard label="Franchise Leads" value={enquiryCount} />
+                </div>
+              )
+            }
 
-        {activeTab === 'sales_trends' && <SalesInsights />}
-        {activeTab === 'tag_performance' && <TagPerformance />}
-        {activeTab === 'item_affinity' && <ItemAffinity />}
+            {activeTab === 'sales_trends' && <SalesInsights />}
+            {activeTab === 'tag_performance' && <TagPerformance />}
+            {activeTab === 'item_affinity' && <ItemAffinity />}
 
-        {
-          activeTab === 'coffee' && (
-            <div className="space-y-6">
-              <div className="flex gap-2">
-                {['ALL', 'LIVE', 'DRAFT'].map((tab) => (
-                  <button
-                    key={tab}
-                    onClick={() => setFilterStatus(tab as any)}
-                    className={`px-4 py-2 text-[10px] uppercase tracking-[0.2em] font-bold rounded-lg transition-colors border ${filterStatus === tab
-                      ? 'bg-black text-white border-black'
-                      : 'bg-white text-zinc-500 border-black/5 hover:border-black/20'
-                      }`}
-                  >
-                    {tab === 'ALL' ? 'All Items' : tab}
-                  </button>
-                ))}
-              </div>
-              <CoffeeTable
-                items={filteredMenuItems}
-                onEdit={openCoffeeModalForEdit}
-                onDelete={deleteCoffeeItem}
-                onToggleStatus={toggleCoffeeStatus}
-              />
-            </div>
-          )
-        }
-
-        {
-          activeTab === 'orders' && (
-            <div className="space-y-6">
-              <div className="bg-white border border-black/5 rounded-xl p-4 flex flex-wrap items-end gap-4 shadow-sm">
-                <div>
-                  <label className="block text-[10px] uppercase tracking-[0.2em] text-zinc-500 mb-2">Start Date</label>
-                  <input
-                    type="date"
-                    value={dateFilter.start}
-                    onChange={(e) => setDateFilter(prev => ({ ...prev, start: e.target.value }))}
-                    className="h-[42px] px-4 text-[13px] border border-black/10 rounded-lg outline-none focus:border-black uppercase tracking-wider text-zinc-700 bg-zinc-50"
+            {
+              activeTab === 'coffee' && (
+                <div className="space-y-6">
+                  <div className="flex gap-2">
+                    {['ALL', 'LIVE', 'DRAFT'].map((tab) => (
+                      <button
+                        key={tab}
+                        onClick={() => setFilterStatus(tab as any)}
+                        className={`px-4 py-2 text-[10px] uppercase tracking-[0.2em] font-bold rounded-lg transition-colors border ${filterStatus === tab
+                          ? 'bg-black text-white border-black'
+                          : 'bg-white text-zinc-500 border-black/5 hover:border-black/20'
+                          }`}
+                      >
+                        {tab === 'ALL' ? 'All Items' : tab}
+                      </button>
+                    ))}
+                  </div>
+                  <CoffeeTable
+                    items={filteredMenuItems}
+                    onEdit={openCoffeeModalForEdit}
+                    onDelete={deleteCoffeeItem}
+                    onToggleStatus={toggleCoffeeStatus}
                   />
                 </div>
-                <div>
-                  <label className="block text-[10px] uppercase tracking-[0.2em] text-zinc-500 mb-2">End Date</label>
-                  <input
-                    type="date"
-                    value={dateFilter.end}
-                    onChange={(e) => setDateFilter(prev => ({ ...prev, end: e.target.value }))}
-                    className="h-[42px] px-4 text-[13px] border border-black/10 rounded-lg outline-none focus:border-black uppercase tracking-wider text-zinc-700 bg-zinc-50"
+              )
+            }
+
+            {
+              activeTab === 'orders' && (
+                <div className="space-y-6">
+                  <div className="bg-white border border-black/5 rounded-xl p-4 flex flex-wrap items-end gap-4 shadow-sm">
+                    <div>
+                      <label className="block text-[10px] uppercase tracking-[0.2em] text-zinc-500 mb-2">Start Date</label>
+                      <input
+                        type="date"
+                        value={dateFilter.start}
+                        onChange={(e) => setDateFilter(prev => ({ ...prev, start: e.target.value }))}
+                        className="h-[42px] px-4 text-[13px] border border-black/10 rounded-lg outline-none focus:border-black uppercase tracking-wider text-zinc-700 bg-zinc-50"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] uppercase tracking-[0.2em] text-zinc-500 mb-2">End Date</label>
+                      <input
+                        type="date"
+                        value={dateFilter.end}
+                        onChange={(e) => setDateFilter(prev => ({ ...prev, end: e.target.value }))}
+                        className="h-[42px] px-4 text-[13px] border border-black/10 rounded-lg outline-none focus:border-black uppercase tracking-wider text-zinc-700 bg-zinc-50"
+                      />
+                    </div>
+                    <div className="flex-1" />
+                    {(dateFilter.start || dateFilter.end) && (
+                      <button
+                        onClick={() => setDateFilter({ start: '', end: '' })}
+                        className="h-[42px] px-6 text-[11px] uppercase tracking-[0.2em] text-zinc-500 hover:text-black border border-transparent hover:border-black/5 rounded-lg transition-colors font-bold"
+                      >
+                        Clear Filter
+                      </button>
+                    )}
+                  </div>
+
+                  <OrdersTable
+                    items={orders
+                      .filter(order => {
+                        if (!dateFilter.start && !dateFilter.end) return true;
+                        const orderDate = new Date(order.date);
+                        // Normalize dates to start of day for comparison
+                        const start = dateFilter.start ? new Date(dateFilter.start) : null;
+                        const end = dateFilter.end ? new Date(dateFilter.end) : null;
+
+                        if (start) start.setHours(0, 0, 0, 0);
+                        if (end) end.setHours(23, 59, 59, 999);
+
+                        if (start && orderDate < start) return false;
+                        if (end && orderDate > end) return false;
+                        return true;
+                      })
+                      .sort((a, b) => {
+                        const dateDiff = new Date(b.date).getTime() - new Date(a.date).getTime();
+                        if (dateDiff === 0) {
+                          return b.id.localeCompare(a.id);
+                        }
+                        return dateDiff;
+                      })
+                    }
+                    onRowClick={setSelectedOrder}
                   />
                 </div>
-                <div className="flex-1" />
-                {(dateFilter.start || dateFilter.end) && (
-                  <button
-                    onClick={() => setDateFilter({ start: '', end: '' })}
-                    className="h-[42px] px-6 text-[11px] uppercase tracking-[0.2em] text-zinc-500 hover:text-black border border-transparent hover:border-black/5 rounded-lg transition-colors font-bold"
-                  >
-                    Clear Filter
-                  </button>
-                )}
-              </div>
+              )
+            }
 
-              <OrdersTable
-                items={orders.filter(order => {
-                  if (!dateFilter.start && !dateFilter.end) return true;
-                  const orderDate = new Date(order.date);
-                  // Normalize dates to start of day for comparison
-                  const start = dateFilter.start ? new Date(dateFilter.start) : null;
-                  const end = dateFilter.end ? new Date(dateFilter.end) : null;
-
-                  if (start) start.setHours(0, 0, 0, 0);
-                  if (end) end.setHours(23, 59, 59, 999);
-
-                  if (start && orderDate < start) return false;
-                  if (end && orderDate > end) return false;
-                  return true;
-                })}
-                onRowClick={setSelectedOrder}
-              />
-            </div>
-          )
-        }
-
-        {/* Order Details Modal */}
-        {selectedOrder && (
-          <OrderDetailsModal
-            order={selectedOrder}
-            onClose={() => setSelectedOrder(null)}
-            onUpdateStatus={async (id, status) => {
-              try {
-                const res = await fetch(`${API_BASE_URL}/api/orders/${id}/status`, {
-                  method: 'PUT',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ status })
-                });
-                if (res.ok) {
-                  showToast('Order status updated', 'success');
-                  // Optimization: Update local state without full reload
-                  const updatedOrder = await res.json();
-                  setSelectedOrder(updatedOrder);
-                  // Orders list should ideally listen to changes or we trigger a refetch, 
-                  // but for now DataContext.refresh might be needed or we can optimistically update
-                  // For simplicity in this turn, I'm not triggering a full reload, assuming DataContext handles it or user refreshes manually
-                } else {
-                  showToast('Failed to update status', 'error');
-                }
-              } catch (e) {
-                showToast('Error updating status', 'error');
-              }
-            }}
-          />
-        )}
-
-        {
-          activeTab === 'art' && (
-            <ArtTable items={artItems} onToggleStatus={toggleArtStatus} onEdit={openArtModalForEdit} onDelete={deleteArtItem} />
-          )
-        }
-
-        {activeTab === 'workshops' && <WorkshopTable items={workshops} onEdit={openWorkshopModalForEdit} onDelete={deleteWorkshopItem} />}
-
-        {
-          activeTab === 'manage_categories' && (
-            <div className="max-w-3xl">
-              <div className="mb-6">
-                <h2 className="text-2xl font-serif italic text-black">Manage Categories</h2>
-                <p className="text-[13px] text-zinc-500 mt-1">Create, rename, and delete categories and sub-categories</p>
-              </div>
-              <CategoryManager
-                selectedCategoryId={selectedCategoryId}
-                onCategorySelect={setSelectedCategoryId}
-              />
-            </div>
-          )
-        }
-
-        {
-          activeTab === 'franchise_enquiries' && (
-            <FranchiseTable
-              items={enquiries}
-              onMarkRead={markEnquiryRead}
-              onDelete={deleteEnquiry}
-              onView={(item) => setSelectedEnquiry(item)}
-            />
-          )
-        }
-
-        {/* Enquiry Modal */}
-        {
-          selectedEnquiry && (
-            <EnquiryDetailModal
-              enquiry={selectedEnquiry}
-              onClose={() => setSelectedEnquiry(null)}
-              onUpdateStatus={async (id, status) => {
-                try {
-                  const res = await fetch(`${API_BASE_URL}/api/franchise/enquiries/${id}/status`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ status })
-                  });
-                  if (res.ok) {
-                    showToast('Status updated', 'success');
-                    setSelectedEnquiry(null);
-                    refreshEnquiries(); // Refresh list
-                  } else {
-                    showToast('Failed to update status', 'error');
+            {/* Order Details Modal */}
+            {selectedOrder && (
+              <OrderDetailsModal
+                order={selectedOrder}
+                onClose={() => setSelectedOrder(null)}
+                onUpdateStatus={async (id, status) => {
+                  try {
+                    const res = await fetch(`${API_BASE_URL}/api/orders/${id}/status`, {
+                      method: 'PUT',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ status })
+                    });
+                    if (res.ok) {
+                      showToast('Order status updated', 'success');
+                      // Optimization: Update local state without full reload
+                      const updatedOrder = await res.json();
+                      setSelectedOrder(updatedOrder);
+                      // Orders list should ideally listen to changes or we trigger a refetch, 
+                      // but for now DataContext.refresh might be needed or we can optimistically update
+                      // For simplicity in this turn, I'm not triggering a full reload, assuming DataContext handles it or user refreshes manually
+                    } else {
+                      showToast('Failed to update status', 'error');
+                    }
+                  } catch (e) {
+                    showToast('Error updating status', 'error');
                   }
-                } catch (e) {
-                  showToast('Error updating status', 'error');
-                }
-              }}
-            />
-          )
-        }
-
-
-        {activeTab === 'settings' && (
-          <div className="max-w-4xl space-y-16 pb-20">
-            {/* Header */}
-            <div>
-              <h1 className="text-4xl font-serif mb-2">Settings</h1>
-              <p className="text-zinc-500 font-light">Manage global configurations for orders and franchise information.</p>
-            </div>
-
-            {/* ORDER AVAILABILITY */}
-            <section>
-              <h2 className="text-2xl font-serif mb-2">Order Availability</h2>
-              <p className="text-zinc-500 text-sm mb-6 font-light">Control whether customers can place orders for specific categories.</p>
-
-              <div className="bg-white border border-black/10 shadow-sm overflow-hidden rounded-xl">
-                {/* Art Orders Toggle */}
-                <div className="p-8 border-b border-black/5 flex items-start justify-between">
-                  <div>
-                    <h3 className="text-lg font-serif mb-1">Accepting Art Orders</h3>
-                    <p className="text-xs text-zinc-500 uppercase tracking-widest">
-                      Live status for artwork purchases.
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => updateOrderSettings({ art_orders_enabled: !orderSettings.art_orders_enabled })}
-                    className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors focus:outline-none ${orderSettings?.art_orders_enabled ? 'bg-green-600' : 'bg-zinc-200'}`}
-                  >
-                    <span className={`${orderSettings?.art_orders_enabled ? 'translate-x-7' : 'translate-x-1'} inline-block h-6 w-6 transform rounded-full bg-white transition-transform shadow-sm`} />
-                  </button>
-                </div>
-
-                {/* Menu Orders Toggle */}
-                <div className="p-8 flex items-start justify-between">
-                  <div>
-                    <h3 className="text-lg font-serif mb-1">Accepting Menu Orders</h3>
-                    <p className="text-xs text-zinc-500 uppercase tracking-widest">
-                      Live status for food and beverage orders.
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => updateOrderSettings({ menu_orders_enabled: !orderSettings.menu_orders_enabled })}
-                    className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors focus:outline-none ${orderSettings?.menu_orders_enabled ? 'bg-green-600' : 'bg-zinc-200'}`}
-                  >
-                    <span className={`${orderSettings?.menu_orders_enabled ? 'translate-x-7' : 'translate-x-1'} inline-block h-6 w-6 transform rounded-full bg-white transition-transform shadow-sm`} />
-                  </button>
-                </div>
-              </div>
-            </section>
-
-            <hr className="border-black/5" />
-
-            {/* STORE TIMINGS */}
-            <section>
-              <h2 className="text-2xl font-serif mb-2">Store Timings</h2>
-              <p className="text-zinc-500 text-sm mb-6 font-light">Set opening and closing hours. Orders are automatically paused outside these times.</p>
-
-              <div className="bg-white border border-black/10 shadow-sm rounded-xl p-8 grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Opening Time</label>
-                  <input
-                    type="time"
-                    value={orderSettings?.opening_time || '10:00'}
-                    onChange={(e) => updateOrderSettings({ opening_time: e.target.value })}
-                    className="w-full p-3 border border-black/10 rounded-lg focus:outline-none focus:border-black transition-colors bg-zinc-50/50 cursor-pointer"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Closing Time</label>
-                  <input
-                    type="time"
-                    value={orderSettings?.closing_time || '22:00'}
-                    onChange={(e) => updateOrderSettings({ closing_time: e.target.value })}
-                    className="w-full p-3 border border-black/10 rounded-lg focus:outline-none focus:border-black transition-colors bg-zinc-50/50 cursor-pointer"
-                  />
-                </div>
-              </div>
-            </section>
-
-
-            {/* FRANCHISE SETTINGS */}
-            <section>
-              <h2 className="text-2xl font-serif mb-2">Franchise Contact Settings</h2>
-              <p className="text-zinc-500 text-sm mb-6 font-light">Update contact information displayed on the Franchise page.</p>
-
-              <FranchiseSettingsManager
-                contactNumber={franchiseContact}
-                onSave={saveFranchiseContact}
+                }}
               />
-            </section>
+            )}
 
-            <hr className="border-black/5" />
+            {
+              activeTab === 'art' && (
+                <ArtTable items={artItems} onToggleStatus={toggleArtStatus} onEdit={openArtModalForEdit} onDelete={deleteArtItem} />
+              )
+            }
 
-            <section>
-              <h2 className="text-2xl font-serif mb-2">Footer Contact Information</h2>
-              <p className="text-zinc-500 text-sm mb-6 font-light">Displayed under the Connect section in the website footer.</p>
+            {activeTab === 'workshops' && <WorkshopTable items={workshops} onEdit={openWorkshopModalForEdit} onDelete={deleteWorkshopItem} />}
 
-              <div className="bg-white border border-black/10 shadow-sm rounded-xl p-8 space-y-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Contact Info 1</label>
-                  <input
-                    type="text"
-                    value={localContact1}
-                    onChange={(e) => setLocalContact1(e.target.value)}
-                    placeholder="e.g. +91 98765 43210"
-                    className="w-full p-3 border border-black/10 rounded-lg focus:outline-none focus:border-black transition-colors bg-zinc-50/50"
+            {
+              activeTab === 'manage_categories' && (
+                <div className="max-w-3xl">
+                  <div className="mb-6">
+                    <h2 className="text-2xl font-serif italic text-black">Manage Categories</h2>
+                    <p className="text-[13px] text-zinc-500 mt-1">Create, rename, and delete categories and sub-categories</p>
+                  </div>
+                  <CategoryManager
+                    selectedCategoryId={selectedCategoryId}
+                    onCategorySelect={setSelectedCategoryId}
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Contact Info 2</label>
-                  <input
-                    type="text"
-                    value={localContact2}
-                    onChange={(e) => setLocalContact2(e.target.value)}
-                    placeholder="e.g. hello@rabuste.com"
-                    className="w-full p-3 border border-black/10 rounded-lg focus:outline-none focus:border-black transition-colors bg-zinc-50/50"
-                  />
-                </div>
+              )
+            }
 
-                <div className="flex justify-end pt-2">
-                  <button
-                    onClick={async () => {
-                      try {
-                        await updateOrderSettings({
-                          contact_info_1: localContact1,
-                          contact_info_2: localContact2
-                        });
-                        showToast('Footer contact info updated', 'success');
-                      } catch (error) {
-                        console.error('Failed to save settings:', error);
-                        showToast('Failed to save changes. Check console.', 'error');
+            {
+              activeTab === 'franchise_enquiries' && (
+                <FranchiseTable
+                  items={[...enquiries].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())}
+                  onMarkRead={markEnquiryRead}
+                  onDelete={deleteEnquiry}
+                  onView={(item) => setSelectedEnquiry(item)}
+                />
+              )
+            }
+
+            {/* Enquiry Modal */}
+            {
+              selectedEnquiry && (
+                <EnquiryDetailModal
+                  enquiry={selectedEnquiry}
+                  onClose={() => setSelectedEnquiry(null)}
+                  onUpdateStatus={async (id, status) => {
+                    try {
+                      const res = await fetch(`${API_BASE_URL}/api/franchise/enquiries/${id}/status`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ status })
+                      });
+                      if (res.ok) {
+                        showToast('Status updated', 'success');
+                        setSelectedEnquiry(null);
+                        refreshEnquiries(); // Refresh list
+                      } else {
+                        showToast('Failed to update status', 'error');
                       }
-                    }}
-                    className="flex items-center space-x-2 bg-black text-white px-6 py-2.5 rounded-lg hover:bg-zinc-800 transition-colors text-sm uppercase tracking-wider font-medium"
-                  >
-                    <Save className="w-4 h-4" />
-                    <span>Save Changes</span>
-                  </button>
-                </div>
+                    } catch (e) {
+                      showToast('Error updating status', 'error');
+                    }
+                  }}
+                />
+              )
+            }
+
+
+            {activeTab === 'settings' && (
+              <div className="max-w-4xl space-y-16 pb-20">
+                {/* Header */}
+
+
+                {/* ORDER AVAILABILITY */}
+                <section>
+                  <h2 className="text-3xl font-serif mb-3 text-black">Order Availability</h2>
+                  <p className="text-black text-lg mb-8 font-medium">Control whether customers can place orders for specific categories.</p>
+
+                  <div className="bg-white border border-black/10 shadow-sm overflow-hidden rounded-xl">
+                    {/* Art Orders Toggle */}
+                    <div className="p-8 border-b border-black/5 flex items-start justify-between">
+                      <div>
+                        <h3 className="text-xl font-serif mb-2 text-black">Accepting Art Orders</h3>
+                        <p className="text-sm text-zinc-600 uppercase tracking-widest font-bold">
+                          Live status for artwork purchases.
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => updateOrderSettings({ art_orders_enabled: !orderSettings.art_orders_enabled })}
+                        className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors focus:outline-none ${orderSettings?.art_orders_enabled ? 'bg-green-600' : 'bg-zinc-200'}`}
+                      >
+                        <span className={`${orderSettings?.art_orders_enabled ? 'translate-x-7' : 'translate-x-1'} inline-block h-6 w-6 transform rounded-full bg-white transition-transform shadow-sm`} />
+                      </button>
+                    </div>
+
+                    {/* Menu Orders Toggle */}
+                    <div className="p-8 flex items-start justify-between">
+                      <div>
+                        <h3 className="text-lg font-serif mb-1">Accepting Menu Orders</h3>
+                        <p className="text-xs text-zinc-500 uppercase tracking-widest">
+                          Live status for food and beverage orders.
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => updateOrderSettings({ menu_orders_enabled: !orderSettings.menu_orders_enabled })}
+                        className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors focus:outline-none ${orderSettings?.menu_orders_enabled ? 'bg-green-600' : 'bg-zinc-200'}`}
+                      >
+                        <span className={`${orderSettings?.menu_orders_enabled ? 'translate-x-7' : 'translate-x-1'} inline-block h-6 w-6 transform rounded-full bg-white transition-transform shadow-sm`} />
+                      </button>
+                    </div>
+                  </div>
+                </section>
+
+                <hr className="border-black border-t-1 my-8" />
+
+                {/* STORE TIMINGS */}
+                <section>
+                  <h2 className="text-3xl font-serif mb-3 text-black">Store Timings</h2>
+                  <p className="text-black text-lg mb-8 font-medium">Set opening and closing hours. Orders are automatically paused outside these times.</p>
+
+                  <div className="bg-white border border-black/10 shadow-sm rounded-xl p-8 grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div>
+                      <label className="block text-base font-bold text-zinc-600 mb-3">Opening Time</label>
+                      <input
+                        type="time"
+                        value={orderSettings?.opening_time || '10:00'}
+                        onChange={(e) => updateOrderSettings({ opening_time: e.target.value })}
+                        className="w-full p-4 border border-black/20 rounded-lg focus:outline-none focus:border-black transition-colors bg-zinc-50/50 cursor-pointer text-lg font-semibold"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-base font-bold text-zinc-600 mb-3">Closing Time</label>
+                      <input
+                        type="time"
+                        value={orderSettings?.closing_time || '22:00'}
+                        onChange={(e) => updateOrderSettings({ closing_time: e.target.value })}
+                        className="w-full p-4 border border-black/20 rounded-lg focus:outline-none focus:border-black transition-colors bg-zinc-50/50 cursor-pointer text-lg font-semibold"
+                      />
+                    </div>
+                  </div>
+                </section>
+
+                <hr className="border-black border-t-1 my-8" />
+
+                {/* FRANCHISE SETTINGS */}
+                <section>
+                  <h2 className="text-3xl font-serif mb-3 text-black">Franchise Contact Settings</h2>
+                  <p className="text-black text-lg mb-8 font-medium">Update contact information displayed on the Franchise page.</p>
+
+                  <FranchiseSettingsManager
+                    contactNumber={franchiseContact}
+                    onSave={saveFranchiseContact}
+                  />
+                </section>
+
+                <hr className="border-black border-t-1 my-8" />
+
+                <section>
+                  <h2 className="text-3xl font-serif mb-3 text-black">Footer Contact Information</h2>
+                  <p className="text-black text-lg mb-8 font-medium">Displayed under the Connect section in the website footer.</p>
+
+                  <div className="bg-white border border-black/10 shadow-sm rounded-xl p-8 space-y-6">
+                    <div>
+                      <label className="block text-base font-bold text-zinc-600 mb-3">Contact Info 1</label>
+                      <input
+                        type="text"
+                        value={localContact1}
+                        onChange={(e) => setLocalContact1(e.target.value)}
+                        placeholder="e.g. +91 98765 43210"
+                        className="w-full p-4 border border-black/20 rounded-lg focus:outline-none focus:border-black transition-colors bg-zinc-50/50 text-lg font-semibold"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-base font-bold text-zinc-600 mb-3">Contact Info 2</label>
+                      <input
+                        type="text"
+                        value={localContact2}
+                        onChange={(e) => setLocalContact2(e.target.value)}
+                        placeholder="e.g. hello@rabuste.com"
+                        className="w-full p-4 border border-black/20 rounded-lg focus:outline-none focus:border-black transition-colors bg-zinc-50/50 text-lg font-semibold"
+                      />
+                    </div>
+
+                    <div className="flex justify-end pt-2">
+                      <button
+                        onClick={async () => {
+                          try {
+                            await updateOrderSettings({
+                              contact_info_1: localContact1,
+                              contact_info_2: localContact2
+                            });
+                            showToast('Footer contact info updated', 'success');
+                          } catch (error) {
+                            console.error('Failed to save settings:', error);
+                            showToast('Failed to save changes. Check console.', 'error');
+                          }
+                        }}
+                        className="flex items-center space-x-2 bg-black text-white px-6 py-2.5 rounded-lg hover:bg-zinc-800 transition-colors text-sm uppercase tracking-wider font-medium"
+                      >
+                        <Save className="w-4 h-4" />
+                        <span>Save Changes</span>
+                      </button>
+                    </div>
+                  </div>
+                </section>
+
+                <hr className="border-black border-t-1 my-8" />
+
+                {/* FAQ SETTINGS - Header removed as requested */}
+                <section>
+                  <FranchiseFaqManager
+                    items={franchiseFaqs}
+                    onAdd={addFaq}
+                    onDelete={deleteFaq}
+                  />
+                </section>
               </div>
-            </section>
-
-            <hr className="border-black/5" />
-
-            {/* FAQ SETTINGS */}
-            <section>
-              <h2 className="text-2xl font-serif mb-2">FAQ / Information Settings</h2>
-              <p className="text-zinc-500 text-sm mb-6 font-light">Manage Frequently Asked Questions for prospective franchise partners.</p>
-
-              <FranchiseFaqManager
-                items={franchiseFaqs}
-                onAdd={addFaq}
-                onDelete={deleteFaq}
-              />
-            </section>
-          </div>
-        )}
+            )}
+          </motion.div>
+        </AnimatePresence>
       </main >
 
       {/* Coffee modal - Notion/Linear styled */}
@@ -2176,10 +2186,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
 // Overview card
 const OverviewCard: React.FC<{ label: string; value: number }> = ({ label, value }) => (
   <div className="bg-white border border-black/5 p-6 flex flex-col justify-between min-h-[140px]">
-    <p className="text-[11px] uppercase tracking-[0.25em] text-zinc-500 font-sans mb-2">
+    <p className="text-sm uppercase tracking-[0.25em] text-zinc-500 font-sans mb-2 font-bold">
       {label}
     </p>
-    <p className="text-4xl font-serif italic">{value}</p>
+    <p className="text-5xl font-serif italic">{value}</p>
   </div>
 );
 
@@ -2191,10 +2201,10 @@ const CoffeeTable: React.FC<{
   onToggleStatus: (item: CoffeeAdminItem) => void;
 }> = ({ items, onEdit, onDelete, onToggleStatus }) => (
   <div className="bg-white border border-black/5 overflow-hidden">
-    <table className="w-full text-left font-sans text-sm">
-      <thead className="bg-[#F9F8F4] text-[10px] uppercase tracking-[0.25em] text-zinc-500">
+    <table className="w-full text-left font-sans text-base">
+      <thead className="bg-[#F9F8F4] text-sm uppercase tracking-[0.25em] text-zinc-500">
         <tr>
-          <th className="px-6 py-3 font-semibold">Item</th>
+          <th className="px-6 py-4 font-semibold">Item</th>
           <th className="px-6 py-3 font-semibold">Category</th>
           <th className="px-6 py-3 font-semibold">Price (₹)</th>
           <th className="px-6 py-3 font-semibold">Diet</th>
@@ -2208,10 +2218,10 @@ const CoffeeTable: React.FC<{
             key={item.id}
             className="border-t border-black/5 hover:bg-[#F9F8F4]/60 transition-colors"
           >
-            <td className="px-6 py-4">
-              <span className="font-medium text-[15px]">{item.name}</span>
+            <td className="px-6 py-5">
+              <span className="font-medium text-base">{item.name}</span>
             </td>
-            <td className="px-6 py-4 text-xs uppercase tracking-[0.2em] text-zinc-700">
+            <td className="px-6 py-5 text-sm uppercase tracking-[0.2em] text-zinc-700">
               {item.category}
             </td>
             <td className="px-6 py-4 text-sm font-semibold">₹{item.price}</td>
@@ -2388,16 +2398,16 @@ const OrderDetailsModal: React.FC<{
 // Orders table
 const OrdersTable: React.FC<{ items: Order[]; onRowClick: (order: Order) => void }> = ({ items, onRowClick }) => (
   <div className="bg-white border border-black/5 overflow-hidden shadow-sm">
-    <table className="w-full text-left font-sans text-sm">
-      <thead className="bg-[#F9F8F4] text-[10px] uppercase tracking-[0.25em] text-zinc-500">
+    <table className="w-full text-left font-sans text-base">
+      <thead className="bg-[#F9F8F4] text-sm uppercase tracking-[0.25em] text-zinc-500">
         <tr>
-          <th className="px-6 py-3 font-semibold">Order ID</th>
-          <th className="px-6 py-3 font-semibold">Customer</th>
-          <th className="px-6 py-3 font-semibold">Phone</th>
-          <th className="px-6 py-3 font-semibold">Items</th>
-          <th className="px-6 py-3 font-semibold">Total (₹)</th>
-          <th className="px-6 py-3 font-semibold">Status</th>
-          <th className="px-6 py-3 font-semibold">Date</th>
+          <th className="px-6 py-4 font-semibold">Order ID</th>
+          <th className="px-6 py-4 font-semibold">Customer</th>
+          <th className="px-6 py-4 font-semibold">Phone</th>
+          <th className="px-6 py-4 font-semibold">Items</th>
+          <th className="px-6 py-4 font-semibold">Total (₹)</th>
+          <th className="px-6 py-4 font-semibold">Status</th>
+          <th className="px-6 py-4 font-semibold">Date</th>
         </tr>
       </thead>
       <tbody>
@@ -2407,26 +2417,26 @@ const OrdersTable: React.FC<{ items: Order[]; onRowClick: (order: Order) => void
             onClick={() => onRowClick(order)}
             className="border-t border-black/5 hover:bg-[#F9F8F4]/60 transition-colors cursor-pointer group"
           >
-            <td className="px-6 py-4 text-xs font-mono font-medium text-zinc-500 group-hover:text-black">
+            <td className="px-6 py-5 text-sm font-mono font-medium text-zinc-500 group-hover:text-black">
               #{order.id.slice(-6)}
             </td>
-            <td className="px-6 py-4 text-sm font-medium">{order.customer.name}</td>
-            <td className="px-6 py-4 text-sm text-zinc-500 font-mono text-xs">{order.customer.phone}</td>
-            <td className="px-6 py-4 text-sm text-zinc-700">
-              <span className="inline-flex items-center justify-center w-6 h-6 bg-zinc-100 text-xs font-bold">
+            <td className="px-6 py-5 text-base font-medium">{order.customer.name}</td>
+            <td className="px-6 py-5 text-sm text-zinc-500 font-mono">{order.customer.phone}</td>
+            <td className="px-6 py-5 text-base text-zinc-700">
+              <span className="inline-flex items-center justify-center w-8 h-8 bg-zinc-100 text-sm font-bold">
                 {order.items.length}
               </span>
             </td>
-            <td className="px-6 py-4 text-sm font-semibold">₹{order.total.toFixed(0)}</td>
-            <td className="px-6 py-4">
-              <span className={`px-3 py-1 text-[9px] uppercase tracking-[0.2em] font-bold border ${(order.status === 'completed') ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+            <td className="px-6 py-5 text-base font-semibold">₹{order.total.toFixed(0)}</td>
+            <td className="px-6 py-5">
+              <span className={`px-4 py-1.5 text-[10px] uppercase tracking-[0.2em] font-bold border ${(order.status === 'completed') ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
                 (order.status === 'cancelled') ? 'bg-red-50 text-red-600 border-red-100' :
                   'bg-amber-50 text-amber-600 border-amber-100'
                 }`}>
                 {order.status || 'placed'}
               </span>
             </td>
-            <td className="px-6 py-4 text-xs text-zinc-400">
+            <td className="px-6 py-5 text-sm text-zinc-400">
               {new Date(order.date).toLocaleDateString()}
             </td>
           </tr>
@@ -2444,10 +2454,10 @@ const ArtTable: React.FC<{
   onDelete: (id: string) => void;
 }> = ({ items, onToggleStatus, onEdit, onDelete }) => (
   <div className="bg-white border border-black/5 overflow-hidden">
-    <table className="w-full text-left font-sans text-sm">
-      <thead className="bg-[#F9F8F4] text-[10px] uppercase tracking-[0.25em] text-zinc-500">
+    <table className="w-full text-left font-sans text-base">
+      <thead className="bg-[#F9F8F4] text-sm uppercase tracking-[0.25em] text-zinc-500">
         <tr>
-          <th className="px-6 py-3 font-semibold">Artwork</th>
+          <th className="px-6 py-4 font-semibold">Artwork</th>
           <th className="px-6 py-3 font-semibold">Price (₹)</th>
           <th className="px-6 py-3 font-semibold">Stock</th>
           <th className="px-6 py-3 font-semibold">Action</th>
@@ -2461,12 +2471,12 @@ const ArtTable: React.FC<{
           >
             <td className="px-6 py-4">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 overflow-hidden bg-zinc-200">
+                <div className="w-16 h-16 overflow-hidden bg-zinc-200">
                   <img src={item.image} alt={item.title} className="w-full h-full object-cover" />
                 </div>
                 <div className="flex flex-col">
-                  <span className="font-medium text-[15px]">{item.title}</span>
-                  <span className="text-[11px] text-zinc-500 uppercase tracking-[0.2em]">
+                  <span className="font-medium text-base">{item.title}</span>
+                  <span className="text-xs text-zinc-500 uppercase tracking-[0.2em]">
                     #{item.id}
                   </span>
                 </div>
@@ -2505,10 +2515,10 @@ const WorkshopTable: React.FC<{
   onDelete: (id: string) => void;
 }> = ({ items, onEdit, onDelete }) => (
   <div className="bg-white border border-black/5 overflow-hidden">
-    <table className="w-full text-left font-sans text-sm">
-      <thead className="bg-[#F9F8F4] text-[10px] uppercase tracking-[0.25em] text-zinc-500">
+    <table className="w-full text-left font-sans text-base">
+      <thead className="bg-[#F9F8F4] text-sm uppercase tracking-[0.25em] text-zinc-500">
         <tr>
-          <th className="px-6 py-3 font-semibold">Title</th>
+          <th className="px-6 py-4 font-semibold">Title</th>
           <th className="px-6 py-3 font-semibold">Date / Time</th>
           <th className="px-6 py-3 font-semibold">Seats</th>
           <th className="px-6 py-3 font-semibold">Price (₹)</th>
@@ -2521,9 +2531,9 @@ const WorkshopTable: React.FC<{
             key={item.id}
             className="border-t border-black/5 hover:bg-[#F9F8F4]/60 transition-colors"
           >
-            <td className="px-6 py-4 font-medium text-[15px]">{item.title}</td>
-            <td className="px-6 py-4 text-sm text-zinc-700">{item.datetime}</td>
-            <td className="px-6 py-4 text-sm text-zinc-700">
+            <td className="px-6 py-5 font-medium text-base">{item.title}</td>
+            <td className="px-6 py-5 text-base text-zinc-700">{item.datetime}</td>
+            <td className="px-6 py-5 text-base text-zinc-700">
               {item.seats - item.remaining}/{item.seats}
             </td>
             <td className="px-6 py-4 text-sm font-semibold">₹{item.price}</td>
@@ -2580,15 +2590,15 @@ const FranchiseTable: React.FC<{
         ))}
       </div>
 
-      <table className="w-full text-left font-sans text-sm">
-        <thead className="bg-[#F9F8F4] text-[10px] uppercase tracking-[0.25em] text-zinc-500">
+      <table className="w-full text-left font-sans text-base">
+        <thead className="bg-[#F9F8F4] text-sm uppercase tracking-[0.25em] text-zinc-500">
           <tr>
-            <th className="px-6 py-3 font-semibold">Name</th>
-            <th className="px-6 py-3 font-semibold">Contact</th>
-            <th className="px-6 py-3 font-semibold">Email</th>
-            <th className="px-6 py-3 font-semibold">Preview</th>
-            <th className="px-6 py-3 font-semibold">Date</th>
-            <th className="px-6 py-3 font-semibold">Actions</th>
+            <th className="px-6 py-4 font-semibold">Name</th>
+            <th className="px-6 py-4 font-semibold">Contact</th>
+            <th className="px-6 py-4 font-semibold">Email</th>
+            <th className="px-6 py-4 font-semibold">Preview</th>
+            <th className="px-6 py-4 font-semibold">Date</th>
+            <th className="px-6 py-4 font-semibold">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -2598,14 +2608,14 @@ const FranchiseTable: React.FC<{
               onClick={() => onView(item)}
               className="border-t border-black/5 hover:bg-[#F9F8F4]/60 transition-colors cursor-pointer group"
             >
-              <td className="px-6 py-4">
-                <span className="font-medium text-[15px]">{item.full_name}</span>
+              <td className="px-6 py-5">
+                <span className="font-medium text-base text-black">{item.full_name}</span>
               </td>
-              <td className="px-6 py-4 text-sm text-zinc-700">{item.contact_number}</td>
-              <td className="px-6 py-4 text-sm text-zinc-700">{item.email}</td>
-              <td className="px-6 py-4 text-sm text-zinc-500 block max-w-xs truncate group-hover:text-black transition-colors">{item.enquiry}</td>
-              <td className="px-6 py-4 text-sm text-zinc-700">{new Date(item.created_at).toLocaleDateString()}</td>
-              <td className="px-6 py-4" onClick={e => e.stopPropagation()}>
+              <td className="px-6 py-5 text-base text-zinc-700">{item.contact_number}</td>
+              <td className="px-6 py-5 text-base text-zinc-700">{item.email}</td>
+              <td className="px-6 py-5 text-base text-zinc-500 block max-w-xs truncate group-hover:text-black transition-colors">{item.enquiry}</td>
+              <td className="px-6 py-5 text-sm text-zinc-700">{new Date(item.created_at).toLocaleDateString()}</td>
+              <td className="px-6 py-5" onClick={e => e.stopPropagation()}>
                 <div className="flex gap-3 text-xs uppercase tracking-[0.2em]">
                   <button
                     onClick={() => onDelete(item.id)}
@@ -2720,20 +2730,20 @@ const FranchiseSettingsManager: React.FC<{
   return (
     <section>
       <div className="mb-6">
-        <h3 className="text-2xl font-serif text-black">Contact Information</h3>
-        <p className="text-sm text-zinc-500 mt-1 max-w-2xl">
+        <h3 className="text-3xl font-serif text-black">Contact Information</h3>
+        <p className="text-lg text-black mt-2 max-w-2xl font-medium">
           This contact number is displayed prominently on the Franchise Opportunity page for prospective partners to reach out.
         </p>
       </div>
 
-      <div className="bg-white border border-black/5 rounded-xl p-8 max-w-2xl shadow-sm">
-        <label className="block text-[10px] uppercase tracking-[0.2em] text-zinc-500 mb-3 font-bold">Phone Number</label>
+      <div className="bg-white border border-black/10 rounded-xl p-8 max-w-2xl shadow-sm">
+        <label className="block text-base font-bold text-zinc-600 mb-3">Phone Number</label>
         <div className="flex gap-4">
           <input
             type="text"
             value={val}
             onChange={(e) => setVal(e.target.value)}
-            className="flex-1 bg-zinc-50 border border-black/10 px-4 py-3 rounded-lg outline-none focus:border-black transition-all text-sm font-mono tracking-wide"
+            className="flex-1 bg-zinc-50 border border-black/20 px-4 py-4 rounded-lg outline-none focus:border-black transition-all text-lg font-semibold tracking-wide"
             placeholder="+91..."
           />
           <button
@@ -2770,8 +2780,8 @@ const FranchiseFaqManager: React.FC<{
     <section>
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
         <div>
-          <h3 className="text-2xl font-serif text-black">FAQs</h3>
-          <p className="text-sm text-zinc-500 mt-1">Manage common questions for prospective franchisees</p>
+          <h3 className="text-3xl font-serif text-black">FAQs</h3>
+          <p className="text-lg text-black mt-2 font-medium">Manage common questions for prospective franchisees</p>
         </div>
         <button
           onClick={() => setIsModalOpen(true)}

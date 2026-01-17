@@ -146,24 +146,25 @@ const SalesInsights: React.FC = () => {
     return (
         <div className="space-y-8 font-sans animate-in fade-in duration-500">
             {/* Header & Controls */}
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+            {/* Header & Controls */}
+            <div className="flex flex-col gap-6">
                 <div>
-                    <h2 className="text-3xl font-serif italic tracking-tight text-[#0a0a0a]">
+                    <h2 className="text-6xl font-serif italic tracking-tight text-[#0a0a0a]">
                         Sales Performance Overview
                     </h2>
-                    <p className="text-xs uppercase tracking-[0.25em] text-zinc-500 mt-1">
+                    <p className="text-sm uppercase tracking-[0.25em] text-black font-bold mt-1">
                         Track revenue patterns across time periods
                     </p>
                 </div>
 
-                <div className="flex items-center gap-4">
+                <div className="flex flex-col md:flex-row md:items-center justify-start gap-8">
                     {/* Sales Category Filter */}
                     <div className="inline-flex bg-zinc-100 rounded-lg p-1 border border-black/5">
                         <button
                             onClick={() => setSalesCategory('all')}
                             className={`px-3 py-1.5 text-[10px] uppercase tracking-widest rounded-md transition-all ${salesCategory === 'all'
-                                    ? 'bg-white text-black shadow-sm font-semibold'
-                                    : 'text-zinc-500 hover:text-black hover:bg-black/5'
+                                ? 'bg-white text-black shadow-sm font-semibold'
+                                : 'text-zinc-500 hover:text-black hover:bg-black/5'
                                 }`}
                         >
                             All Sales
@@ -171,8 +172,8 @@ const SalesInsights: React.FC = () => {
                         <button
                             onClick={() => setSalesCategory('menu')}
                             className={`px-3 py-1.5 text-[10px] uppercase tracking-widest rounded-md transition-all ${salesCategory === 'menu'
-                                    ? 'bg-white text-black shadow-sm font-semibold'
-                                    : 'text-zinc-500 hover:text-black hover:bg-black/5'
+                                ? 'bg-white text-black shadow-sm font-semibold'
+                                : 'text-zinc-500 hover:text-black hover:bg-black/5'
                                 }`}
                         >
                             Menu Orders
@@ -180,8 +181,8 @@ const SalesInsights: React.FC = () => {
                         <button
                             onClick={() => setSalesCategory('art')}
                             className={`px-3 py-1.5 text-[10px] uppercase tracking-widest rounded-md transition-all ${salesCategory === 'art'
-                                    ? 'bg-white text-black shadow-sm font-semibold'
-                                    : 'text-zinc-500 hover:text-black hover:bg-black/5'
+                                ? 'bg-white text-black shadow-sm font-semibold'
+                                : 'text-zinc-500 hover:text-black hover:bg-black/5'
                                 }`}
                         >
                             Art Orders

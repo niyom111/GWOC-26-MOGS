@@ -438,6 +438,9 @@ const AdminRoute: React.FC<{ children: (logout: () => void) => React.ReactNode, 
       {/* Background Image Removed */}
 
       <div className="w-full max-w-sm bg-white/95 backdrop-blur-md border border-black/10 shadow-2xl p-8 z-10 relative">
+        <div className="flex items-center justify-center mb-6">
+          <Lock className="w-8 h-8 text-black/20" />
+        </div>
         <h1 className="text-2xl font-serif mb-2 text-center text-black">Admin Login</h1>
         <p className="text-xs text-zinc-500 font-sans mb-4 text-center uppercase tracking-[0.25em]">
           Rabuste Coffee
