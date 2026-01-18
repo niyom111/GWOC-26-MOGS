@@ -1,3 +1,16 @@
+*************IMPORTANT NOTICE*********************
+
+ADMIN LOGIN AND PASSWORD
+username:rabustecafeadmin
+password:Admin@6767
+
+Employee code
+PIN: 0022
+
+*************IMPORTANT NOTICE*********************
+
+
+
 # Rabuste Café – Project Documentation
 
 ## 1. Project Vision
