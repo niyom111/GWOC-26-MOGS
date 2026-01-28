@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { ShoppingCart } from 'lucide-react';
 import { CoffeeItem } from '../types';
+import { FALLBACK_IMAGE } from '../config';
 
 interface MenuProductCardProps {
     item: any; // Allow flexible item types (MenuItem or CoffeeItem)
@@ -12,7 +13,15 @@ interface MenuProductCardProps {
 
 const MenuProductCard: React.FC<MenuProductCardProps> = ({ item, image, onAddToCart, index }) => {
     const [isFlipped, setIsFlipped] = useState(false);
-    const displayImage = image || item.image || '';
+
+    // Use prop image, or item image, or fallback
+    const initialImage = image || item.image || FALLBACK_IMAGE;
+    const [imgSrc, setImgSrc] = useState(initialImage);
+
+    // Update if prop changes (e.g. searching)
+    React.useEffect(() => {
+        setImgSrc(image || item.image || FALLBACK_IMAGE);
+    }, [image, item.image]);
 
     // Toggle flip on image click
     const handleImageClick = () => {
@@ -68,7 +77,8 @@ const MenuProductCard: React.FC<MenuProductCardProps> = ({ item, image, onAddToC
                     >
                         <div className="w-full h-full overflow-hidden bg-zinc-100">
                             <img
-                                src={displayImage}
+                                src={imgSrc}
+                                onError={() => setImgSrc(FALLBACK_IMAGE)}
                                 alt={item.name}
                                 className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                             />
@@ -105,7 +115,7 @@ const MenuProductCard: React.FC<MenuProductCardProps> = ({ item, image, onAddToC
                             <div
                                 className="absolute inset-0 w-full h-full"
                                 style={{
-                                    backgroundImage: `url(${displayImage})`,
+                                    backgroundImage: `url(${imgSrc})`,
                                     backgroundSize: 'cover',
                                     backgroundPosition: 'center',
                                     filter: 'blur(12px)',

@@ -32,7 +32,7 @@ const CartPage: React.FC<CartPageProps> = ({
   onPaymentFailure,
   artItems = [],
 }) => {
-  const { placeOrder, refreshArtItems, orderSettings, checkStoreStatus, isStoreOpenAt } = useDataContext();
+  const { placeOrder, refreshArtItems, orderSettings, checkStoreStatus, isStoreOpenAt, checkOrderingStatus } = useDataContext();
 
   // EmailJS configuration (must be VITE_ prefixed in .env)
   // --- EMAILJS CONFIGURATION ---
@@ -121,13 +121,20 @@ const CartPage: React.FC<CartPageProps> = ({
     const hasArt = cart.some(c => artItems.some(a => a.id === c.id));
     const hasMenu = cart.some(c => !artItems.some(a => a.id === c.id));
 
-    if (hasArt && !orderSettings.art_orders_enabled) {
-      setError('Art orders are currently not being accepted.');
-      return;
+    if (hasArt) {
+      const artStatus = checkOrderingStatus('art');
+      if (!artStatus.allowed) {
+        setError(artStatus.message || 'Art orders are currently not being accepted.');
+        return;
+      }
     }
-    if (hasMenu && !orderSettings.menu_orders_enabled) {
-      setError('Menu orders are currently not being accepted.');
-      return;
+
+    if (hasMenu) {
+      const menuStatus = checkOrderingStatus('menu');
+      if (!menuStatus.allowed) {
+        setError(menuStatus.message || 'Menu orders are currently not being accepted.');
+        return;
+      }
     }
 
     const name = (customer.name ?? '').trim();
@@ -160,7 +167,8 @@ const CartPage: React.FC<CartPageProps> = ({
 
       // Validate pickup time against store hours
       if (!isStoreOpenAt(pickupTime)) {
-        setShowTimeError(true);
+        const status = checkStoreStatus();
+        setError(`Selected time ${pickupTime} is outside store hours (${status.openingTime} - ${status.closingTime}). Please choose a valid time.`);
         return;
       }
     }

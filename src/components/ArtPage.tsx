@@ -18,11 +18,18 @@ interface ArtPageProps {
 }
 
 const ArtPage: React.FC<ArtPageProps> = ({ onAddToCart, cart, artItems }) => {
-  const { refreshArtItems, orderSettings } = useDataContext();
+  const { refreshArtItems, orderSettings, checkOrderingStatus } = useDataContext();
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const toastTimeoutRef = useRef<number | null>(null);
   const [processingIds, setProcessingIds] = useState<Set<string>>(new Set());
-  const [isOrderPopupOpen, setIsOrderPopupOpen] = useState(false);
+
+  // Status Popup State
+  const [statusPopup, setStatusPopup] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    type: 'info' | 'error';
+  }>({ isOpen: false, title: '', message: '', type: 'info' });
 
   useEffect(() => {
     return () => {
@@ -33,9 +40,16 @@ const ArtPage: React.FC<ArtPageProps> = ({ onAddToCart, cart, artItems }) => {
   }, []);
 
   const handleAddToCart = async (art: ArtAdminItem) => {
-    // Check if ordering is enabled
-    if (!orderSettings.art_orders_enabled) {
-      setIsOrderPopupOpen(true);
+    // Check ordering status
+    const status = checkOrderingStatus('art');
+
+    if (!status.allowed) {
+      setStatusPopup({
+        isOpen: true,
+        title: status.reason === 'STORE_CLOSED' ? 'We are Closed' : 'Art Orders Paused',
+        message: status.message || "We are not accepting art orders at the moment.",
+        type: 'info'
+      });
       return;
     }
 
@@ -153,11 +167,11 @@ const ArtPage: React.FC<ArtPageProps> = ({ onAddToCart, cart, artItems }) => {
       </div>
 
       <StatusPopup
-        isOpen={isOrderPopupOpen}
-        onClose={() => setIsOrderPopupOpen(false)}
-        title="Art Orders Paused"
-        message="We are not accepting new art orders at the moment. Please feel free to browse our collection!"
-        type="info"
+        isOpen={statusPopup.isOpen}
+        onClose={() => setStatusPopup(prev => ({ ...prev, isOpen: false }))}
+        title={statusPopup.title}
+        message={statusPopup.message}
+        type={statusPopup.type}
       />
 
       <Toast message={toastMessage} />
