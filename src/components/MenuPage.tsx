@@ -1,7 +1,7 @@
 
 import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { motion as motionBase, AnimatePresence } from 'framer-motion';
+import { motion as motionBase, AnimatePresence, useScroll, useMotionValueEvent } from 'framer-motion';
 import { Search, Filter, X } from 'lucide-react';
 import CustomDropdown from './ui/CustomDropdown';
 import { CoffeeItem } from '../types';
@@ -10,6 +10,8 @@ import BrewDeskPopup from './BrewDeskPopup';
 import StatusPopup from './StatusPopup';
 import Toast from './Toast';
 import { API_BASE_URL } from '../config';
+import { getMenuImage } from './MenuItemImages';
+import MenuProductCard from './MenuProductCard';
 
 // Fix for framer-motion type mismatch in the current environment
 const motion = motionBase as any;
@@ -257,6 +259,31 @@ interface MenuPageProps {
 
 const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
   const { menuItems, orderSettings, menuLoading } = useDataContext();
+
+  // Side Nav Logic
+  const { scrollY } = useScroll();
+  const [isSideMode, setIsSideMode] = useState(false);
+  const [nearFooter, setNearFooter] = useState(false);
+
+  useMotionValueEvent(scrollY, "change", (latest) => {
+    // Threshold to switch to side mode (e.g. after hero section)
+    const threshold = 400;
+    if (latest > threshold && !isSideMode) {
+      setIsSideMode(true);
+    } else if (latest < threshold && isSideMode) {
+      setIsSideMode(false);
+    }
+
+    // Check for footer proximity to hide side nav
+    if (typeof document !== 'undefined') {
+      const footerThreshold = document.documentElement.scrollHeight - window.innerHeight - 300; // 300px buffer
+      if (latest > footerThreshold && !nearFooter) {
+        setNearFooter(true);
+      } else if (latest <= footerThreshold && nearFooter) {
+        setNearFooter(false);
+      }
+    }
+  });
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState<'default' | 'price-asc' | 'price-desc'>('default');
   const [activeCategoryId, setActiveCategoryId] = useState<string>('');
@@ -501,13 +528,20 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
   // Helper to convert Admin item to UI CoffeeItem
   const toCoffeeItem = (item: any): CoffeeItem => {
     const group = item.sub_category_name || (item.category ? item.category.split('(')[0].trim() : (item.category_name || 'Specialty'));
+
+    // Resolve image: Use backend image if valid and not placeholder, else use local mapping
+    let imageUrl = item.image;
+    if (!imageUrl || imageUrl.includes('menu-placeholder') || imageUrl.includes('pic1.jpeg') || imageUrl.includes('pic2.jpeg') || imageUrl.includes('pic3.jpeg')) {
+      imageUrl = getMenuImage(item.name);
+    }
+
     return {
       id: item.id,
       name: item.name.replace(/_/g, ' '),
       notes: group,
       caffeine: item.caffeine || 'Medium',
       intensity: 4, // Default or derived
-      image: item.image || '/media/menu-placeholder.jpg',
+      image: imageUrl,
       price: item.price,
       description: (item.description || item.name).replace(/_/g, ' '),
       diet_pref: item.diet_pref
@@ -872,75 +906,87 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
             Or maybe remove since user asked for Community layout which doesn't have sticky nav typically.
             But Menu is long... let's keep it but make it blend in or cleaner.
         */}
-        {/* Mobile Navigation (Sticky Top) - Refined: Smooth Entry, Beige, Unbold, Soft Mask */}
+        {/* Navigation System (Top Sticky -> Side Fixed) */}
         {!menuLoading && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.6 }}
-            className="sticky top-24 z-30 bg-[#F3EFE0]/85 backdrop-blur-md py-5 mb-12 -mx-6 md:mx-0 md:px-0"
-          >
-            <motion.div
-              initial="hidden"
-              animate="visible"
-              variants={{
-                visible: {
-                  transition: {
-                    staggerChildren: 0.08
-                  }
-                }
-              }}
-              className="flex overflow-x-auto gap-3 pb-2 no-scrollbar snap-x scroll-pl-6 justify-start md:justify-center"
-            >
-              <div className="w-6 shrink-0 md:hidden" />
-              {/* Removed All Button */}
-              {allCategories.map((cat) => {
-                const isActive = activeCategoryId === cat.id;
+          <>
+            {/* Top Navigation (Visible when NOT in Side Mode) */}
+            <AnimatePresence>
+              {!isSideMode && (
+                <motion.div
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.2 }}
+                  className="sticky top-24 z-30 bg-[#F3EFE0]/60 backdrop-blur-md py-5 mb-12 -mx-6 md:mx-0 md:px-0 shadow-sm"
+                >
+                  <div className="flex overflow-x-auto gap-3 pb-2 no-scrollbar snap-x scroll-pl-6 justify-start md:justify-center">
+                    <div className="w-6 shrink-0 md:hidden" />
+                    {allCategories.map((cat) => {
+                      const isActive = activeCategoryId === cat.id;
+                      return (
+                        <button
+                          key={cat.id}
+                          onClick={() => handleCategoryClick(cat.id)}
+                          className={`relative shrink-0 py-3 rounded-full text-base font-medium font-sans border snap-start transition-all duration-300 px-8
+                            ${isActive ? 'text-[#F9F8F4] border-[#B5693E]' : 'bg-white border-black/30 text-black hover:bg-black hover:text-white hover:border-black'}`}
+                        >
+                          {isActive && (
+                            <motion.div
+                              layoutId="activeCategoryTop"
+                              className="absolute inset-0 bg-[#B5693E] rounded-full"
+                              transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                            />
+                          )}
+                          <span className="relative z-10 capitalize tracking-wide">{cat.label.toLowerCase()}</span>
+                        </button>
+                      );
+                    })}
+                    <div className="w-6 shrink-0 md:hidden" />
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
-                return (
-                  <motion.button
-                    key={cat.id}
-                    variants={{
-                      hidden: { opacity: 0, x: -20 },
-                      visible: { opacity: 1, x: 0 }
-                    }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => handleCategoryClick(cat.id)}
-                    className={`relative shrink-0 py-3 rounded-full text-base font-semibold font-sans border snap-start transition-all duration-300 
-                      px-8
-                      ${isActive
-                        ? 'text-[#F9F8F4] border-[#B5693E]'
-                        : 'bg-white border-black/80 text-black hover:bg-black/5'
-                      }`}
-                  >
-                    {isActive && (
-                      <motion.div
-                        layoutId="activeCategory"
-                        className="absolute inset-0 bg-[#B5693E] rounded-full"
-                        transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                      />
-                    )}
-                    <span className="relative z-10 capitalize tracking-wide">
-                      {cat.label.toLowerCase()}
-                    </span>
-                  </motion.button>
-                );
-              })}
-              <div className="w-6 shrink-0 md:hidden" />
-            </motion.div>
+            {/* Side Navigation (Visible when IN Side Mode) - Desktop Only */}
+            <AnimatePresence>
+              {isSideMode && !nearFooter && (
+                <motion.div
+                  initial={{ opacity: 0, x: -50 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -50 }}
+                  transition={{ duration: 0.3, ease: "easeOut" }}
+                  className="fixed top-0 left-0 h-full w-auto z-40 hidden lg:flex flex-col justify-center pl-10 gap-8 pointer-events-none"
+                >
+                  <div className="pointer-events-auto flex flex-col gap-6">
+                    {allCategories.map((cat) => {
+                      const isActive = activeCategoryId === cat.id;
+                      return (
+                        <button
+                          key={cat.id}
+                          onClick={() => handleCategoryClick(cat.id)}
+                          className="group flex items-center transition-all duration-300"
+                        >
+                          {/* Text Label */}
+                          <span className={`text-lg font-bold uppercase tracking-[0.2em] whitespace-nowrap transition-colors duration-300
+                              ${isActive ? 'text-[#B5693E]' : 'text-zinc-500 group-hover:text-zinc-800'}`}>
+                            {cat.label}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
-            {/* Scroll Hint */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 1 }}
-              className="md:hidden flex justify-center mt-2"
-            >
-              <span className="text-[10px] uppercase tracking-widest text-black/40 font-sans flex items-center gap-2">
-                <span>←</span> SCROLL <span>→</span>
-              </span>
-            </motion.div>
-          </motion.div>
+            {/* Mobile Sticky fallback for side mode (since side nav is hidden on mobile) */}
+            {isSideMode && (
+              <div className="lg:hidden sticky top-24 z-30 bg-[#F3EFE0]/90 backdrop-blur-md py-4 shadow-sm mb-8 flex justify-center">
+                <span className="text-xs font-bold uppercase tracking-widest text-black">Menu</span>
+              </div>
+            )}
+
+          </>
         )}
 
 
@@ -1045,7 +1091,7 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, margin: "-10%" }}
                   transition={{ duration: 0.6 }}
-                  className="mb-8 text-center md:text-left"
+                  className="mb-8 text-center md:text-left md:ml-[3.75%]"
                 >
                   <p className="text-[10px] uppercase tracking-[0.4em] text-black font-stardom mb-1">
                     picked for you
@@ -1065,54 +1111,29 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
                       }
                     }
                   }}
-                  className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-10"
+                  className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-12"
                 >
-                  {recommendedItems.map(item => {
+                  {recommendedItems.map((item, idx) => {
                     const isVeg = item.diet_pref === 'veg' || item.diet_pref === 'jain';
-                    return (
-                      <motion.div
-                        key={`rec-${item.id}`}
-                        variants={{
-                          hidden: { opacity: 0, y: 20 },
-                          visible: { opacity: 1, y: 0 }
-                        }}
-                        whileHover={{ y: -4 }}
-                        transition={{ duration: 0.3 }}
-                        className="flex flex-col pb-4 border-b border-black/10 group"
-                      >
-                        {/* Top Row: Name and Price/Add */}
-                        <div className="flex items-baseline justify-between mb-2">
-                          <h3 className="text-2xl md:text-3xl font-serif text-[#1A1A1A] leading-tight tracking-tight">
-                            {item.name}
-                          </h3>
-                          <div className="flex items-center gap-4 shrink-0 pl-4">
-                            <span className="text-xl md:text-2xl font-medium font-sans text-[#1A1A1A]">
-                              ₹{item.price}
-                            </span>
-                            <motion.button
-                              whileHover={{ scale: 1.1, rotate: 90 }}
-                              whileTap={{ scale: 0.9 }}
-                              onClick={() => handleAddToCart(item)}
-                              className="w-10 h-10 flex items-center justify-center rounded-full border border-[#B5693E] text-[#B5693E] 
-                                         hover:bg-[#B5693E] hover:text-white transition-colors duration-300"
-                              aria-label="Add to cart"
-                            >
-                              <span className="text-3xl leading-none mb-1">+</span>
-                            </motion.button>
-                          </div>
-                        </div>
 
-                        {/* Bottom Row: Icon + Description */}
-                        {/* Bottom Row: Icon + Description */}
-                        <div className="flex items-start text-base md:text-lg text-black font-sans font-light leading-relaxed">
-                          <span className="inline-flex shrink-0 translate-y-[8px] mr-2">
-                            <DietIcon pref={item.diet_pref} />
-                          </span>
-                          <p>
-                            {item.notes} • Based on your taste
-                          </p>
-                        </div>
-                      </motion.div>
+                    // Resolve image
+                    let imageUrl = item.image;
+                    if (!imageUrl || imageUrl.includes('menu-placeholder') || imageUrl.includes('pic1.jpeg') || imageUrl.includes('pic2.jpeg') || imageUrl.includes('pic3.jpeg')) {
+                      imageUrl = getMenuImage(item.name);
+                    }
+
+                    const cartItem = {
+                      ...item,
+                      image: imageUrl
+                    };
+
+                    return (
+                      <MenuProductCard
+                        key={`rec-${item.id}`}
+                        item={cartItem}
+                        index={idx}
+                        onAddToCart={handleAddToCart}
+                      />
                     );
                   })}
                 </motion.div>
@@ -1130,14 +1151,14 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, margin: "-10%" }}
                   transition={{ duration: 0.6 }}
-                  className="mb-8 text-center md:text-left"
+                  className="relative mb-8 text-center md:text-left md:ml-[3.75%]"
                 >
                   <h2 className="text-5xl md:text-7xl font-stardom italic tracking-tight">
                     Trending Now
                   </h2>
                 </motion.div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-10">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-12">
                   {trendingItems.map(item => {
                     // Find the category group for this item
                     if (!item.category || !item.name || !item.id || item.price == null) return null; // Skip items without required fields
@@ -1146,13 +1167,19 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
                     const canonicalCategory = categoryStr.toUpperCase();
                     const group = (canonicalCategory.split('(')[0] ?? '').trim();
 
+                    // Resolve image
+                    let imageUrl = item.image;
+                    if (!imageUrl || imageUrl.includes('menu-placeholder') || imageUrl.includes('pic1.jpeg') || imageUrl.includes('pic2.jpeg') || imageUrl.includes('pic3.jpeg')) {
+                      imageUrl = getMenuImage(item.name);
+                    }
+
                     const cartItem: CoffeeItem = {
                       id: item.id,
                       name: item.name,
                       notes: group,
                       caffeine: item.caffeine || 'High',
                       intensity: 4,
-                      image: item.image || '/media/menu-placeholder.jpg',
+                      image: imageUrl,
                       price: item.price,
                       description: item.description || item.category || item.name,
                       diet_pref: item.diet_pref,
@@ -1162,41 +1189,12 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
 
 
                     return (
-                      <div
+                      <MenuProductCard
                         key={item.id}
-                        className="flex flex-col pb-4 border-b border-black/10 group"
-                      >
-                        {/* Top Row: Name and Price/Add */}
-                        <div className="flex items-baseline justify-between mb-2">
-                          <h3 className="text-2xl md:text-3xl font-serif text-[#1A1A1A] leading-tight tracking-tight">
-                            {item.name}
-                          </h3>
-                          <div className="flex items-center gap-4 shrink-0 pl-4">
-                            <span className="text-xl md:text-2xl font-medium font-sans text-[#1A1A1A]">
-                              ₹{item.price}
-                            </span>
-                            <button
-                              onClick={() => handleAddToCart(cartItem)}
-                              className="w-10 h-10 flex items-center justify-center rounded-full border border-[#B5693E] text-[#B5693E] 
-                                         hover:bg-[#B5693E] hover:text-white transition-all duration-300 hover:-translate-y-1 hover:rotate-90"
-                              aria-label="Add to cart"
-                            >
-                              <span className="text-3xl leading-none mb-1">+</span>
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* Bottom Row: Icon + Description */}
-                        {/* Bottom Row: Icon + Description */}
-                        <div className="flex items-start gap-1 text-base md:text-lg text-black font-sans font-light leading-snug">
-                          <div className="pt-1.5 shrink-0">
-                            <DietIcon pref={(item as any).diet_pref} />
-                          </div>
-                          <p>
-                            {item.description || item.category || 'Popular choice'}
-                          </p>
-                        </div>
-                      </div>
+                        item={cartItem}
+                        index={0} // No stagger needed or simple 0
+                        onAddToCart={handleAddToCart}
+                      />
                     );
                   })}
                 </div>
@@ -1220,7 +1218,7 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, margin: "-10%" }}
                   transition={{ duration: 0.6 }}
-                  className="mb-6 mt-4 text-center md:text-left"
+                  className="mb-6 mt-4 text-center md:text-left md:ml-[3.75%]"
                 >
                   <h2 className="text-5xl md:text-7xl font-stardom italic tracking-tight">
                     {category.label}
@@ -1236,15 +1234,19 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
                           whileInView={{ opacity: 1, x: 0 }}
                           viewport={{ once: true, margin: "-5%" }}
                           transition={{ duration: 0.5 }}
-                          className="text-3xl md:text-4xl font-stardom italic text-[#B5693E] mb-12 capitalize"
+                          className="text-3xl md:text-4xl font-stardom italic text-[#B5693E] mb-12 capitalize md:ml-[3.75%]"
                         >
                           {subCategory.title}
                         </motion.h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-20">
-                          {subCategory.items.map(item => {
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-16">
+                          {subCategory.items.map((item, idx) => {
                             const fullItem = menuItems.find(m => m.id === item.id) || item as any;
-                            const description = fullItem.description || fullItem.category || '';
-                            const isVeg = fullItem.diet_pref === 'veg' || fullItem.diet_pref === 'jain';
+
+                            // Resolve image
+                            let imageUrl = fullItem.image;
+                            if (!imageUrl || imageUrl.includes('menu-placeholder') || imageUrl.includes('pic1.jpeg') || imageUrl.includes('pic2.jpeg') || imageUrl.includes('pic3.jpeg')) {
+                              imageUrl = getMenuImage(fullItem.name);
+                            }
 
                             const cartItem: CoffeeItem = {
                               id: fullItem.id,
@@ -1252,53 +1254,19 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
                               notes: fullItem.category || '',
                               caffeine: fullItem.caffeine || 'Medium',
                               intensity: 4,
-                              image: fullItem.image || '/media/menu-placeholder.jpg',
+                              image: imageUrl,
                               price: fullItem.price,
                               description: fullItem.description || fullItem.category || fullItem.name,
+                              diet_pref: fullItem.diet_pref
                             };
 
                             return (
-                              <motion.div
+                              <MenuProductCard
                                 key={item.id}
-                                initial={{ opacity: 0, y: 20 }}
-                                whileInView={{ opacity: 1, y: 0 }}
-                                viewport={{ once: true, margin: "-10%" }}
-                                transition={{ duration: 0.4 }}
-                                whileHover={{ y: -4 }}
-                                className="flex flex-col pb-4 border-b border-black/10 group"
-                              >
-                                {/* Top Row: Name and Price/Add */}
-                                <div className="flex items-baseline justify-between mb-2">
-                                  <h3 className="text-2xl md:text-3xl font-serif text-[#1A1A1A] leading-tight tracking-tight">
-                                    {item.name}
-                                  </h3>
-                                  <div className="flex items-center gap-4 shrink-0 pl-4">
-                                    <span className="text-xl md:text-2xl font-medium font-sans text-[#1A1A1A]">
-                                      ₹{item.price}
-                                    </span>
-                                    <motion.button
-                                      whileHover={{ scale: 1.1, rotate: 90 }}
-                                      whileTap={{ scale: 0.9 }}
-                                      onClick={() => handleAddToCart(cartItem)}
-                                      className="w-10 h-10 flex items-center justify-center rounded-full border border-[#B5693E] text-[#B5693E] 
-                                                  hover:bg-[#B5693E] hover:text-white transition-colors duration-300"
-                                      aria-label="Add to cart"
-                                    >
-                                      <span className="text-3xl leading-none mb-1">+</span>
-                                    </motion.button>
-                                  </div>
-                                </div>
-
-                                {/* Bottom Row: Icon + Description */}
-                                <div className="flex items-start text-base md:text-lg text-black font-sans font-light leading-relaxed">
-                                  <span className="inline-flex shrink-0 translate-y-[8px] mr-2">
-                                    <DietIcon pref={fullItem.diet_pref} />
-                                  </span>
-                                  <p>
-                                    {description}
-                                  </p>
-                                </div>
-                              </motion.div>
+                                item={cartItem}
+                                index={idx}
+                                onAddToCart={handleAddToCart}
+                              />
                             );
                           })}
                         </div>
@@ -1306,11 +1274,15 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
                     ))
                   ) : (
                     // Fallback for items without valid sub-categories or if logic fails
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-16">
-                      {category.items.map(item => {
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-12">
+                      {category.items.map((item, idx) => {
                         const fullItem = menuItems.find(m => m.id === item.id) || item as any;
-                        const description = fullItem.description || fullItem.category || '';
-                        const isVeg = fullItem.diet_pref === 'veg' || fullItem.diet_pref === 'jain';
+
+                        // Resolve image
+                        let imageUrl = fullItem.image;
+                        if (!imageUrl || imageUrl.includes('menu-placeholder') || imageUrl.includes('pic1.jpeg') || imageUrl.includes('pic2.jpeg') || imageUrl.includes('pic3.jpeg')) {
+                          imageUrl = getMenuImage(fullItem.name);
+                        }
 
                         const cartItem: CoffeeItem = {
                           id: fullItem.id,
@@ -1318,41 +1290,19 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
                           notes: fullItem.category || '',
                           caffeine: fullItem.caffeine || 'Medium',
                           intensity: 4,
-                          image: fullItem.image || '/media/menu-placeholder.jpg',
+                          image: imageUrl,
                           price: fullItem.price,
                           description: fullItem.description || fullItem.category || fullItem.name,
+                          diet_pref: fullItem.diet_pref
                         };
 
                         return (
-                          <div
+                          <MenuProductCard
                             key={item.id}
-                            className="flex flex-col pb-4 border-b border-black/10 group"
-                          >
-                            <div className="flex items-baseline justify-between mb-2">
-                              <h3 className="text-2xl md:text-3xl font-serif text-[#1A1A1A] leading-tight tracking-tight">
-                                {item.name}
-                              </h3>
-                              <div className="flex items-center gap-4 shrink-0 pl-4">
-                                <span className="text-xl md:text-2xl font-medium font-sans text-[#1A1A1A]">
-                                  ₹{item.price}
-                                </span>
-                                <button
-                                  onClick={() => handleAddToCart(cartItem)}
-                                  className="w-10 h-10 flex items-center justify-center rounded-full border border-[#B5693E] text-[#B5693E] 
-                                              hover:bg-[#B5693E] hover:text-white transition-all duration-300 hover:-translate-y-1 hover:rotate-90"
-                                  aria-label="Add to cart"
-                                >
-                                  <span className="text-3xl leading-none mb-1">+</span>
-                                </button>
-                              </div>
-                            </div>
-                            <div className="flex items-start gap-1 text-sm text-zinc-500 font-sans font-light leading-snug">
-                              <div className="pt-[6px] shrink-0">
-                                <DietIcon pref={fullItem.diet_pref} />
-                              </div>
-                              <p>{description}</p>
-                            </div>
-                          </div>
+                            item={cartItem}
+                            index={idx}
+                            onAddToCart={handleAddToCart}
+                          />
                         );
                       })}
                     </div>
