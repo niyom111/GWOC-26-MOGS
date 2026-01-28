@@ -306,6 +306,7 @@ interface DataContextValue {
   updateOrderSettings: (settings: Partial<OrderSettings>) => Promise<void>;
   checkStoreStatus: () => { isOpen: boolean; reason: string; openingTime?: string; closingTime?: string };
   isStoreOpenAt: (timeStr: string) => boolean;
+  checkOrderingStatus: (type: 'menu' | 'art') => { allowed: boolean; reason: 'STORE_CLOSED' | 'MENU_PAUSED' | 'ART_PAUSED' | 'OK'; message?: string };
 }
 
 const DataContext = createContext<DataContextValue | undefined>(undefined);
@@ -374,6 +375,41 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
     };
     fetchData();
+  }, []);
+
+  // Poll settings every 10 seconds and on window focus to ensure multi-tab sync
+  useEffect(() => {
+    const refreshSettings = async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/settings`);
+        if (res.ok) {
+          const settingsData = await res.json();
+          if (settingsData) {
+            setOrderSettings(prev => {
+              // Optional: Deep compare could be added here to avoid re-renders if identical,
+              // but checking basics or just setting is usually fine for this size of data
+              return settingsData;
+            });
+          }
+        }
+      } catch (err) {
+        console.error("Failed to refresh settings:", err);
+      }
+    };
+
+    // Poll every 10 seconds
+    const intervalId = setInterval(refreshSettings, 10000);
+
+    // Refresh immediately on window focus (e.g. switching tabs back to this app)
+    const onFocus = () => {
+      refreshSettings();
+    };
+    window.addEventListener('focus', onFocus);
+
+    return () => {
+      clearInterval(intervalId);
+      window.removeEventListener('focus', onFocus);
+    };
   }, []);
 
   // Helper to refresh menu
@@ -690,6 +726,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     if (checkTime === null || openTime === null || closeTime === null) return true; // Fallback
 
+    // Handle overnight hours (e.g. 11PM to 2AM)
+    if (closeTime < openTime) {
+      return checkTime >= openTime || checkTime <= closeTime;
+    }
     return checkTime >= openTime && checkTime <= closeTime;
   };
 
@@ -705,7 +745,12 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const openTime = parseTimeToMinutes(orderSettings.opening_time || '10:00') ?? 600; // 10:00 AM
     const closeTime = parseTimeToMinutes(orderSettings.closing_time || '22:00') ?? 1320; // 10:00 PM
 
-    const isWithinHours = currentTotalMinutes >= openTime && currentTotalMinutes <= closeTime;
+    let isWithinHours = false;
+    if (closeTime < openTime) {
+      isWithinHours = currentTotalMinutes >= openTime || currentTotalMinutes <= closeTime;
+    } else {
+      isWithinHours = currentTotalMinutes >= openTime && currentTotalMinutes <= closeTime;
+    }
 
     return {
       isOpen: isWithinHours,
@@ -713,6 +758,37 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       openingTime: orderSettings.opening_time || '10:00',
       closingTime: orderSettings.closing_time || '22:00'
     };
+  };
+
+  const checkOrderingStatus = (type: 'menu' | 'art') => {
+    // 1. Check Global Store Hours
+    const status = checkStoreStatus();
+    if (!status.isOpen) {
+      return {
+        allowed: false,
+        reason: 'STORE_CLOSED' as const,
+        message: `We're closed! Open from ${status.openingTime} to ${status.closingTime}`
+      };
+    }
+
+    // 2. Check Specific Pauses
+    if (type === 'menu' && !orderSettings.menu_orders_enabled) {
+      return {
+        allowed: false,
+        reason: 'MENU_PAUSED' as const,
+        message: "The kitchen is paused at the moment."
+      };
+    }
+
+    if (type === 'art' && !orderSettings.art_orders_enabled) {
+      return {
+        allowed: false,
+        reason: 'ART_PAUSED' as const,
+        message: "Art orders are currently paused."
+      };
+    }
+
+    return { allowed: true, reason: 'OK' as const };
   };
 
   return (
@@ -740,7 +816,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         orderSettings,
         updateOrderSettings,
         checkStoreStatus,
-        isStoreOpenAt
+        isStoreOpenAt,
+        checkOrderingStatus
       }}
     >
       {children}

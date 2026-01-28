@@ -635,6 +635,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
     const draftName = (coffeeDraft.name ?? '').trim();
     if (!draftName) return;
 
+    // Handle Image Upload
+    let imageToUse = coffeeDraft.image || '/media/pic1.jpeg';
+    if (selectedFile) {
+      const uploadedUrl = await uploadImage(selectedFile);
+      if (uploadedUrl) {
+        imageToUse = uploadedUrl;
+      }
+    }
+
     let categoryId = coffeeDraft.category_id;
     let subCategoryId = coffeeDraft.sub_category_id;
 
@@ -716,7 +725,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
       calories: itemKind === 'food' ? (coffeeDraft.calories ?? null) : null,
       shareable: itemKind === 'food' ? (coffeeDraft.shareable ? 1 : 0) : null,
       intensity_level: coffeeDraft.intensity_level ?? null,
-      image: coffeeDraft.image || '/media/pic1.jpeg',
+      image: imageToUse,
       description: coffeeDraft.description || '',
       status: coffeeDraft.status || 'DRAFT',
       diet_pref: coffeeDraft.diet_pref || 'veg',
@@ -1619,6 +1628,53 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack, onLogout }) => 
                     <option value="non-veg">Non-Veg</option>
                     <option value="jain">Jain</option>
                   </select>
+                </div>
+
+                {/* Divider */}
+                <div className="border-t border-[#F0F0F0]" />
+
+                {/* Image Upload */}
+                <div>
+                  <label className="block text-[12px] font-semibold text-[#333] uppercase tracking-[0.05em] mb-2">Item Image</label>
+                  <div className="flex items-start gap-4">
+                    {/* Preview */}
+                    <div className="w-20 h-20 bg-gray-100 border border-gray-200 overflow-hidden flex items-center justify-center">
+                      <img
+                        src={selectedFile ? URL.createObjectURL(selectedFile) : (coffeeDraft.image || '/media/pic1.jpeg')}
+                        alt="Preview"
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = '/media/pic1.jpeg';
+                        }}
+                      />
+                    </div>
+
+                    <div className="flex-1">
+                      <input
+                        type="file"
+                        accept=".jpg, .jpeg"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            // Validate file type
+                            if (!file.type.match('image/jpeg')) {
+                              showToast('Only JPG/JPEG files are allowed', 'error');
+                              return;
+                            }
+                            setSelectedFile(file);
+                          }
+                        }}
+                        className="block w-full text-sm text-slate-500
+                              file:mr-4 file:py-2 file:px-4
+                              file:rounded-full file:border-0
+                              file:text-xs file:font-semibold
+                              file:bg-violet-50 file:text-violet-700
+                              hover:file:bg-violet-100
+                            "
+                      />
+                      <p className="mt-1 text-xs text-gray-500">JPG or JPEG only.</p>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Divider */}
