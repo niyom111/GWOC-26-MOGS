@@ -5,3 +5,5 @@ export const API_BASE_URL = import.meta.env.VITE_API_URL ||
     ? 'https://rabuste-backend-production.up.railway.app'
     : `http://${window.location.hostname}:5000`);
 
+
+export const FALLBACK_IMAGE = '/media/logo.png';

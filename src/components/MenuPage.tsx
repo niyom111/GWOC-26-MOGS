@@ -291,12 +291,26 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
   const toastTimeoutRef = useRef<number | null>(null);
   const activeCategoryTimeoutRef = useRef<number | null>(null);
   const [showBrewDesk, setShowBrewDesk] = useState(false);
-  const [isOrderPopupOpen, setIsOrderPopupOpen] = useState(false);
+
+  // Status Popup State
+  const [statusPopup, setStatusPopup] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    type: 'info' | 'error';
+  }>({ isOpen: false, title: '', message: '', type: 'info' });
 
   const handleAddToCart = (item: CoffeeItem) => {
-    // Check if ordering is enabled
-    if (orderSettings && !orderSettings.menu_orders_enabled) {
-      setIsOrderPopupOpen(true);
+    // Check ordering status
+    const status = checkOrderingStatus('menu');
+
+    if (!status.allowed) {
+      setStatusPopup({
+        isOpen: true,
+        title: status.reason === 'STORE_CLOSED' ? 'We are Closed' : 'Kitchen Paused',
+        message: status.message || "We are not accepting orders at the moment.",
+        type: 'info'
+      });
       return;
     }
 
@@ -1343,11 +1357,11 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
 
 
       <StatusPopup
-        isOpen={isOrderPopupOpen}
-        onClose={() => setIsOrderPopupOpen(false)}
-        title="We're Closed for Now"
-        message="Our kitchen is currently taking a break. We are not accepting new menu orders at the moment. Please check back soon!"
-        type="info"
+        isOpen={statusPopup.isOpen}
+        onClose={() => setStatusPopup(prev => ({ ...prev, isOpen: false }))}
+        title={statusPopup.title}
+        message={statusPopup.message}
+        type={statusPopup.type}
       />
 
       <Toast message={toastMessage} />
