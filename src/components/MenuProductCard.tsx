@@ -22,11 +22,11 @@ const MenuProductCard: React.FC<MenuProductCardProps> = ({ item, image, onAddToC
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-10%" }}
-            transition={{ delay: Math.min(index * 0.02, 0.3), duration: 0.3 }}
+            transition={{ delay: Math.min(index * 0.02, 0.3), duration: 0.6, ease: "easeOut" }}
             className="group flex flex-col h-full cursor-pointer"
         >
             {/* Image Container - Square, Hover Lifts & Rotates Slightly, No Zoom */}
-            <div className="relative w-[85%] mx-auto aspect-square overflow-hidden mb-5 bg-[#e5e5e5] rounded-none transition-all duration-500 ease-out group-hover:-translate-y-2 group-hover:rotate-3 shadow-none group-hover:shadow-xl">
+            <div className="relative w-[85%] mx-auto aspect-square overflow-hidden mb-5 bg-[#e5e5e5] rounded-none transition-all duration-500 ease-out md:group-hover:-translate-y-2 md:group-hover:rotate-3 shadow-none md:group-hover:shadow-xl">
                 <img
                     src={displayImage}
                     alt={item.name}
@@ -52,7 +52,7 @@ const MenuProductCard: React.FC<MenuProductCardProps> = ({ item, image, onAddToC
             {/* Content Container */}
             <div className="flex flex-col w-[85%] mx-auto">
                 {/* Header: Name & Price */}
-                <div className="flex justify-between items-start mb-2 gap-4">
+                <div className="flex items-baseline mb-2 gap-4">
                     <h3 className="text-4xl font-serif italic text-black leading-tight group-hover:text-[#B5693E] transition-colors duration-300">
                         {item.name}
                     </h3>

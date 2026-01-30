@@ -258,7 +258,7 @@ interface MenuPageProps {
 }
 
 const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
-  const { menuItems, orderSettings, menuLoading } = useDataContext();
+  const { menuItems, orderSettings, menuLoading, checkOrderingStatus } = useDataContext();
 
   // Side Nav Logic
   const { scrollY } = useScroll();
@@ -931,7 +931,7 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -20 }}
                   transition={{ duration: 0.2 }}
-                  className="sticky top-24 z-30 bg-[#F3EFE0]/60 backdrop-blur-md py-5 mb-12 -mx-6 md:mx-0 md:px-0 shadow-sm"
+                  className="relative bg-[#F3EFE0]/60 backdrop-blur-md py-5 mb-12 -mx-6 md:mx-0 md:px-0 shadow-sm"
                 >
                   <div className="flex overflow-x-auto gap-3 pb-2 no-scrollbar snap-x scroll-pl-6 justify-start md:justify-center">
                     <div className="w-6 shrink-0 md:hidden" />
@@ -993,12 +993,7 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
               )}
             </AnimatePresence>
 
-            {/* Mobile Sticky fallback for side mode (since side nav is hidden on mobile) */}
-            {isSideMode && (
-              <div className="lg:hidden sticky top-24 z-30 bg-[#F3EFE0]/90 backdrop-blur-md py-4 shadow-sm mb-8 flex justify-center">
-                <span className="text-xs font-bold uppercase tracking-widest text-black">Menu</span>
-              </div>
-            )}
+
 
           </>
         )}
@@ -1104,7 +1099,7 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, margin: "-10%" }}
-                  transition={{ duration: 0.6 }}
+                  transition={{ duration: 0.8, ease: "easeOut" }}
                   className="mb-8 text-center md:text-left md:ml-[3.75%]"
                 >
                   <p className="text-[10px] uppercase tracking-[0.4em] text-black font-stardom mb-1">
@@ -1121,7 +1116,9 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
                   variants={{
                     visible: {
                       transition: {
-                        staggerChildren: 0.1
+                        staggerChildren: 0.1,
+                        delayChildren: 0.1,
+                        ease: "easeOut"
                       }
                     }
                   }}
@@ -1164,7 +1161,7 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, margin: "-10%" }}
-                  transition={{ duration: 0.6 }}
+                  transition={{ duration: 0.8, ease: "easeOut" }}
                   className="relative mb-8 text-center md:text-left md:ml-[3.75%]"
                 >
                   <h2 className="text-5xl md:text-7xl font-stardom italic tracking-tight">
@@ -1231,7 +1228,7 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, margin: "-10%" }}
-                  transition={{ duration: 0.6 }}
+                  transition={{ duration: 0.8, ease: "easeOut" }}
                   className="mb-6 mt-4 text-center md:text-left md:ml-[3.75%]"
                 >
                   <h2 className="text-5xl md:text-7xl font-stardom italic tracking-tight">
@@ -1248,7 +1245,7 @@ const MenuPage: React.FC<MenuPageProps> = ({ onAddToCart }) => {
                           whileInView={{ opacity: 1, x: 0 }}
                           viewport={{ once: true, margin: "-5%" }}
                           transition={{ duration: 0.5 }}
-                          className="text-3xl md:text-4xl font-stardom italic text-[#B5693E] mb-12 capitalize md:ml-[3.75%]"
+                          className="text-3xl md:text-4xl font-stardom italic text-[#B5693E] mb-12 capitalize ml-[7.5%] md:ml-[3.75%]"
                         >
                           {subCategory.title}
                         </motion.h3>
